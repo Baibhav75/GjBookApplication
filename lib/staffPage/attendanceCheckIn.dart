@@ -6,9 +6,24 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '/staffPage/attendanceCheckOut.dart';
+import '/Service/agent_login_service.dart';
+import '/Model/agent_login_model.dart';
+import '/Service/secure_storage_service.dart';
+import '/Model/attendance_checkin_model.dart';
+import '/Service/attendance_service.dart';
+import '/Service/staff_profile_service.dart';
 
 class AttendanceCheckIn extends StatefulWidget {
-  const AttendanceCheckIn({super.key});
+  final String? agentName;
+  final String? employeeType;
+  final String? mobile;
+
+  const AttendanceCheckIn({
+    super.key,
+    this.agentName,
+    this.employeeType,
+    this.mobile,
+  });
 
   @override
   State<AttendanceCheckIn> createState() => _AttendanceCheckInState();
@@ -19,7 +34,8 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
   Position? _position;
   String? _address;
   String? _state; // State extracted from location
-  bool _isLoadingLocation = true;
+  bool _isLoadingLocation = false;
+  bool _gpsEnabled = false;
 
   // Photo
   File? _photo;
@@ -31,12 +47,18 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
   // User Session - Simplified
   String? _userName;
   String? _userMobile;
+  String? _employeeId; // Store actual employee ID
   bool _isLoadingUser = false;
 
-  bool get _isLocationReady =>
-      !_isLoadingLocation && _position != null && (_address?.isNotEmpty ?? false);
+  // API Response Data
+  AttendanceCheckInModel? _lastCheckInResponse;
+  String? _todayWorkDuration;
+  String? _weekWorkDuration;
 
-  bool get _canSubmitCheckIn => !_isCheckingIn && _isLocationReady;
+  bool get _isLocationReady =>
+      _gpsEnabled && _position != null && (_address?.isNotEmpty ?? false);
+
+  bool get _canSubmitCheckIn => !_isCheckingIn && _gpsEnabled && _isLocationReady;
 
   @override
   void initState() {
@@ -52,65 +74,160 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
 
   /// Initialize screen with user data and location
   Future<void> _initializeScreen() async {
-    // Set dummy user data (replace with your actual user management)
-    _userName = "Demo User";
-    _userMobile = "1234567890";
+    // Load user data from secure storage
+    await _loadUserData();
 
-    await _initLocation();
+    // Auto-request permissions and check GPS without blocking
+    _initLocation();
   }
 
-  /// Initialize location with better error handling
-  Future<void> _initLocation() async {
+  /// Load user data from secure storage
+  Future<void> _loadUserData() async {
     try {
-      // Check location service
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
+      setState(() => _isLoadingUser = true);
+
+      final storageService = SecureStorageService();
+      final credentials = await storageService.getStaffCredentials();
+
+      if (mounted) {
+        setState(() {
+          final storedName = widget.agentName ??
+              credentials['agentName'] ??
+              credentials['username'] ??
+              '';
+          _userName = storedName.trim().isNotEmpty ? storedName : null;
+          _userMobile = widget.mobile ?? credentials['username'] ?? '';
+          
+          // Try to get employee ID from credentials or use mobile as fallback
+          // Mobile number is commonly used as employee ID in many systems
+          _employeeId = credentials['employeeId'] ?? _userMobile;
+          
+          _isLoadingUser = false;
+        });
+      }
+      
+      // Try to fetch employee ID from staff profile if mobile is available
+      if (_userMobile != null && _userMobile!.isNotEmpty) {
+        await _fetchEmployeeId();
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      if (mounted) {
+        setState(() {
+          _userName = null;
+          _userMobile = '';
+          _employeeId = null;
+          _isLoadingUser = false;
+        });
+      }
+    }
+  }
+
+  /// Fetch employee ID from staff profile API
+  Future<void> _fetchEmployeeId() async {
+    if (_userMobile == null || _userMobile!.isEmpty) return;
+    
+    try {
+      final staffProfileService = StaffProfileService();
+      final profile = await staffProfileService.fetchProfile(_userMobile!);
+      
+      if (profile != null && profile.employeeId.isNotEmpty && mounted) {
+        setState(() {
+          _employeeId = profile.employeeId;
+        });
+        debugPrint('Employee ID fetched: $_employeeId');
+      } else {
+        // Fallback to mobile number if profile fetch fails
         if (mounted) {
           setState(() {
-            _isLoadingLocation = false;
-            _address = 'Location service disabled';
+            _employeeId = _userMobile;
           });
-          _showError('Please enable location services in your device settings.');
         }
-        return;
+        debugPrint('Using mobile number as Employee ID: $_employeeId');
       }
+    } catch (e) {
+      debugPrint('Error fetching employee ID: $e');
+      // Fallback to mobile number
+      if (mounted) {
+        setState(() {
+          _employeeId = _userMobile;
+        });
+      }
+    }
+  }
 
-      // Check and request permission
+  /// Initialize location with auto permission and GPS detection
+  Future<void> _initLocation() async {
+    if (!mounted) return;
+
+    try {
+      // 1. Auto-request permission first (non-blocking)
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (mounted) {
-            setState(() {
-              _isLoadingLocation = false;
-              _address = 'Location permission denied';
-            });
-            _showError('Location permission is required for attendance.');
-          }
-          return;
-        }
       }
 
+      // 2. Check GPS status immediately
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+      if (!mounted) return;
+
+      setState(() {
+        _gpsEnabled = serviceEnabled;
+        _isLoadingLocation = false; // Clear loading state
+      });
+
+      // 3. If GPS is OFF, show popup and navigate
+      if (!serviceEnabled) {
+        _handleGPSDisabled();
+        return;
+      }
+
+      // 4. If permission denied forever, show popup and navigate
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
           setState(() {
             _isLoadingLocation = false;
-            _address = 'Location permission permanently denied';
           });
-          _showError('Please enable location permission in app settings.');
         }
+        _handlePermissionDeniedForever();
         return;
       }
 
-      // Get current position with timeout
+      // 5. If permission still denied, show popup and navigate
+      if (permission == LocationPermission.denied) {
+        if (mounted) {
+          setState(() {
+            _isLoadingLocation = false;
+          });
+        }
+        _handlePermissionDenied();
+        return;
+      }
+
+      // 6. GPS is ON and permission granted - get location
+      _getLocationData();
+    } catch (e) {
+      if (mounted) {
+        debugPrint('Location initialization error: $e');
+        _handleGPSDisabled();
+      }
+    }
+  }
+
+  /// Get location data when GPS is enabled
+  Future<void> _getLocationData() async {
+    try {
+      // Get current position with shorter timeout
       Position pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        timeLimit: const Duration(seconds: 8),
       );
 
       if (mounted) {
         setState(() {
           _position = pos;
+          _isLoadingLocation = false;
         });
       }
 
@@ -118,14 +235,174 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       _fetchAddress(pos);
     } catch (e) {
       if (mounted) {
+        debugPrint('Get location error: $e');
         setState(() {
+          _address = 'Location unavailable';
           _isLoadingLocation = false;
-          _address = 'Error getting location';
         });
-        debugPrint('Location error: $e');
-        _showError('Failed to get location. Please try again.');
       }
     }
+  }
+
+  /// Handle GPS disabled - show popup and navigate
+  void _handleGPSDisabled() {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_off, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'your GPS is Off',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Please on GPS and befour connect it ',
+          style: TextStyle(fontSize: 16),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToCheckOut();
+            },
+            child: const Text(
+              'Ok',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B46FF),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle permission denied forever
+  void _handlePermissionDeniedForever() {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_disabled, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Location Permission',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'कृपया app settings में location permission enable करें।',
+          style: TextStyle(fontSize: 16),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToCheckOut();
+            },
+            child: const Text(
+              'ठीक है',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B46FF),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle permission denied
+  void _handlePermissionDenied() {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_off, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Permission Required',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Location permission आवश्यक है attendance के लिए।',
+          style: TextStyle(fontSize: 16),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToCheckOut();
+            },
+            child: const Text(
+              'ठीक है',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B46FF),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Navigate to check out page with default values
+  void _navigateToCheckOut() {
+    if (!mounted) return;
+    
+    // Create default values for navigation
+    final defaultCheckInTime = DateTime.now();
+    
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AttendanceCheckOut(
+          checkInTime: defaultCheckInTime,
+          checkInPhoto: _photo, // Can be null if GPS was off before photo capture
+          checkInPosition: _position,
+          checkInAddress: _address ?? 'Location not available',
+        ),
+      ),
+    );
   }
 
   /// Fetch address from coordinates
@@ -169,93 +446,177 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
 
   /// Perform check-in with validation
   Future<void> _performCheckIn() async {
-    // Prevent double-tap
     if (!_canSubmitCheckIn) {
-      _showError(_isLoadingLocation
-          ? 'Still acquiring location. Please wait a moment.'
-          : 'Location unavailable. Pull down to refresh.');
-      if (!_isLoadingLocation) {
-        _initLocation();
-      }
+      _showError("Location not ready. Please wait.");
       return;
     }
 
     setState(() => _isCheckingIn = true);
 
     try {
-      // 1. Capture photo
-      final XFile? picked = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 75,
-        maxWidth: 1024,
-        maxHeight: 1024,
-      );
+      // Capture photo
+      final pic = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
 
-      if (picked == null) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
+      if (pic == null) {
+        setState(() => _isCheckingIn = false);
         return;
       }
 
-      final photoFile = File(picked.path);
-      setState(() => _photo = photoFile);
-
-      // 2. Ensure location is available
-      if (_position == null) {
-        _showError('Waiting for location...');
-        await _initLocation();
-
-        if (_position == null) {
-          throw Exception('Unable to get location. Please enable GPS.');
+      final photoFile = File(pic.path);
+      
+      // Validate image file exists
+      if (!photoFile.existsSync()) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
         }
+        _showError("Photo file not found. Please try again.");
+        return;
       }
 
-      // 3. Prepare check-in data
-      final checkInTime = DateTime.now();
-      final employeeName = _userName ?? '';
-      final empMob = _userMobile ?? '';
+      _photo = photoFile;
 
-      // Validate required fields
-      if (employeeName.isEmpty) {
-        throw Exception('Employee name is required.');
-      }
-      if (empMob.isEmpty) {
-        throw Exception('Employee mobile number is required.');
-      }
-      if (_address == null || _address!.isEmpty) {
-        throw Exception('Location address is required.');
+      // Comprehensive validation of required info
+      if (_employeeId == null || _employeeId!.trim().isEmpty) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        _showError("Employee ID is missing. Please wait or login again.");
+        return;
       }
 
-      // 4. Save check-in data locally
-      await _saveCheckInLocally(
+      if (_userMobile == null || _userMobile!.trim().isEmpty) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        _showError("Mobile number is missing. Please login again.");
+        return;
+      }
+
+      if (_address == null || _address!.trim().isEmpty) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        _showError("Location is missing. Please wait for GPS location.");
+        return;
+      }
+
+      if (_position == null) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        _showError("GPS position is missing. Please wait for location.");
+        return;
+      }
+
+      // Validate coordinates are valid numbers
+      if (_position!.latitude.isNaN || _position!.longitude.isNaN || 
+          _position!.latitude.isInfinite || _position!.longitude.isInfinite) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        _showError("Invalid GPS coordinates. Please try again.");
+        return;
+      }
+
+      final checkInTime = DateTime.now().toIso8601String();
+      
+      // Validate check-in time is valid
+      if (checkInTime.isEmpty) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        _showError("Invalid check-in time. Please try again.");
+        return;
+      }
+
+      // Send API with all validated parameters - Use employee ID, not name
+      final result = await AttendanceService.markAttendance(
+        employeeId: _employeeId!.trim(),
+        mobile: _userMobile!.trim(),
         checkInTime: checkInTime,
-        checkInPhoto: photoFile,
-        checkInPosition: _position,
-        checkInAddress: _address!,
-        employeeName: employeeName,
-        empMob: empMob,
-        state: _state,
+        location: _address!.trim(),
+        latitude: _position!.latitude,
+        longitude: _position!.longitude,
+        image: photoFile,
       );
 
-      // 5. Show success feedback in UI and navigate
+      // Validate result
+      if (result == null) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        _showError("Check-in failed: No response from server");
+        return;
+      }
+
+      // Store response data
+      if (mounted) {
+        setState(() {
+          _lastCheckInResponse = result;
+          if (result.workDuration != null && result.workDuration!.isNotEmpty) {
+            _todayWorkDuration = result.workDuration;
+          }
+        });
+      }
+
+      // Check if status is false
+      if (result.status == false) {
+        if (mounted) {
+          setState(() => _isCheckingIn = false);
+        }
+        
+        // Handle specific error messages
+        String errorMessage = "Check-in failed. Please try again.";
+        
+        if (result.message != null && result.message!.isNotEmpty) {
+          final msg = result.message!.trim();
+          
+          // Check for specific server errors
+          if (msg.toLowerCase().contains("object reference not set") ||
+              msg.toLowerCase().contains("null reference")) {
+            errorMessage = "Server error: Required information is missing. Please check all fields and try again.";
+          } else if (msg.toLowerCase().contains("employee") || 
+                     msg.toLowerCase().contains("not found")) {
+            errorMessage = "Employee not found. Please check your login credentials.";
+          } else {
+            errorMessage = msg;
+          }
+        }
+        
+        _showError(errorMessage);
+        return;
+      }
+
+      // Success - show message
+      final successMessage = result.message?.isNotEmpty == true
+          ? result.message!
+          : "Check-in successful";
+      
+      if (mounted) {
+        _showSuccess(successMessage);
+      }
+
+      // Navigate to check out only if mounted
       if (!mounted) return;
-      _showSuccess('Check-in completed successfully');
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => AttendanceCheckOut(
-            checkInTime: checkInTime,
+          builder: (_) => AttendanceCheckOut(
+            checkInTime: DateTime.parse(checkInTime),
             checkInPhoto: photoFile,
-            checkInPosition: _position,
-            checkInAddress: _address,
+            checkInPosition: _position!,
+            checkInAddress: _address!,
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint("Check-in error: $e");
+      debugPrint("Stack trace: $stackTrace");
+      
       if (mounted) {
-        _showError('Check-in failed: ${e.toString()}');
+        setState(() => _isCheckingIn = false);
+        _showError("Error: ${e.toString()}");
       }
     } finally {
       if (mounted) {
@@ -263,6 +624,8 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       }
     }
   }
+
+
 
   /// Save check-in data locally
   Future<void> _saveCheckInLocally({
@@ -390,16 +753,27 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
             children: [
               const SizedBox(height: 6),
 
-              // Welcome message with user name
-              Text(
-                'Welcome, ${_userName ?? 'User'}!',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF6B46FF),
-                ),
-                textAlign: TextAlign.center,
-              ),
+              // Welcome message with logged-in user name
+              _isLoadingUser
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF6B46FF),
+                      ),
+                    )
+                  : Text(
+                      _userName != null && _userName!.trim().isNotEmpty
+                          ? 'Welcome, ${_userName!.trim()}!'
+                          : 'Welcome!',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF6B46FF),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
 
               const SizedBox(height: 12),
 
@@ -490,17 +864,25 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _position != null
+                  color: _gpsEnabled && _position != null
                       ? const Color(0xFFDCFCE7)
-                      : const Color(0xFFFEF3C7),
+                      : !_gpsEnabled
+                          ? const Color(0xFFFEE2E2)
+                          : const Color(0xFFFEF3C7),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  _position != null ? 'Acquired' : 'Acquiring...',
+                  !_gpsEnabled
+                      ? 'GPS OFF'
+                      : _position != null
+                          ? 'Acquired'
+                          : 'Acquiring...',
                   style: TextStyle(
-                    color: _position != null
-                        ? const Color(0xFF166534)
-                        : const Color(0xFF92400E),
+                    color: !_gpsEnabled
+                        ? const Color(0xFFDC2626)
+                        : _position != null
+                            ? const Color(0xFF166534)
+                            : const Color(0xFF92400E),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -558,7 +940,28 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
                     ),
                   ],
                 ),
-                if (_address != null && _address!.isNotEmpty) ...[
+                if (!_gpsEnabled) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_off,
+                        size: 16,
+                        color: Color(0xFFDC2626),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'GPS is turned off. Please enable GPS to get location.',
+                          style: const TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (_address != null && _address!.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Row(
                     children: [
@@ -590,21 +993,31 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
           Row(
             children: [
               Icon(
-                _position != null ? Icons.check_circle : Icons.access_time,
-                color: _position != null
-                    ? const Color(0xFF16A34A)
-                    : Colors.orange,
+                !_gpsEnabled
+                    ? Icons.location_off
+                    : _position != null
+                        ? Icons.check_circle
+                        : Icons.access_time,
+                color: !_gpsEnabled
+                    ? const Color(0xFFDC2626)
+                    : _position != null
+                        ? const Color(0xFF16A34A)
+                        : Colors.orange,
                 size: 18,
               ),
               const SizedBox(width: 8),
               Text(
-                _position != null
-                    ? 'Location captured successfully'
-                    : 'Acquiring location...',
+                !_gpsEnabled
+                    ? 'GPS is turned off. Please enable GPS.'
+                    : _position != null
+                        ? 'Location captured successfully'
+                        : 'Acquiring location...',
                 style: TextStyle(
-                  color: _position != null
-                      ? const Color(0xFF16A34A)
-                      : Colors.orange,
+                  color: !_gpsEnabled
+                      ? const Color(0xFFDC2626)
+                      : _position != null
+                          ? const Color(0xFF16A34A)
+                          : Colors.orange,
                 ),
               ),
             ],
@@ -669,9 +1082,11 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
                 Text(
                   _isCheckingIn
                       ? 'CHECKING IN...'
-                      : isDisabled
-                          ? 'WAITING GPS'
-                          : 'CHECK-IN',
+                      : !_gpsEnabled
+                          ? 'GPS OFF'
+                          : isDisabled
+                              ? 'WAITING GPS'
+                              : 'CHECK-IN',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -687,6 +1102,19 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
 
   /// Build summary card
   Widget _buildSummaryCard() {
+    // Get work duration from API response if available
+    final todayDuration = _todayWorkDuration?.isNotEmpty == true 
+        ? _todayWorkDuration! 
+        : '0 h 0 m';
+    
+    final weekDuration = _weekWorkDuration?.isNotEmpty == true 
+        ? _weekWorkDuration! 
+        : '0 h 0 m';
+    
+    final status = _lastCheckInResponse != null && _lastCheckInResponse!.status == true
+        ? 'Checked In'
+        : 'Ready';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -704,9 +1132,9 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _summaryItem('0 h 0 m', 'Today'),
-          _summaryItem('42h 15m', 'This Week'),
-          _summaryItem('Ready', 'Status'),
+          _summaryItem(todayDuration, 'Today'),
+          _summaryItem(weekDuration, 'This Week'),
+          _summaryItem(status, 'Status'),
         ],
       ),
     );

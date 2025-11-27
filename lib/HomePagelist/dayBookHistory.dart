@@ -23,11 +23,8 @@ class _DayBookHistoryState extends State<DayBookHistory> {
 
   List<Transaction> _allTransactions = [];
   List<Transaction> _filteredTransactions = [];
-  String _selectedFilter = 'Today';
-  DateTimeRange _currentDateRange = DateTimeRange(
-    start: DateTime.now(),
-    end: DateTime.now(),
-  );
+  String? _selectedFilter; // null means "All" - no filtering
+  DateTimeRange? _currentDateRange; // null means show all records
 
   @override
   void initState() {
@@ -48,7 +45,8 @@ class _DayBookHistoryState extends State<DayBookHistory> {
   }
 
   void _initializeData() {
-    _currentDateRange = _getDateRangeForFilter(_selectedFilter);
+    // Default: Show all records without filtering
+    _currentDateRange = null;
     _loadTransactions();
   }
 
@@ -58,18 +56,20 @@ class _DayBookHistoryState extends State<DayBookHistory> {
 
     try {
       final response = await _transactionService.getTransactions(
-        fromDate: _currentDateRange.start,
-        toDate: _currentDateRange.end,
+        fromDate: _currentDateRange?.start,
+        toDate: _currentDateRange?.end,
         forceRefresh: forceRefresh,
       );
 
       final allTransactions = response.getAllTransactions();
       
-      // Apply client-side date filtering to ensure accuracy
-      final filteredByDate = _filterTransactionsByDateRange(
-        allTransactions,
-        _currentDateRange,
-      );
+      // Apply client-side date filtering only if a filter is selected
+      final filteredByDate = _currentDateRange != null
+          ? _filterTransactionsByDateRange(
+              allTransactions,
+              _currentDateRange!,
+            )
+          : allTransactions; // Show all if no filter selected
 
       if (mounted) {
         setState(() {
@@ -97,9 +97,12 @@ class _DayBookHistoryState extends State<DayBookHistory> {
   /// Gets the date range for the specified filter
   /// 
   /// - Today: Only today's date
-  /// - Weekly: Today + past 7 days (8 days total)
+  /// - Weekly: Current week (Monday to Sunday)
   /// - Monthly: Current month only (from start of month to today)
-  DateTimeRange _getDateRangeForFilter(String filter) {
+  /// Returns null for "All" to show all records
+  DateTimeRange? _getDateRangeForFilter(String? filter) {
+    if (filter == null) return null; // Show all records
+
     final now = DateTime.now();
     final todayStart = _getStartOfDay(now);
     final todayEnd = _getEndOfDay(now);
@@ -109,9 +112,16 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         return DateTimeRange(start: todayStart, end: todayEnd);
 
       case 'Weekly':
-        // Today + past 7 days (8 days total: today + 7 previous days)
-        final sevenDaysAgo = todayStart.subtract(const Duration(days: 7));
-        return DateTimeRange(start: sevenDaysAgo, end: todayEnd);
+        // Current week: Monday to Sunday (or today if today is before Sunday)
+        final daysFromMonday = now.weekday - 1; // Monday = 0, Sunday = 6
+        final startOfWeek = todayStart.subtract(Duration(days: daysFromMonday));
+        final endOfWeekDate = startOfWeek.add(const Duration(days: 6));
+        // Use today if it's before the end of the week, otherwise use end of week
+        final endDate = endOfWeekDate.isAfter(now) ? now : endOfWeekDate;
+        return DateTimeRange(
+          start: startOfWeek,
+          end: _getEndOfDay(endDate),
+        );
 
       case 'Monthly':
         // Current month only (from start of month to today)
@@ -119,7 +129,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         return DateTimeRange(start: startOfMonth, end: todayEnd);
 
       default:
-        return DateTimeRange(start: todayStart, end: todayEnd);
+        return null; // Show all records
     }
   }
 
@@ -190,7 +200,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
   }
 
   /// Handles filter change and automatically refreshes the transaction list
-  void _handleFilterChange(String filter) {
+  void _handleFilterChange(String? filter) {
     if (_selectedFilter == filter) return; // Avoid unnecessary reloads
 
     setState(() {
@@ -370,6 +380,8 @@ class _DayBookHistoryState extends State<DayBookHistory> {
           const SizedBox(height: 12),
           Row(
             children: [
+              _buildFilterButton(null, Icons.list, 'All'),
+              const SizedBox(width: 12),
               _buildFilterButton('Today', Icons.today),
               const SizedBox(width: 12),
               _buildFilterButton('Weekly', Icons.calendar_view_week),
@@ -382,8 +394,9 @@ class _DayBookHistoryState extends State<DayBookHistory> {
     );
   }
 
-  Widget _buildFilterButton(String filter, IconData icon) {
+  Widget _buildFilterButton(String? filter, IconData icon, [String? label]) {
     final isSelected = _selectedFilter == filter;
+    final displayLabel = label ?? filter ?? 'All';
 
     return Expanded(
       child: GestureDetector(
@@ -409,7 +422,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
               ),
               const SizedBox(width: 6),
               Text(
-                filter,
+                displayLabel,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

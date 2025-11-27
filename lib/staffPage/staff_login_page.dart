@@ -46,6 +46,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
           username: _mobileController.text.trim(),
           password: _passwordController.text.trim(),
           employeeType: dropdownEmployeeType,
+          agentName: result.agentName, // Save agent name
         );
       } catch (e) {
         // Log error but continue with navigation

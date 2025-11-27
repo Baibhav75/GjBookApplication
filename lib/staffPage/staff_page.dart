@@ -226,7 +226,13 @@ class _StaffPageState extends State<StaffPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => AttendanceCheckIn()),
+                    MaterialPageRoute(
+                      builder: (_) => AttendanceCheckIn(
+                        agentName: staffName,
+                        employeeType: staffPosition,
+                        mobile: staffMobile,
+                      ),
+                    ),
                   );
                 },
                 child: _dashboardItem(Icons.school, "Attendance", Colors.orange),

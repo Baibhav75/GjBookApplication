@@ -1,23 +1,26 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '/Service/agent_login_service.dart';
+import '/Model/agent_login_model.dart';
+import '/Service/secure_storage_service.dart';
+
 /// Checkout screen that completes the attendance flow.
 class AttendanceCheckOut extends StatefulWidget {
   const AttendanceCheckOut({
     super.key,
     required this.checkInTime,
-    required this.checkInPhoto,
+    this.checkInPhoto,
     required this.checkInPosition,
     required this.checkInAddress,
   });
 
   final DateTime checkInTime;
-  final File checkInPhoto;
+  final File? checkInPhoto;
   final Position? checkInPosition;
   final String? checkInAddress;
 
@@ -36,20 +39,73 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
   String? _currentAddress;
   bool _isLoadingLocation = true;
 
+  // Timer for real-time duration update
+  DateTime? _lastUpdateTime;
+
+  // User data
+  String? _userName;
+  String? _userMobile;
+
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _initLocation();
+    _startDurationTimer();
   }
 
-  Future<void> _initLocation() async {
+  /// Load user data from secure storage
+  Future<void> _loadUserData() async {
     try {
+      final storageService = SecureStorageService();
+      final credentials = await storageService.getStaffCredentials();
+      
+      if (mounted) {
+        setState(() {
+          _userName = credentials['agentName'];
+          _userMobile = credentials['username'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user data in checkout: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _lastUpdateTime = null;
+    super.dispose();
+  }
+
+  /// Start timer to update duration in real-time (optimized)
+  void _startDurationTimer() {
+    if (_checkOutTime != null) return; // Stop if checkout completed
+    
+    _lastUpdateTime = DateTime.now();
+    // Update every second for real-time duration display
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted && _checkOutTime == null) {
+        setState(() {
+          _lastUpdateTime = DateTime.now();
+        });
+        _startDurationTimer(); // Recursive call for continuous updates
+      }
+    });
+  }
+
+  /// Initialize location with optimized fetching
+  Future<void> _initLocation() async {
+    if (!mounted) return;
+
+    try {
+      // Check GPS service status
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         _handleLocationFailure('Location service disabled');
         return;
       }
 
+      // Check and request permission
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -61,20 +117,26 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
         return;
       }
 
+      // Get position with optimized timeout
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
+        timeLimit: const Duration(seconds: 10),
       );
 
-      _fetchAddress(pos);
-
       if (!mounted) return;
+
+      // Update position immediately
       setState(() {
         _currentPosition = pos;
       });
+
+      // Fetch address in parallel (non-blocking)
+      _fetchAddress(pos);
     } catch (e) {
-      _handleLocationFailure('Unable to fetch current location');
-      debugPrint('Checkout location error: $e');
+      if (mounted) {
+        _handleLocationFailure('Unable to fetch current location');
+        debugPrint('Checkout location error: $e');
+      }
     }
   }
 
@@ -86,41 +148,62 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     });
   }
 
+  /// Fetch address from coordinates with optimized error handling
   Future<void> _fetchAddress(Position pos) async {
     try {
       final placemarks = await placemarkFromCoordinates(
         pos.latitude,
         pos.longitude,
+      ).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => <Placemark>[],
       );
 
-      if (placemarks.isEmpty || !mounted) return;
+      if (placemarks.isEmpty || !mounted) {
+        if (mounted) {
+          setState(() {
+            _currentAddress = 'Address unavailable';
+            _isLoadingLocation = false;
+          });
+        }
+        return;
+      }
 
       final p = placemarks.first;
-      final parts = <String?>[
-        p.name,
-        p.subLocality,
-        p.locality,
-        p.administrativeArea,
-        p.postalCode,
-        p.country,
-      ].whereType<String>().where((value) => value.isNotEmpty).toList();
+      // Build address parts more efficiently
+      final addressParts = <String>[];
+      
+      if (p.name?.isNotEmpty ?? false) addressParts.add(p.name!);
+      if (p.subLocality?.isNotEmpty ?? false) addressParts.add(p.subLocality!);
+      if (p.locality?.isNotEmpty ?? false) addressParts.add(p.locality!);
+      if (p.administrativeArea?.isNotEmpty ?? false) {
+        addressParts.add(p.administrativeArea!);
+      }
+      if (p.postalCode?.isNotEmpty ?? false) addressParts.add(p.postalCode!);
+      if (p.country?.isNotEmpty ?? false) addressParts.add(p.country!);
 
-      setState(() {
-        _currentAddress = parts.join(', ');
-        _isLoadingLocation = false;
-      });
+      if (mounted) {
+        setState(() {
+          _currentAddress = addressParts.join(', ');
+          _isLoadingLocation = false;
+        });
+      }
     } catch (e) {
-      _handleLocationFailure('Address unavailable');
-      debugPrint('Checkout geocoding error: $e');
+      if (mounted) {
+        _handleLocationFailure('Address unavailable');
+        debugPrint('Checkout geocoding error: $e');
+      }
     }
   }
 
+  /// Perform checkout with camera and show session summary popup
   Future<void> _performCheckOut() async {
-    if (_isCheckingOut) return;
+    if (_isCheckingOut || !mounted) return;
 
     setState(() => _isCheckingOut = true);
 
     try {
+      // Open camera to capture checkout photo
       final XFile? picked = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 75,
@@ -129,7 +212,9 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       );
 
       if (picked == null) {
-        setState(() => _isCheckingOut = false);
+        if (mounted) {
+          setState(() => _isCheckingOut = false);
+        }
         return;
       }
 
@@ -137,39 +222,20 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       final checkoutTime = DateTime.now();
 
       if (!mounted) return;
+
+      // Update state with checkout data
       setState(() {
         _checkOutPhoto = checkoutPhoto;
         _checkOutTime = checkoutTime;
+        _lastUpdateTime = checkoutTime; // Stop timer updates
       });
 
-      // TODO: send to backend / persist locally.
-      debugPrint(
-        'Check-out captured at $checkoutTime from ${_currentAddress ?? 'unknown'}',
-      );
+      // Show session summary popup
+      await _showSessionSummaryPopup(checkoutTime, checkoutPhoto);
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Check-out completed successfully'),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 1200));
-
-      if (mounted) {
-        Navigator.pop(context);
-      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Check-out failed: $e'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showError('Check-out failed: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -178,18 +244,340 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     }
   }
 
+  /// Show session summary popup with all relevant information
+  Future<void> _showSessionSummaryPopup(DateTime checkoutTime, File checkoutPhoto) async {
+    if (!mounted) return;
+
+    final fullFormatter = DateFormat('MMM d, yyyy – hh:mm a');
+    final finalDuration = checkoutTime.difference(widget.checkInTime);
+    
+    // Check if checkout location is valid (calculate before widget tree)
+    final isValidCheckoutLocation = (_currentAddress ?? '').isNotEmpty &&
+        _currentAddress != 'Address will appear here once available' &&
+        _currentAddress != 'Location service disabled' &&
+        _currentAddress != 'Location permission denied' &&
+        _currentAddress != 'Address unavailable' &&
+        _currentAddress != 'Unable to fetch current location';
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6B46FF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF6B46FF),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Check-out Complete',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6B46FF),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Checkout Photo Preview
+                if (checkoutPhoto.existsSync())
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      checkoutPhoto,
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                if (checkoutPhoto.existsSync()) const SizedBox(height: 20),
+
+                // Session Information
+                _buildPopupInfoRow(
+                  Icons.access_time,
+                  'Check-in Time',
+                  fullFormatter.format(widget.checkInTime),
+                ),
+                const SizedBox(height: 12),
+                _buildPopupInfoRow(
+                  Icons.logout,
+                  'Check-out Time',
+                  fullFormatter.format(checkoutTime),
+                ),
+                const SizedBox(height: 12),
+                _buildPopupInfoRow(
+                  Icons.timer,
+                  'Work Duration',
+                  _formatDuration(finalDuration),
+                ),
+                const SizedBox(height: 12),
+
+                // Location Information
+                if ((widget.checkInAddress ?? '').isNotEmpty) ...[
+                  const Divider(height: 24),
+                  const Text(
+                    'Check-in Location',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPopupInfoRow(
+                    Icons.location_on,
+                    'Address',
+                    widget.checkInAddress!,
+                    isAddress: true,
+                  ),
+                  if (widget.checkInPosition != null) ...[
+                    const SizedBox(height: 8),
+                    _buildPopupInfoRow(
+                      Icons.my_location,
+                      'Coordinates',
+                      '${widget.checkInPosition!.latitude.toStringAsFixed(6)}, ${widget.checkInPosition!.longitude.toStringAsFixed(6)}',
+                    ),
+                  ],
+                ],
+
+                // Check-out Location (only if available and valid)
+                if (isValidCheckoutLocation) ...[
+                  const SizedBox(height: 16),
+                  const Divider(height: 24),
+                  const Text(
+                    'Check-out Location',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPopupInfoRow(
+                    Icons.location_on,
+                    'Address',
+                    _currentAddress!,
+                    isAddress: true,
+                  ),
+                  if (_currentPosition != null) ...[
+                    const SizedBox(height: 8),
+                    _buildPopupInfoRow(
+                      Icons.my_location,
+                      'Coordinates',
+                      '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                    ),
+                  ],
+                ],
+
+                const SizedBox(height: 24),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _saveAndNavigate();
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6B46FF),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build info row for popup
+  Widget _buildPopupInfoRow(IconData icon, String label, String value, {bool isAddress = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: const Color(0xFF6B46FF)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: isAddress ? 13 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                maxLines: isAddress ? null : 2,
+                softWrap: true,
+                overflow: isAddress ? TextOverflow.visible : TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Save checkout data and navigate back
+  void _saveAndNavigate() {
+    // TODO: Save to backend / persist locally
+    debugPrint('Check-out saved:');
+    debugPrint('Employee: ${_userName ?? 'Unknown'}');
+    debugPrint('Mobile: ${_userMobile ?? 'Unknown'}');
+    debugPrint('Check-in: ${widget.checkInTime}');
+    debugPrint('Check-out: ${_checkOutTime}');
+    debugPrint('Duration: ${_formatDuration(_workedDuration)}');
+    debugPrint('Check-in Location: ${widget.checkInAddress}');
+    debugPrint('Check-out Location: $_currentAddress');
+
+    if (!mounted) return;
+
+    _showSuccess('Check-out completed successfully');
+
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  /// Show error message
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  /// Show success message
+  void _showSuccess(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  /// Calculate worked duration with real-time updates
   Duration get _workedDuration {
-    final end = _checkOutTime ?? DateTime.now();
+    final end = _checkOutTime ?? (_lastUpdateTime ?? DateTime.now());
     return end.difference(widget.checkInTime);
   }
 
+  /// Format duration in a user-friendly way
   String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    return '${hours.toString().padLeft(2, '0')}h '
-        '${minutes.toString().padLeft(2, '0')}m '
-        '${seconds.toString().padLeft(2, '0')}s';
+    if (duration.isNegative) {
+      return '00h 00m 00s';
+    }
+
+    final totalSeconds = duration.inSeconds;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    // Format based on duration length
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}h '
+          '${minutes.toString().padLeft(2, '0')}m '
+          '${seconds.toString().padLeft(2, '0')}s';
+    } else if (minutes > 0) {
+      return '${minutes.toString().padLeft(2, '0')}m '
+          '${seconds.toString().padLeft(2, '0')}s';
+    } else {
+      return '${seconds.toString().padLeft(2, '0')}s';
+    }
+  }
+
+  /// Get formatted time difference for display
+  String get _formattedWorkDuration {
+    return _formatDuration(_workedDuration);
   }
 
   @override
@@ -262,29 +650,64 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
           if ((widget.checkInAddress ?? '').isNotEmpty)
             _summaryRow('Check-in address', widget.checkInAddress!),
           _summaryRow('Current status', _checkOutTime == null ? 'Working' : 'Completed'),
-          _summaryRow('Worked duration', _formatDuration(_workedDuration)),
+          _summaryRow('Worked duration', _formattedWorkDuration),
         ],
       ),
     );
   }
 
   Widget _summaryRow(String label, String value) {
+    // Check if value is likely to overflow (addresses are usually long)
+    final isLongText = value.length > 30 || label.toLowerCase().contains('address');
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.black54)),
-          const SizedBox(width: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+      child: isLongText
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    fontSize: 14,
+                  ),
+                  maxLines: null,
+                  softWrap: true,
+                ),
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(color: Colors.black54),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.end,
+                    maxLines: null,
+                    softWrap: true,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -325,6 +748,8 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
           Text(
             _currentAddress ?? 'Address will appear here once available',
             style: const TextStyle(color: Color(0xFF1D4ED8)),
+            maxLines: null,
+            softWrap: true,
           ),
           if (widget.checkInPosition != null) ...[
             const Divider(height: 24),
@@ -350,6 +775,8 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
                 child: Text(
                   widget.checkInAddress!,
                   style: const TextStyle(color: Color(0xFF1D4ED8)),
+                  maxLines: null,
+                  softWrap: true,
                 ),
               ),
           ],
@@ -425,7 +852,11 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _photoCard('Check-in photo', widget.checkInPhoto)),
+            Expanded(
+              child: widget.checkInPhoto != null && widget.checkInPhoto!.existsSync()
+                  ? _photoCard('Check-in image', widget.checkInPhoto!)
+                  : _emptyPhotoPlaceholder(),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: _checkOutPhoto == null
@@ -438,12 +869,23 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     );
   }
 
+  /// Build photo card with error handling
   Widget _photoCard(String title, File photo) {
+    if (!photo.existsSync()) {
+      return _emptyPhotoPlaceholder();
+    }
+
     return Container(
       height: 160,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        image: DecorationImage(image: FileImage(photo), fit: BoxFit.cover),
+        image: DecorationImage(
+          image: FileImage(photo),
+          fit: BoxFit.cover,
+          onError: (exception, stackTrace) {
+            debugPrint('Error loading image: $exception');
+          },
+        ),
       ),
       alignment: Alignment.bottomLeft,
       padding: const EdgeInsets.all(8),
@@ -455,7 +897,11 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
         ),
         child: Text(
           title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
         ),
       ),
     );

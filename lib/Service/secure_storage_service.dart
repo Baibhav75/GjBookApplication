@@ -18,6 +18,7 @@ class SecureStorageService {
   static const String _keyStaffUsername = 'staff_username';
   static const String _keyStaffPassword = 'staff_password';
   static const String _keyStaffEmployeeType = 'staff_employee_type';
+  static const String _keyStaffAgentName = 'staff_agent_name';
   
   // School keys
   static const String _keySchoolId = 'school_id';
@@ -71,6 +72,7 @@ class SecureStorageService {
     required String username,
     required String password,
     String? employeeType,
+    String? agentName,
   }) async {
     try {
       await _storage.write(key: _keyUserType, value: 'staff');
@@ -80,6 +82,10 @@ class SecureStorageService {
       
       if (employeeType != null) {
         await _storage.write(key: _keyStaffEmployeeType, value: employeeType);
+      }
+      
+      if (agentName != null) {
+        await _storage.write(key: _keyStaffAgentName, value: agentName);
       }
     } catch (e) {
       throw Exception('Failed to save staff credentials: $e');
@@ -92,11 +98,13 @@ class SecureStorageService {
       final username = await _storage.read(key: _keyStaffUsername);
       final password = await _storage.read(key: _keyStaffPassword);
       final employeeType = await _storage.read(key: _keyStaffEmployeeType);
+      final agentName = await _storage.read(key: _keyStaffAgentName);
       
       return {
         'username': username,
         'password': password,
         'employeeType': employeeType,
+        'agentName': agentName,
       };
     } catch (e) {
       throw Exception('Failed to get staff credentials: $e');
@@ -182,6 +190,7 @@ class SecureStorageService {
       await _storage.delete(key: _keyStaffUsername);
       await _storage.delete(key: _keyStaffPassword);
       await _storage.delete(key: _keyStaffEmployeeType);
+      await _storage.delete(key: _keyStaffAgentName);
       
       // Clear school credentials
       await _storage.delete(key: _keySchoolId);
