@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../home_screen.dart';
+
 class SchoolPageScreen extends StatefulWidget {
   const SchoolPageScreen({Key? key}) : super(key: key);
 
@@ -24,21 +26,17 @@ class _SchoolPageScreenState extends State<SchoolPageScreen> {
         title: const Text('School Dashboard'),
         backgroundColor: Colors.orange[800],
         foregroundColor: Colors.white,
-        elevation: 2,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              // Notification action
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              // Profile action
-            },
-          ),
-        ],
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+              );
+            }
+
+        ),
       ),
       body: _getCurrentPage(),
       bottomNavigationBar: BottomNavigationBar(

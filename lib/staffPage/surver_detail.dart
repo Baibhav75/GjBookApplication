@@ -24,8 +24,13 @@ class SurveyDetail extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blueAccent,
-        title: Text(school.schoolName ?? 'School Detail'),
+        iconTheme: const IconThemeData(color: Colors.white), // ← white icons
+        title: Text(
+          school.schoolName ?? 'School Detail',
+          style: const TextStyle(color: Colors.white),       // ← white text
+        ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Card(
@@ -55,7 +60,7 @@ class SurveyDetail extends StatelessWidget {
                 _row('Established Year', school.schoolEstablishYear?.toString()),
                 _row('Board', school.boardAffiliation),
                 _row('Total Students', school.allTotal?.toString()),
-                _row('Agent', school.agentName),
+                _row('AgentStaff', school.agentName),
                 _row('Account Detail', school.accountDetail),
                 _row('Created Date', school.createdDate),
                 const SizedBox(height: 12),

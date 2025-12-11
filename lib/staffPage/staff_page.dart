@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'package:bookworld/staffPage/staffhistory.dart';
+import 'package:bookworld/staffPage/surver_detail.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:bookworld/staffPage/addSchoolPage.dart';
 import 'package:bookworld/staffPage/attendanceCheckIn.dart';
+import 'package:bookworld/staffPage/attendanceCheckOut.dart';
 import 'package:bookworld/staffPage/staffChangePassword.dart';
 import 'package:bookworld/staffPage/staffProfile.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +13,11 @@ import 'package:bookworld/home_screen.dart';
 
 import 'AddSurvey.dart';
 
-  class StaffPage extends StatefulWidget {
+// --------------------------------------------------
+// STAFF PAGE MAIN CLASS
+// --------------------------------------------------
+
+class StaffPage extends StatefulWidget {
   final String agentName;
   final String employeeType;
   final String email;
@@ -75,6 +84,11 @@ class _StaffPageState extends State<StaffPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
+              // 🔥 ADD ANIMATED BANNER BELOW APPBAR
+              AnimatedBanner(),
+              SizedBox(height: 20),
+
               _dashboardOverview(),
               const SizedBox(height: 30),
             ],
@@ -110,7 +124,19 @@ class _StaffPageState extends State<StaffPage> {
             },
           ),
 
-          _drawerTile(Icons.history, "Attendance History", 2),
+          ListTile(
+            leading: const Icon(Icons.person, color: Colors.blue),
+            title: const Text("attendance history"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => staffhistory(),
+                ),
+              );
+            },
+          ),
 
           ExpansionTile(
             leading: const Icon(Icons.settings),
@@ -122,7 +148,7 @@ class _StaffPageState extends State<StaffPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) =>  ChangePasswordPage()),
+                    MaterialPageRoute(builder: (_) => ChangePasswordPage()),
                   );
                 },
               ),
@@ -222,24 +248,44 @@ class _StaffPageState extends State<StaffPage> {
             mainAxisSpacing: 30,
             childAspectRatio: 0.65,
             children: [
+
+              // -------- Attendance Button ---------
+              GestureDetector(
+                onTap: () async {
+                  final storageService = SecureStorageService();
+                  final hasCheckedIn = await storageService.hasCheckedIn();
+
+                  if (hasCheckedIn) {
+                    final checkInData = await storageService.getCheckInData();
+                    _navigateToCheckout(context, checkInData);
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AttendanceCheckIn(
+                          agentName: staffName,
+                          employeeType: staffPosition,
+                          mobile: staffMobile,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: _dashboardItem(Icons.work_history
+                    , "Attendance", Colors.green),
+              ),
+
               GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => AttendanceCheckIn(
-                        agentName: staffName,
-                        employeeType: staffPosition,
-                        mobile: staffMobile,
-                      ),
-                    ),
+                    MaterialPageRoute(builder: (_) => staffhistory()),
                   );
                 },
-                child: _dashboardItem(Icons.school, "Attendance", Colors.orange),
+                child: _dashboardItem(Icons.history, "Attendance History", Colors.orange),
               ),
 
-              _dashboardItem(Icons.history, "History", Colors.blue),
-              _dashboardItem(Icons.assignment, "Survey History", Colors.purple),
+
 
 
               GestureDetector(
@@ -249,7 +295,7 @@ class _StaffPageState extends State<StaffPage> {
                     MaterialPageRoute(builder: (_) => AddSurvey()),
                   );
                 },
-                child: _dashboardItem(Icons.school, "Add School", Colors.orange),
+                child: _dashboardItem(Icons.assignment, "survey History", Colors.deepPurpleAccent),
               ),
 
               GestureDetector(
@@ -258,28 +304,24 @@ class _StaffPageState extends State<StaffPage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => StaffHistoryPage(
-                        mobileNo: staffMobile,   // <-- pass your variable here
+                        mobileNo: staffMobile,
                       ),
                     ),
                   );
                 },
-                child: _dashboardItem(Icons.person, "Profile", Colors.orange),
+                child: _dashboardItem(Icons.account_circle, "Profile", Colors.lightBlueAccent),
               ),
 
 
-
-              _dashboardItem(Icons.settings, "Setting", Colors.teal),
 
               GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) =>  ChangePasswordPage()),
+                    MaterialPageRoute(builder: (_) => ChangePasswordPage()),
                   );
                 },
-                child:_dashboardItem(Icons.assignment_add, "Change Password", Colors.cyan),
-
-
+                child: _dashboardItem(Icons.password, "Change Password", Colors.cyan),
               ),
 
               GestureDetector(
@@ -289,9 +331,7 @@ class _StaffPageState extends State<StaffPage> {
                     MaterialPageRoute(builder: (_) => AddSchoolPage()),
                   );
                 },
-                child:_dashboardItem(Icons.assignment_add, "Add Survey", Colors.cyan),
-
-
+                child: _dashboardItem(Icons.search, "Add Survey", Colors.cyan),
               ),
             ],
 
@@ -303,24 +343,24 @@ class _StaffPageState extends State<StaffPage> {
 
   Widget _dashboardItem(IconData icon, String title, Color color) {
     return Column(
-      mainAxisSize: MainAxisSize.min,   // ← prevents extra height usage
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          height: 55,   // ← reduced height
-          width: 55,    // ← reduced width
+          height: 55,
+          width: 55,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Colors.white, size: 28), // ← smaller icon
+          child: Icon(icon, color: Colors.white, size: 28),
         ),
         const SizedBox(height: 6),
-        Flexible(                              // ← prevents overflow
+        Flexible(
           child: Text(
             title,
             textAlign: TextAlign.center,
-            maxLines: 2,                       // ← avoid long text overflow
-            overflow: TextOverflow.ellipsis,   // ← safe text wrapping
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
@@ -330,7 +370,6 @@ class _StaffPageState extends State<StaffPage> {
       ],
     );
   }
-
 
   // ---------------------------------------------------
   // BUTTON ACTIONS
@@ -348,12 +387,6 @@ class _StaffPageState extends State<StaffPage> {
     );
   }
 
-  void _changePassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Change password coming soon")),
-    );
-  }
-
   void _logout() async {
     final storage = SecureStorageService();
     await storage.clearAllCredentials();
@@ -361,6 +394,158 @@ class _StaffPageState extends State<StaffPage> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const HomeScreen()),
+    );
+  }
+
+  // ---------------------------------------------------
+  // CHECKOUT NAVIGATION
+  // ---------------------------------------------------
+
+  void _navigateToCheckout(BuildContext context, Map<String, String?> checkInData) {
+    try {
+      final checkInTimeStr = checkInData['time'];
+      if (checkInTimeStr == null || checkInTimeStr.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid check-in data. Please check in again.')),
+        );
+        return;
+      }
+
+      final checkInTime = DateTime.parse(checkInTimeStr);
+
+      final photoPath = checkInData['photoPath'];
+      File? checkInPhoto;
+      if (photoPath != null && photoPath.isNotEmpty) {
+        final photoFile = File(photoPath);
+        if (photoFile.existsSync()) {
+          checkInPhoto = photoFile;
+        }
+      }
+
+      final latStr = checkInData['latitude'];
+      final lngStr = checkInData['longitude'];
+      Position? checkInPosition;
+      if (latStr != null && lngStr != null) {
+        final lat = double.tryParse(latStr);
+        final lng = double.tryParse(lngStr);
+        if (lat != null && lng != null) {
+          checkInPosition = Position(
+            latitude: lat,
+            longitude: lng,
+            timestamp: checkInTime,
+            accuracy: 0,
+            altitude: 0,
+            heading: 0,
+            speed: 0,
+            speedAccuracy: 0,
+            altitudeAccuracy: 0,
+            headingAccuracy: 0,
+          );
+        }
+      }
+
+      final address = checkInData['address'] ?? 'Location not available';
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AttendanceCheckOut(
+            checkInTime: checkInTime,
+            checkInPhoto: checkInPhoto,
+            checkInPosition: checkInPosition,
+            checkInAddress: address,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading check-in: ${e.toString()}')),
+      );
+      SecureStorageService().clearCheckInData();
+    }
+  }
+}
+
+// -------------------------------------------------------------
+// ANIMATED BANNER WIDGET (BEAUTIFUL SLIDE + GRADIENT)
+// -------------------------------------------------------------
+
+class AnimatedBanner extends StatefulWidget {
+  @override
+  _AnimatedBannerState createState() => _AnimatedBannerState();
+}
+
+class _AnimatedBannerState extends State<AnimatedBanner>
+    with SingleTickerProviderStateMixin {
+
+  late AnimationController _controller;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _slide = Tween<Offset>(
+      begin: Offset(-0.05, 0),
+      end: Offset(0.05, 0),
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slide,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.blue.shade800,
+              Colors.blue.shade500,
+              Colors.lightBlueAccent,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.campaign, color: Colors.white, size: 30),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Welcome Back! Have a productive day ahead 🚀",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }

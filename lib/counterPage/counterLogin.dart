@@ -10,222 +10,158 @@ class CounterLoginPage extends StatefulWidget {
 }
 
 class _CounterLoginPageState extends State<CounterLoginPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _counterIdCtrl =
+  TextEditingController(text: "counter01");
+  final TextEditingController _passwordCtrl =
+  TextEditingController(text: "12345");
+
   bool _isLoading = false;
+  bool _obscureText = true;
+
   final SecureStorageService _storageService = SecureStorageService();
 
-  void _login() async {
-    setState(() {
-      _isLoading = true;
-    });
+  @override
+  void dispose() {
+    _counterIdCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
 
-    // Simulate loading delay
-    await Future.delayed(const Duration(seconds: 1));
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
 
-    // Save counter credentials (no user input required)
-    try {
-      await _storageService.saveCounterCredentials();
-    } catch (e) {
-      print('Error saving credentials: $e');
-    }
+    await Future.delayed(const Duration(milliseconds: 700));
 
-    // Direct navigation to counter main page
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const CounterMainPage()),
-      );
-    }
+    const demoUser = "counter01";
+    const demoPass = "12345";
 
-    setState(() {
-      _isLoading = false;
-    });
+    await _storageService.saveCounterCredentials(
+      counterId: demoUser,
+      password: demoPass,
+    );
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const CounterMainPage()),
+    );
+
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    const Color primaryColor = Color(0xFF6A1B9A);
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Counter Login'),
-        backgroundColor: Colors.purple[800],
+        title: const Text("Counter Login"),
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 50),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const SizedBox(height: 40),
 
-              // Header
-              Icon(
-                Icons.point_of_sale,
-                size: 80,
-                color: Colors.purple[800],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Counter Portal',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.purple[800],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Fee collection and counter management system',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 60),
+            Icon(Icons.point_of_sale, size: 85, color: primaryColor),
+            const SizedBox(height: 15),
 
-              // Direct Login Button
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple[800],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            Text(
+              "Counter Portal",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+
+            const SizedBox(height: 35),
+
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // READ-ONLY AUTO-FILLED COUNTER ID
+                  TextFormField(
+                    controller: _counterIdCtrl,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: "Counter ID",
+                      prefixIcon: const Icon(Icons.person_outline),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    elevation: 3,
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+
+                  const SizedBox(height: 18),
+
+                  // READ-ONLY AUTO-FILLED PASSWORD
+                  TextFormField(
+                    controller: _passwordCtrl,
+                    readOnly: true,
+                    obscureText: _obscureText,
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureText
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureText = !_obscureText),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  )
-                      : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.login, size: 20),
-                      SizedBox(width: 10),
-                      Text(
-                        'Enter Counter Portal',
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2)
+                          : const Text(
+                        "Login",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 30),
-
-              // Features Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.purple[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.purple[100]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star,
-                          color: Colors.purple[800],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Counter Portal Features',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.purple[900],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    _buildFeatureItem('Fee Collection'),
-                    _buildFeatureItem('Receipt Generation'),
-                    _buildFeatureItem('Student Search'),
-                    _buildFeatureItem('Payment History'),
-                    _buildFeatureItem('Daily Reports'),
-                    _buildFeatureItem('Cash Management'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Counter Information
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.blue[100]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.blue[600],
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'No credentials required. Direct access to counter operations and fee management system.',
-                        style: TextStyle(
-                          color: Colors.blue[800],
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(String feature) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle,
-            color: Colors.purple[600],
-            size: 16,
-          ),
-          const SizedBox(width: 10),
-          Text(
-            feature,
-            style: TextStyle(
-              color: Colors.purple[800],
-              fontSize: 14,
             ),
-          ),
-        ],
+
+
+          ],
+        ),
       ),
     );
   }

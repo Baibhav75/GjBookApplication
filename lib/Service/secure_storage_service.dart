@@ -26,6 +26,14 @@ class SecureStorageService {
   static const String _keySchoolPassword = 'school_password';
   
   // Counter keys (no specific credentials needed, just user type)
+  
+  // Attendance check-in keys
+  static const String _keyCheckInStatus = 'checkin_status';
+  static const String _keyCheckInTime = 'checkin_time';
+  static const String _keyCheckInPhotoPath = 'checkin_photo_path';
+  static const String _keyCheckInLatitude = 'checkin_latitude';
+  static const String _keyCheckInLongitude = 'checkin_longitude';
+  static const String _keyCheckInAddress = 'checkin_address';
 
   /// Save admin credentials
   Future<void> saveAdminCredentials({
@@ -146,7 +154,7 @@ class SecureStorageService {
   }
 
   /// Save counter credentials (no user input required)
-  Future<void> saveCounterCredentials() async {
+  Future<void> saveCounterCredentials({required String password, required String counterId}) async {
     try {
       await _storage.write(key: _keyUserType, value: 'counter');
       await _storage.write(key: _keyIsLoggedIn, value: 'true');
@@ -174,6 +182,73 @@ class SecureStorageService {
     }
   }
 
+  /// Save check-in data
+  Future<void> saveCheckInData({
+    required DateTime checkInTime,
+    required String photoPath,
+    required double latitude,
+    required double longitude,
+    required String address,
+  }) async {
+    try {
+      await _storage.write(key: _keyCheckInStatus, value: 'true');
+      await _storage.write(key: _keyCheckInTime, value: checkInTime.toIso8601String());
+      await _storage.write(key: _keyCheckInPhotoPath, value: photoPath);
+      await _storage.write(key: _keyCheckInLatitude, value: latitude.toString());
+      await _storage.write(key: _keyCheckInLongitude, value: longitude.toString());
+      await _storage.write(key: _keyCheckInAddress, value: address);
+    } catch (e) {
+      throw Exception('Failed to save check-in data: $e');
+    }
+  }
+
+  /// Get check-in data
+  Future<Map<String, String?>> getCheckInData() async {
+    try {
+      final status = await _storage.read(key: _keyCheckInStatus);
+      final time = await _storage.read(key: _keyCheckInTime);
+      final photoPath = await _storage.read(key: _keyCheckInPhotoPath);
+      final latitude = await _storage.read(key: _keyCheckInLatitude);
+      final longitude = await _storage.read(key: _keyCheckInLongitude);
+      final address = await _storage.read(key: _keyCheckInAddress);
+      
+      return {
+        'status': status,
+        'time': time,
+        'photoPath': photoPath,
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
+      };
+    } catch (e) {
+      throw Exception('Failed to get check-in data: $e');
+    }
+  }
+
+  /// Check if user has checked in
+  Future<bool> hasCheckedIn() async {
+    try {
+      final status = await _storage.read(key: _keyCheckInStatus);
+      return status == 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Clear check-in data
+  Future<void> clearCheckInData() async {
+    try {
+      await _storage.delete(key: _keyCheckInStatus);
+      await _storage.delete(key: _keyCheckInTime);
+      await _storage.delete(key: _keyCheckInPhotoPath);
+      await _storage.delete(key: _keyCheckInLatitude);
+      await _storage.delete(key: _keyCheckInLongitude);
+      await _storage.delete(key: _keyCheckInAddress);
+    } catch (e) {
+      throw Exception('Failed to clear check-in data: $e');
+    }
+  }
+
   /// Clear all stored credentials
   Future<void> clearAllCredentials() async {
     try {
@@ -196,6 +271,9 @@ class SecureStorageService {
       await _storage.delete(key: _keySchoolId);
       await _storage.delete(key: _keySchoolUsername);
       await _storage.delete(key: _keySchoolPassword);
+      
+      // Clear check-in data
+      await clearCheckInData();
     } catch (e) {
       throw Exception('Failed to clear credentials: $e');
     }

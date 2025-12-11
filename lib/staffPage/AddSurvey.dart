@@ -24,7 +24,7 @@ class _AddSurveyState extends State<AddSurvey> {
   String _query = '';
 
   // client-side pagination
-  static const int pageSize = 12;
+  static const int pageSize = 15;
   int _page = 0;
   List<SchoolData> _visible = []; // portion shown on UI
   bool _isLoadingMore = false;
@@ -85,7 +85,7 @@ class _AddSurveyState extends State<AddSurvey> {
 
   void _onScroll() {
     if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) return;
-    final threshold = 200; // px
+    final threshold = 100;
     if (_scrollController.position.extentAfter < threshold) {
       _loadMore();
     }
@@ -95,8 +95,7 @@ class _AddSurveyState extends State<AddSurvey> {
     if (!_hasMore) return;
     setState(() => _isLoadingMore = true);
 
-    // simulate small delay for UI smoothness
-    Future.delayed(const Duration(milliseconds: 250), () {
+    Future.delayed(const Duration(milliseconds: 200), () {
       final start = _page * pageSize;
       final end = start + pageSize;
       if (start >= _filtered.length) {
@@ -107,7 +106,10 @@ class _AddSurveyState extends State<AddSurvey> {
         return;
       }
 
-      final slice = _filtered.sublist(start, end > _filtered.length ? _filtered.length : end);
+      final slice = _filtered.sublist(
+        start,
+        end > _filtered.length ? _filtered.length : end,
+      );
       setState(() {
         _visible.addAll(slice);
         _page += 1;
@@ -139,36 +141,77 @@ class _AddSurveyState extends State<AddSurvey> {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: TextField(
-        onChanged: _onSearchChanged,
-        decoration: InputDecoration(
-          hintText: "Search school, principal or prabandhak...",
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-        ),
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search, color: Colors.deepPurpleAccent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              onChanged: _onSearchChanged,
+              decoration: const InputDecoration(
+                hintText: "Search school, principal or prabandhak...",
+                border: InputBorder.none,
+                hintStyle: TextStyle(color: Colors.grey),
+              ),
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+          if (_query.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear, size: 20),
+              onPressed: () => _onSearchChanged(''),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeaderRow() {
+  Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      color: const Color(0xFFDFF6FF),
-      child: Row(
-        children: const [
-          _TableHeader("Sr", flex: 1),
-          _TableHeader("School Name", flex: 3),
-          _TableHeader("Address", flex: 3),
-          _TableHeader("Prabandhak", flex: 3),
-          _TableHeader("Prabandhak No", flex: 2),
-          _TableHeader("Principal", flex: 3),
-          _TableHeader("Principal No", flex: 2),
-          _TableHeader("Action", flex: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.deepPurpleAccent,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurpleAccent.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Row(
+        children: [
+          _TableHeader("No", flex: 1),
+          SizedBox(width: 16),
+          Expanded(
+            flex: 3,
+            child: Text(
+              "School Name",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          SizedBox(width: 16),
+          _TableHeader("Actions", flex: 2),
         ],
       ),
     );
@@ -176,140 +219,307 @@ class _AddSurveyState extends State<AddSurvey> {
 
   Widget _buildRow(BuildContext context, int index) {
     final school = _visible[index];
+    final isEven = index % 2 == 0;
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: index.isEven ? Colors.white : Colors.grey.shade50,
+        color: isEven ? Colors.white : Colors.grey.shade50,
         border: const Border(bottom: BorderSide(color: Colors.black12)),
       ),
-      child: Row(
-        children: [
-          _TableCell("${index + 1}", flex: 1, center: true),
-          _TableCell(school.schoolName ?? "-", flex: 3),
-          _TableCell(school.schoolAddress ?? "-", flex: 3),
-          _TableCell(school.prabandhakName ?? "-", flex: 3),
-          _TableCell(school.prabandhakMobile ?? "-", flex: 2),
-          _TableCell(school.principalName ?? "-", flex: 3),
-          _TableCell(school.principalMobile ?? "-", flex: 2),
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: ElevatedButton(
-                onPressed: () => _openDetail(school),
-                style: ElevatedButton.styleFrom(minimumSize: const Size(80, 36)),
-                child: const Text("View", style: TextStyle(fontSize: 13)),
-              ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openDetail(school),
+          splashColor: Colors.deepPurpleAccent.withOpacity(0.1),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                _TableCell(
+                  "${index + 1}",
+                  flex: 1,
+                  center: true,
+                  color: Colors.deepPurpleAccent,
+                  bold: true,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    school.schoolName ?? "-",
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 2,
+                  child: FittedBox(
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => _openDetail(school),
+                          icon: const Icon(Icons.visibility, size: 18),
+                          label: const Text("View"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurpleAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            minimumSize: const Size(0, 40),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.info_outline, color: Colors.deepPurpleAccent),
+                          onPressed: () => _showQuickInfo(school),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+
+
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQuickInfo(SchoolData school) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("School Info"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _infoRow("Principal:", school.principalName ?? "-"),
+            _infoRow("Prabandhak:", school.prabandhakName ?? "-"),
+            _infoRow("Mobile:", school.prabandhakMobile ?? "-"),
+            _infoRow("Address:", school.schoolAddress ?? "-"),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _openDetail(school);
+            },
+            child: const Text("Edit"),
           ),
         ],
       ),
     );
   }
 
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(color: Colors.black87, fontSize: 14),
+          children: [
+            TextSpan(
+              text: "$label ",
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _openDetail(SchoolData school) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SurveyDetail(school: school)),
+      MaterialPageRoute(
+        builder: (_) => SurveyDetail(school: school),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.school_outlined,
+            size: 80,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            _query.isEmpty ? 'No surveys available' : 'No matching schools found',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+          if (_query.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Try a different search term',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _fetch,
+            child: const Text("Refresh Data"),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
-        backgroundColor: Colors.blueAccent,
-        elevation: 0,
+        backgroundColor: Colors.deepPurpleAccent,
+        elevation: 4,
         title: const Text(
           'Survey List',
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
         ),
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _onRefresh,
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
-
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-
-            : _error
-            ? ListView(
+      body: _loading
+          ? const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  Text(
-                    'Error loading data',
-                    style: Theme.of(context).textTheme.titleLarge ??
-                        const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(_errorMsg),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _fetch,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            CircularProgressIndicator(
+              color: Colors.deepPurpleAccent,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Loading surveys...',
+              style: TextStyle(color: Colors.grey),
             ),
           ],
-        )
-
-            : Column(
+        ),
+      )
+          : _error
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildSearchBar(),
-
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                scrollDirection: Axis.vertical,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: 1150,
-                    child: Column(
-                      children: [
-                        _buildHeaderRow(),
-
-                        ListView.builder(
-                          primary: false,
-                          shrinkWrap: true,
-                          itemCount: _visible.length,
-                          itemBuilder: (context, index) =>
-                              _buildRow(context, index),
-                        ),
-
-                        if (_isLoadingMore)
-                          const Padding(
-                            padding:
-                            EdgeInsets.symmetric(vertical: 12),
-                            child:
-                            Center(child: CircularProgressIndicator()),
-                          ),
-
-                        if (!_hasMore && _visible.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: const Center(
-                              child: Text('No schools found'),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.redAccent,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Error loading data',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.redAccent,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _errorMsg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _fetch,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurpleAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
                 ),
               ),
             ),
           ],
         ),
+      )
+          : Column(
+        children: [
+          _buildSearchBar(),
+          const SizedBox(height: 8),
+          if (_visible.isNotEmpty) _buildHeader(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: Colors.deepPurpleAccent,
+              child: _visible.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                controller: _scrollController,
+                itemCount: _visible.length + (_isLoadingMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == _visible.length) {
+                    return _isLoadingMore
+                        ? const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.deepPurpleAccent,
+                        ),
+                      ),
+                    )
+                        : const SizedBox.shrink();
+                  }
+                  return _buildRow(context, index);
+                },
+              ),
+            ),
+          ),
+          if (!_hasMore && _visible.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.grey.shade50,
+              child: const Center(
+                child: Text(
+                  'No more schools to load',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
-
 }
 
 class _TableHeader extends StatelessWidget {
@@ -323,7 +533,12 @@ class _TableHeader extends StatelessWidget {
       flex: flex,
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -333,7 +548,16 @@ class _TableCell extends StatelessWidget {
   final String text;
   final int flex;
   final bool center;
-  const _TableCell(this.text, {required this.flex, this.center = false, Key? key}) : super(key: key);
+  final bool bold;
+  final Color? color;
+  const _TableCell(
+      this.text, {
+        required this.flex,
+        this.center = false,
+        this.bold = false,
+        this.color,
+        Key? key,
+      }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +570,12 @@ class _TableCell extends StatelessWidget {
           textAlign: center ? TextAlign.center : TextAlign.left,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.3),
+          style: TextStyle(
+            fontSize: 14,
+            color: color ?? Colors.black87,
+            fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
+            height: 1.4,
+          ),
         ),
       ),
     );

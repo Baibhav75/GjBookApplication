@@ -589,12 +589,12 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
                       const SizedBox(height: 6),
                       // --- Agent Information ---
                       _buildTextInput(
-                        label: 'Agent ID',
+                        label: 'AgentStaff ID',
                         controller: _agentIdCtl,
-                        hint: 'Enter Agent ID',
+                        hint: 'Enter AgentStaff ID',
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Agent ID is required';
+                            return 'AgentStaff ID is required';
                           }
                           return null;
                         },
@@ -602,9 +602,9 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
 
 
                       _buildTextInput(
-                        label: 'Agent Name',
+                        label: 'AgentStaff Name',
                         controller: _agentNameCtl,
-                        hint: 'Enter Agent Name',
+                        hint: 'Enter AgentStaff Name',
                       ),
 
 

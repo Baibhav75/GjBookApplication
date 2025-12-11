@@ -16,7 +16,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
 
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  String dropdownEmployeeType = "Agent";
+  String dropdownEmployeeType = "AgentStaff";
 
   bool _isLoading = false;
   bool _obscure = true;
@@ -84,7 +84,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Staff Login"),
+        title: const Text("AgentStaff Login"),
         backgroundColor: Colors.green[800],
         foregroundColor: Colors.white,
         elevation: 0,
@@ -99,7 +99,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
               Icon(Icons.people, size: 90, color: Colors.green[800]),
               const SizedBox(height: 10),
               Text(
-                "Staff Portal",
+                "AgentStaff Portal",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -146,7 +146,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
               const SizedBox(height: 20),
 
               // Employee Type Dropdown
-              DropdownButtonFormField<String>(
+             /* DropdownButtonFormField<String>(
                 value: dropdownEmployeeType,
                 items: ["Agent", "Staff", "Admin"]
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
@@ -157,8 +157,8 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                   });
                 },
                 decoration: _inputDecoration("Employee Type", Icons.person),
-              ),
-              const SizedBox(height: 30),
+              ),*/
+              /*const SizedBox(height: 30),*/
 
               // Login Button
               SizedBox(
@@ -168,6 +168,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green[800],
+                    foregroundColor: Colors.white, // This makes the text color white
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -176,10 +177,14 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                     "Login",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white, // Alternative: set color directly in TextStyle
+                    ),
                   ),
                 ),
-              ),
+              )
             ],
           ),
         ),

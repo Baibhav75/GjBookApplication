@@ -8,6 +8,10 @@ import 'package:intl/intl.dart';
 import '/Service/agent_login_service.dart';
 import '/Model/agent_login_model.dart';
 import '/Service/secure_storage_service.dart';
+import '/Service/attendance_out_service.dart';
+import '/Service/staff_profile_service.dart';
+import 'staff_page.dart';
+
 
 /// Checkout screen that completes the attendance flow.
 class AttendanceCheckOut extends StatefulWidget {
@@ -45,6 +49,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
   // User data
   String? _userName;
   String? _userMobile;
+  String? _employeeId; // Store actual employee ID
 
   @override
   void initState() {
@@ -64,10 +69,50 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
         setState(() {
           _userName = credentials['agentName'];
           _userMobile = credentials['username'];
+          // Try to get employee ID from credentials or use mobile as fallback
+          _employeeId = credentials['employeeId'] ?? _userMobile;
         });
+      }
+      
+      // Try to fetch employee ID from staff profile if mobile is available
+      if (_userMobile != null && _userMobile!.isNotEmpty) {
+        await _fetchEmployeeId();
       }
     } catch (e) {
       debugPrint('Error loading user data in checkout: $e');
+    }
+  }
+
+  /// Fetch employee ID from staff profile API
+  Future<void> _fetchEmployeeId() async {
+    if (_userMobile == null || _userMobile!.isEmpty) return;
+    
+    try {
+      final staffProfileService = StaffProfileService();
+      final profile = await staffProfileService.fetchProfile(_userMobile!);
+      
+      if (profile != null && profile.employeeId.isNotEmpty && mounted) {
+        setState(() {
+          _employeeId = profile.employeeId;
+        });
+        debugPrint('Employee ID fetched in checkout: $_employeeId');
+      } else {
+        // Fallback to mobile number if profile fetch fails
+        if (mounted) {
+          setState(() {
+            _employeeId = _userMobile;
+          });
+        }
+        debugPrint('Using mobile number as Employee ID in checkout: $_employeeId');
+      }
+    } catch (e) {
+      debugPrint('Error fetching employee ID in checkout: $e');
+      // Fallback to mobile number
+      if (mounted) {
+        setState(() {
+          _employeeId = _userMobile;
+        });
+      }
     }
   }
 
@@ -478,28 +523,133 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     );
   }
 
-  /// Save checkout data and navigate back
-  void _saveAndNavigate() {
-    // TODO: Save to backend / persist locally
-    debugPrint('Check-out saved:');
-    debugPrint('Employee: ${_userName ?? 'Unknown'}');
-    debugPrint('Mobile: ${_userMobile ?? 'Unknown'}');
-    debugPrint('Check-in: ${widget.checkInTime}');
-    debugPrint('Check-out: ${_checkOutTime}');
-    debugPrint('Duration: ${_formatDuration(_workedDuration)}');
-    debugPrint('Check-in Location: ${widget.checkInAddress}');
-    debugPrint('Check-out Location: $_currentAddress');
+  /// Save checkout data and navigate to StaffPage
+  void _saveAndNavigate() async {
+    if (_checkOutTime == null || _checkOutPhoto == null) {
+      _showError("Checkout photo missing");
+      return;
+    }
 
+    // Validate employee ID
+    if (_employeeId == null || _employeeId!.trim().isEmpty) {
+      _showError("Employee ID is missing. Please wait.");
+      return;
+    }
+
+    // Validate mobile
+    if (_userMobile == null || _userMobile!.trim().isEmpty) {
+      _showError("Mobile number is missing.");
+      return;
+    }
+
+    // Validate address
+    if (_currentAddress == null || _currentAddress!.trim().isEmpty) {
+      _showError("Location is missing. Please wait for GPS location.");
+      return;
+    }
+
+    // Validate image file exists
+    if (!_checkOutPhoto!.existsSync()) {
+      _showError("Checkout photo file not found. Please try again.");
+      return;
+    }
+
+    final service = AttendanceOutService();
+
+    final response = await service.submitAttendance(
+      employeeId: _employeeId!.trim(),
+      mobile: _userMobile!.trim(),
+      type: "CheckOut",
+      address: _currentAddress!.trim(),
+      timestamp: _checkOutTime!,
+      imageFile: _checkOutPhoto,
+      lat: _currentPosition?.latitude,
+      lng: _currentPosition?.longitude,
+    );
+
+    // Handle response - always navigate regardless of API response
+    if (response == null || response.status == false) {
+      final errorMsg = response?.message?.isNotEmpty == true 
+          ? response!.message! 
+          : "Checkout API failed";
+      
+      // Log error but don't block navigation
+      debugPrint('Checkout API warning: $errorMsg');
+      
+      // Show a subtle warning but still proceed
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Checkout saved. ${errorMsg.isNotEmpty ? errorMsg : ''}"),
+            backgroundColor: Colors.orange.shade700,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      // Show success message only if API succeeded
+      _showSuccess("Check-out Completed Successfully");
+    }
+
+    // Clear check-in data from storage (checkout completed)
+    try {
+      final storageService = SecureStorageService();
+      await storageService.clearCheckInData();
+      debugPrint('Check-in data cleared after checkout');
+    } catch (e) {
+      debugPrint('Error clearing check-in data: $e');
+      // Continue even if clear fails
+    }
+
+    // Navigate to StaffPage immediately (don't wait for success message)
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      _navigateToStaffPage();
+    });
+  }
+
+  /// Navigate to StaffPage with credentials
+  Future<void> _navigateToStaffPage() async {
     if (!mounted) return;
 
-    _showSuccess('Check-out completed successfully');
+    try {
+      final storageService = SecureStorageService();
+      final credentials = await storageService.getStaffCredentials();
+      
+      final agentName = credentials['agentName'] ?? _userName ?? '';
+      final employeeType = credentials['employeeType'] ?? 'AgentStaff';
+      final email = credentials['email'] ?? '';
+      final password = credentials['password'] ?? '';
+      final mobile = credentials['username'] ?? _userMobile ?? '';
 
-    Future.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+
+      // Navigate to StaffPage
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StaffPage(
+            agentName: agentName,
+            employeeType: employeeType,
+            email: email,
+            password: password,
+            mobile: mobile,
+          ),
+        ),
+        (route) => false, // Remove all previous routes
+      );
+    } catch (e) {
+      debugPrint('Error navigating to StaffPage: $e');
+      // Fallback: just pop if navigation fails
       if (mounted) {
         Navigator.pop(context);
       }
-    });
+    }
   }
+
+
+
+
 
   /// Show error message
   void _showError(String message) {
@@ -587,6 +737,17 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF6B46FF)),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StaffPage(agentName: '', employeeType: '', email: '', password: '', mobile: '',), // Your staff page widget
+              ),
+            );
+          },
+        ),
         title: const Text(
           'Attendance Checkout',
           style: TextStyle(color: Color(0xFF6B46FF)),
@@ -600,6 +761,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

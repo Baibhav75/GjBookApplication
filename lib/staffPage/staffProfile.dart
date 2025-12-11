@@ -85,7 +85,7 @@ class _StaffHistoryPageState extends State<StaffHistoryPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text("Staff Profile"),
+        title: const Text("AgentStaff Profile"),
         backgroundColor: Colors.blue[800],
         foregroundColor: Colors.white,
       ),

@@ -444,10 +444,27 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
     }
   }
 
-  /// Perform check-in with validation
+  /// Perform check-in with optimized validation
   Future<void> _performCheckIn() async {
+    // Fast pre-validation
     if (!_canSubmitCheckIn) {
       _showError("Location not ready. Please wait.");
+      return;
+    }
+
+    // Quick validation checks before API call
+    if (_employeeId == null || _employeeId!.trim().isEmpty) {
+      _showError("Employee ID is missing. Please wait or login again.");
+      return;
+    }
+
+    if (_userMobile == null || _userMobile!.trim().isEmpty) {
+      _showError("Mobile number is missing. Please login again.");
+      return;
+    }
+
+    if (_address == null || _address!.trim().isEmpty || _position == null) {
+      _showError("Location is missing. Please wait for GPS location.");
       return;
     }
 
@@ -464,7 +481,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
 
       final photoFile = File(pic.path);
       
-      // Validate image file exists
+      // Quick image validation
       if (!photoFile.existsSync()) {
         if (mounted) {
           setState(() => _isCheckingIn = false);
@@ -475,40 +492,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
 
       _photo = photoFile;
 
-      // Comprehensive validation of required info
-      if (_employeeId == null || _employeeId!.trim().isEmpty) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
-        _showError("Employee ID is missing. Please wait or login again.");
-        return;
-      }
-
-      if (_userMobile == null || _userMobile!.trim().isEmpty) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
-        _showError("Mobile number is missing. Please login again.");
-        return;
-      }
-
-      if (_address == null || _address!.trim().isEmpty) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
-        _showError("Location is missing. Please wait for GPS location.");
-        return;
-      }
-
-      if (_position == null) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
-        _showError("GPS position is missing. Please wait for location.");
-        return;
-      }
-
-      // Validate coordinates are valid numbers
+      // Fast coordinate validation
       if (_position!.latitude.isNaN || _position!.longitude.isNaN || 
           _position!.latitude.isInfinite || _position!.longitude.isInfinite) {
         if (mounted) {
@@ -518,109 +502,87 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
         return;
       }
 
-      final checkInTime = DateTime.now().toIso8601String();
+      final checkInTime = DateTime.now();
+      final checkInTimeString = checkInTime.toIso8601String();
       
-      // Validate check-in time is valid
-      if (checkInTime.isEmpty) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
-        _showError("Invalid check-in time. Please try again.");
-        return;
-      }
-
-      // Send API with all validated parameters - Use employee ID, not name
-      final result = await AttendanceService.markAttendance(
-        employeeId: _employeeId!.trim(),
-        mobile: _userMobile!.trim(),
-        checkInTime: checkInTime,
-        location: _address!.trim(),
-        latitude: _position!.latitude,
-        longitude: _position!.longitude,
-        image: photoFile,
-      );
-
-      // Validate result
-      if (result == null) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
-        _showError("Check-in failed: No response from server");
-        return;
-      }
-
-      // Store response data
-      if (mounted) {
-        setState(() {
-          _lastCheckInResponse = result;
-          if (result.workDuration != null && result.workDuration!.isNotEmpty) {
-            _todayWorkDuration = result.workDuration;
-          }
-        });
-      }
-
-      // Check if status is false
-      if (result.status == false) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
-        
-        // Handle specific error messages
-        String errorMessage = "Check-in failed. Please try again.";
-        
-        if (result.message != null && result.message!.isNotEmpty) {
-          final msg = result.message!.trim();
-          
-          // Check for specific server errors
-          if (msg.toLowerCase().contains("object reference not set") ||
-              msg.toLowerCase().contains("null reference")) {
-            errorMessage = "Server error: Required information is missing. Please check all fields and try again.";
-          } else if (msg.toLowerCase().contains("employee") || 
-                     msg.toLowerCase().contains("not found")) {
-            errorMessage = "Employee not found. Please check your login credentials.";
-          } else {
-            errorMessage = msg;
-          }
-        }
-        
-        _showError(errorMessage);
-        return;
-      }
-
-      // Success - show message
-      final successMessage = result.message?.isNotEmpty == true
-          ? result.message!
-          : "Check-in successful";
-      
-      if (mounted) {
-        _showSuccess(successMessage);
-      }
-
-      // Navigate to check out only if mounted
+      // NAVIGATE IMMEDIATELY - Don't wait for API call
+      // This makes the check-in process instant and smooth
       if (!mounted) return;
 
+      // Save check-in data to local storage before navigation
+      try {
+        final storageService = SecureStorageService();
+        await storageService.saveCheckInData(
+          checkInTime: checkInTime,
+          photoPath: photoFile.path,
+          latitude: _position!.latitude,
+          longitude: _position!.longitude,
+          address: _address!,
+        );
+        debugPrint('Check-in data saved locally');
+      } catch (e) {
+        debugPrint('Error saving check-in data: $e');
+        // Continue even if save fails
+      }
+
+      // Navigate instantly after photo capture - before API call
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => AttendanceCheckOut(
-            checkInTime: DateTime.parse(checkInTime),
+            checkInTime: checkInTime,
             checkInPhoto: photoFile,
             checkInPosition: _position!,
             checkInAddress: _address!,
           ),
         ),
       );
+
+      // Reset state since navigation happened
+      // (Widget will be disposed, but resetting for safety)
+      _isCheckingIn = false;
+
+      // Send API call in background (non-blocking) - don't await
+      // This allows navigation to happen instantly while API processes in background
+      AttendanceService.markAttendance(
+        employeeId: _employeeId!.trim(),
+        mobile: _userMobile!.trim(),
+        checkInTime: checkInTimeString,
+        location: _address!.trim(),
+        latitude: _position!.latitude,
+        longitude: _position!.longitude,
+        image: photoFile,
+      ).then((result) {
+        // Handle API response in background (non-blocking)
+        if (result != null) {
+          debugPrint('Check-in API response: ${result.status} - ${result.message}');
+          
+          // Log errors but don't block user - they're already on checkout page
+          if (result.status == false) {
+            final message = result.message?.trim().toLowerCase() ?? '';
+            if (!message.contains("already checked-out") && 
+                !message.contains("already checked out")) {
+              debugPrint('Check-in API error: ${result.message}');
+            }
+          }
+        } else {
+          debugPrint('Check-in API returned null');
+        }
+      }).catchError((error) {
+        // Log errors but don't interrupt user flow
+        debugPrint('Check-in API error: $error');
+      });
+      
+      // Return immediately - navigation already happened
+      return;
     } catch (e, stackTrace) {
       debugPrint("Check-in error: $e");
       debugPrint("Stack trace: $stackTrace");
       
+      // Only show error if navigation hasn't happened yet
       if (mounted) {
         setState(() => _isCheckingIn = false);
         _showError("Error: ${e.toString()}");
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isCheckingIn = false);
       }
     }
   }
@@ -649,21 +611,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
     debugPrint('Latitude: ${checkInPosition?.latitude}');
     debugPrint('Longitude: ${checkInPosition?.longitude}');
 
-    // Example using shared_preferences (uncomment if you have the package):
-    /*
-    final prefs = await SharedPreferences.getInstance();
-    final checkInData = {
-      'employeeName': employeeName,
-      'empMob': empMob,
-      'checkInTime': checkInTime.toIso8601String(),
-      'checkInLocation': checkInAddress,
-      'state': state,
-      'latitude': checkInPosition?.latitude,
-      'longitude': checkInPosition?.longitude,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-    await prefs.setString('last_checkin', jsonEncode(checkInData));
-    */
+
   }
 
   /// Show error message

@@ -130,11 +130,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(40),
                               ),
-                              child: const Icon(
-                                Icons.menu_book_rounded,
-                                size: 80,
-                                color: Colors.blue,
+                              child: Image.asset(
+                                'assets/bookimg.png',
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.contain,
                               ),
+
                             );
                           },
                         ),
