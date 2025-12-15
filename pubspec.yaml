@@ -52,6 +52,7 @@ dependencies:
   shared_preferences: ^2.3.3
   file_picker: ^10.3.6
   open_file: ^3.5.10
+  flutter_screenutil: ^5.9.3
 
 dev_dependencies:
   flutter_test:

@@ -5,7 +5,7 @@ import '/Model/school_survey_model.dart';
 
 class SchoolSurveyService {
   static const String baseUrl =
-      "https://gj.realhomes.co.in/API/AddSchollSurvey/AddSchool";
+      "https://g17bookworld.com/API/AddSchollSurvey/AddSchool";
 
   static Future<bool> submitSurvey(SchoolSurveyModel model) async {
     try {

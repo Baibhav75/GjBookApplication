@@ -4,7 +4,7 @@ import '/Model/staffChangePassword.dart';
 
 class ChangePasswordService {
   static const String baseUrl =
-      "https://gj.realhomes.co.in/API/EmpChangePassword/ChangePassword";
+      "https://g17bookworld.com/API/EmpChangePassword/ChangePassword";
 
   static Future<ChangePasswordModel> changePassword({
     required String mobileNo,

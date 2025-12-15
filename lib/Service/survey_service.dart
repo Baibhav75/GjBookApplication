@@ -6,7 +6,7 @@ import '/Model/survey_model.dart';
 
 class SurveyService {
   static const String _endpoint =
-      "https://gj.realhomes.co.in/API/SurveyFormList/GetSurveyFormList";
+      "https://g17bookworld.com/API/SurveyFormList/GetSurveyFormList";
   static const String _cacheKey = "survey_cache_v1";
   static const Duration cacheTTL = Duration(minutes: 30);
 

@@ -1,3 +1,4 @@
+import 'package:bookworld/Hr_Page/HrMainPage.dart';
 import 'package:flutter/material.dart';
 
 class hrLoginScreen extends StatefulWidget {
@@ -134,7 +135,7 @@ class _hrLoginScreenState extends State<hrLoginScreen>
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white, // Changed to white
+                        color: Colors.teal, // Changed to white
                       ),
                     ),
                   ),
@@ -187,7 +188,12 @@ class _hrLoginScreenState extends State<hrLoginScreen>
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => Hrmainpage()),
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryGreen,
                           shape: RoundedRectangleBorder(
@@ -196,12 +202,18 @@ class _hrLoginScreenState extends State<hrLoginScreen>
                         ),
                         child: const Text(
                           "Login",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white, // <-- TEXT COLOR UPDATED
+                          ),
                         ),
+
                       ),
                     ),
                   ),
                 ),
+
               ],
             ),
           ),

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:bookworld/Model/change_password_model.dart';
 
 class ChangePasswordService {
-  static const String baseUrl = 'https://gj.realhomes.co.in/api/ChangePass/ChangePassword';
+  static const String baseUrl = 'https://g17bookworld.com/api/ChangePass/ChangePassword';
 
   Future<ChangePasswordModel> changePassword({
     required String mobileNo,

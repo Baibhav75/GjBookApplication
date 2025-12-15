@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:bookworld/Model/ViewProductList_model.dart';
 
 class ViewProductListService {
-  static const String baseUrl = 'https://gj.realhomes.co.in/API/Product';
+  static const String baseUrl = 'https://g17bookworld.com/API/Product';
 
   Future<ViewProductListResponse> getProductList() async {
     final url = Uri.parse('$baseUrl/GetProductList');
@@ -46,6 +46,7 @@ class ViewProductListService {
     }
   }
 }
+
 
 
 

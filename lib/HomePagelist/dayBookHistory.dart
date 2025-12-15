@@ -62,13 +62,10 @@ class _DayBookHistoryState extends State<DayBookHistory> {
       );
 
       final allTransactions = response.getAllTransactions();
-      
+
       // Apply client-side date filtering only if a filter is selected
       final filteredByDate = _currentDateRange != null
-          ? _filterTransactionsByDateRange(
-              allTransactions,
-              _currentDateRange!,
-            )
+          ? _filterTransactionsByDateRange(allTransactions, _currentDateRange!)
           : allTransactions; // Show all if no filter selected
 
       if (mounted) {
@@ -95,7 +92,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
   }
 
   /// Gets the date range for the specified filter
-  /// 
+  ///
   /// - Today: Only today's date
   /// - Weekly: Current week (Monday to Sunday)
   /// - Monthly: Current month only (from start of month to today)
@@ -118,10 +115,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         final endOfWeekDate = startOfWeek.add(const Duration(days: 6));
         // Use today if it's before the end of the week, otherwise use end of week
         final endDate = endOfWeekDate.isAfter(now) ? now : endOfWeekDate;
-        return DateTimeRange(
-          start: startOfWeek,
-          end: _getEndOfDay(endDate),
-        );
+        return DateTimeRange(start: startOfWeek, end: _getEndOfDay(endDate));
 
       case 'Monthly':
         // Current month only (from start of month to today)
@@ -151,21 +145,21 @@ class _DayBookHistoryState extends State<DayBookHistory> {
   ) {
     final rangeStart = dateRange.start;
     final rangeEnd = dateRange.end;
-    
+
     return transactions.where((transaction) {
       try {
         final transactionDate = DateTime.parse(transaction.createdDateTime);
-        
+
         // Check if transaction date falls within the range (inclusive on both ends)
         // rangeStart <= transactionDate <= rangeEnd
-        return !transactionDate.isBefore(rangeStart) && !transactionDate.isAfter(rangeEnd);
+        return !transactionDate.isBefore(rangeStart) &&
+            !transactionDate.isAfter(rangeEnd);
       } catch (e) {
         // If date parsing fails, exclude the transaction
         return false;
       }
     }).toList();
   }
-
 
   /// Filters transactions based on search query
   /// Searches across: mobile number, particular name, remarks, voucher numbers, and transaction flag
@@ -176,7 +170,9 @@ class _DayBookHistoryState extends State<DayBookHistory> {
       if (query.isEmpty) {
         _filteredTransactions = List.from(_allTransactions);
       } else {
-        _filteredTransactions = _allTransactions.where(_matchesSearchQuery(query)).toList();
+        _filteredTransactions = _allTransactions
+            .where(_matchesSearchQuery(query))
+            .toList();
       }
     });
   }
@@ -207,16 +203,18 @@ class _DayBookHistoryState extends State<DayBookHistory> {
       _selectedFilter = filter;
       _currentDateRange = _getDateRangeForFilter(filter);
     });
-    
+
     // Clear search when filter changes
     _searchController.clear();
-    
+
     // Reload transactions with new date range
     _loadTransactions(forceRefresh: true);
   }
 
   /// Calculates total debit and credit amounts from a list of transactions
-  ({double debit, double credit}) _calculateTotals(List<Transaction> transactions) {
+  ({double debit, double credit}) _calculateTotals(
+    List<Transaction> transactions,
+  ) {
     double totalDebit = 0.0;
     double totalCredit = 0.0;
 
@@ -305,21 +303,23 @@ class _DayBookHistoryState extends State<DayBookHistory> {
             builder: (context, isLoading, child) {
               return isLoading
                   ? const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-              )
+                      padding: EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      ),
+                    )
                   : IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _handleRefresh,
-                tooltip: 'Refresh',
-              );
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _handleRefresh,
+                      tooltip: 'Refresh',
+                    );
             },
           ),
         ],
@@ -336,7 +336,9 @@ class _DayBookHistoryState extends State<DayBookHistory> {
           ValueListenableBuilder<String>(
             valueListenable: _errorMessage,
             builder: (context, errorMessage, child) {
-              return errorMessage.isNotEmpty ? _buildErrorMessage(errorMessage) : const SizedBox();
+              return errorMessage.isNotEmpty
+                  ? _buildErrorMessage(errorMessage)
+                  : const SizedBox();
             },
           ),
 
@@ -457,16 +459,19 @@ class _DayBookHistoryState extends State<DayBookHistory> {
             prefixIcon: const Icon(Icons.search, color: Colors.grey),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-              icon: const Icon(Icons.clear, color: Colors.grey),
-              onPressed: () {
-                _searchController.clear();
-                _filterTransactions();
-              },
-            )
+                    icon: const Icon(Icons.clear, color: Colors.grey),
+                    onPressed: () {
+                      _searchController.clear();
+                      _filterTransactions();
+                    },
+                  )
                 : null,
             hintText: "Search by Mobile, Particular, Remarks, or Voucher No",
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
           onChanged: (value) => _filterTransactions(),
         ),
@@ -515,22 +520,31 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  'Showing ${_filteredTransactions.length} of ${_allTransactions.length} transactions',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+              // ✅ Top text (will wrap automatically)
+              Text(
+                'Showing ${_filteredTransactions.length} of ${_allTransactions.length} transactions',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              Row(
+
+              const SizedBox(height: 8),
+
+              // ✅ Wrap instead of Row (NO OVERFLOW)
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red[50],
                       borderRadius: BorderRadius.circular(4),
@@ -544,9 +558,11 @@ class _DayBookHistoryState extends State<DayBookHistory> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green[50],
                       borderRadius: BorderRadius.circular(4),
@@ -644,11 +660,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.receipt_long,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.receipt_long, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             _searchController.text.isEmpty
@@ -700,7 +712,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
               controller: _verticalScrollController,
               child: DataTable(
                 headingRowColor: MaterialStateColor.resolveWith(
-                      (states) => Colors.blue[50]!,
+                  (states) => Colors.blue[50]!,
                 ),
                 columnSpacing: 12,
                 horizontalMargin: 12,
@@ -708,43 +720,76 @@ class _DayBookHistoryState extends State<DayBookHistory> {
                 dataRowMaxHeight: 60,
                 columns: const [
                   DataColumn(
-                    label: Text("Sr No", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Sr No",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     numeric: true,
                   ),
                   DataColumn(
-                    label: Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Date",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Mobile", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Mobile",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Particular", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Particular",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Type", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Type",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Debit", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Debit",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Credit", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Credit",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Receipt", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Receipt",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Expense", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Expense",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Image", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Image",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text("Action", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      "Action",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
                 rows: List.generate(
                   _filteredTransactions.length,
-                      (index) => _buildDataRow(index, _filteredTransactions[index]),
+                  (index) => _buildDataRow(index, _filteredTransactions[index]),
                 ),
               ),
             ),
@@ -756,14 +801,14 @@ class _DayBookHistoryState extends State<DayBookHistory> {
 
   DataRow _buildDataRow(int index, Transaction transaction) {
     return DataRow(
-      color: MaterialStateProperty.resolveWith<Color?>(
-            (Set<MaterialState> states) {
-          if (index.isEven) {
-            return Colors.grey[50];
-          }
-          return null;
-        },
-      ),
+      color: MaterialStateProperty.resolveWith<Color?>((
+        Set<MaterialState> states,
+      ) {
+        if (index.isEven) {
+          return Colors.grey[50];
+        }
+        return null;
+      }),
       cells: [
         DataCell(Center(child: Text('${index + 1}'))),
         DataCell(
@@ -801,13 +846,17 @@ class _DayBookHistoryState extends State<DayBookHistory> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: transaction.flag == 'Debit' ? Colors.red[50] : Colors.green[50],
+              color: transaction.flag == 'Debit'
+                  ? Colors.red[50]
+                  : Colors.green[50],
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               transaction.flag,
               style: TextStyle(
-                color: transaction.flag == 'Debit' ? Colors.red[700] : Colors.green[700],
+                color: transaction.flag == 'Debit'
+                    ? Colors.red[700]
+                    : Colors.green[700],
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -817,25 +866,25 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         DataCell(
           transaction.debit != null
               ? Text(
-            _formatCurrency(transaction.debit!),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.red,
-              fontSize: 12,
-            ),
-          )
+                  _formatCurrency(transaction.debit!),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                    fontSize: 12,
+                  ),
+                )
               : const Text('-', style: TextStyle(fontSize: 12)),
         ),
         DataCell(
           transaction.credit != null
               ? Text(
-            _formatCurrency(transaction.credit!),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-              fontSize: 12,
-            ),
-          )
+                  _formatCurrency(transaction.credit!),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                    fontSize: 12,
+                  ),
+                )
               : const Text('-', style: TextStyle(fontSize: 12)),
         ),
         DataCell(
@@ -1011,7 +1060,10 @@ class TransactionDetailDialog extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _buildDetailRow('Date', _formatDateTime(transaction.createdDateTime)),
+            _buildDetailRow(
+              'Date',
+              _formatDateTime(transaction.createdDateTime),
+            ),
             _buildDetailRow('Mobile', transaction.mobileNo ?? 'N/A'),
             _buildDetailRow('Particular', transaction.particularName),
             _buildDetailRow('Transaction Type', transaction.flag),
@@ -1021,21 +1073,34 @@ class TransactionDetailDialog extends StatelessWidget {
             if (transaction.credit != null)
               _buildDetailRow('Credit', _formatCurrency(transaction.credit!)),
             if (transaction.totalBalance != null)
-              _buildDetailRow('Balance', _formatCurrency(transaction.totalBalance!)),
+              _buildDetailRow(
+                'Balance',
+                _formatCurrency(transaction.totalBalance!),
+              ),
             _buildDetailRow('Remarks', transaction.remarks ?? 'N/A'),
-            _buildDetailRow('Receipt Voucher', transaction.receiptBowcherNo ?? 'N/A'),
-            _buildDetailRow('Expense Voucher', transaction.expenseBowcherNo ?? 'N/A'),
+            _buildDetailRow(
+              'Receipt Voucher',
+              transaction.receiptBowcherNo ?? 'N/A',
+            ),
+            _buildDetailRow(
+              'Expense Voucher',
+              transaction.expenseBowcherNo ?? 'N/A',
+            ),
             _buildDetailRow('Remark', transaction.remark ?? 'N/A'),
             if (transaction.hasImage) ...[
               const SizedBox(height: 16),
-              const Text('Image:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Image:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
                   Navigator.of(context).pop();
                   showDialog(
                     context: context,
-                    builder: (context) => ImageViewDialog(imageUrl: transaction.imageUrl),
+                    builder: (context) =>
+                        ImageViewDialog(imageUrl: transaction.imageUrl),
                   );
                 },
                 child: Container(
@@ -1049,8 +1114,10 @@ class TransactionDetailDialog extends StatelessWidget {
                   child: CachedNetworkImage(
                     imageUrl: transaction.imageUrl,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                    errorWidget: (context, url, error) => const Center(child: Icon(Icons.error)),
+                    placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) =>
+                        const Center(child: Icon(Icons.error)),
                   ),
                 ),
               ),

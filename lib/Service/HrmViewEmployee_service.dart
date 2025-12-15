@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '/Model/HrmViewEmplyeeModel.dart';
 
 class HrmViewEmployeeService {
-  static const String apiUrl = 'https://gj.realhomes.co.in/API/EmployeeList/GetEmployee';
+  static const String apiUrl = 'https://g17bookworld.com/API/EmployeeList/GetEmployee';
 
   Future<HrmViewEmployeeModel?> fetchEmployees() async {
     try {

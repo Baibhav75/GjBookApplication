@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '/Model/ViewCompany_model.dart';
 
 class ViewCompanyService {
-  static const String baseUrl = 'https://gj.realhomes.co.in/API/Publication/GetPublication';
+  static const String baseUrl = 'https://g17bookworld.com/API/Publication/GetPublication';
   static const int timeoutSeconds = 30;
 
   static Future<ViewCompanyModel?> getCompanies() async {

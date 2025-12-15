@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:bookworld/HomePagelist/addDayBook.dart';
 import 'package:bookworld/adminPage/BilingPurchase/purchaseNotForSale.dart';
@@ -36,6 +38,27 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   int _currentIndex = 0;
+
+  // add footer
+  void _navigateToHome() {
+    setState(() {
+      _currentIndex = 0;
+    });
+  }
+
+  void _navigateToDayBook() {
+    setState(() {
+      _currentIndex = 1;
+    });
+  }
+
+  void _navigateToAttendanceHistory() {
+    setState(() {
+      _currentIndex = 2;
+    });
+  }
+
+
 
   // Get user data from widget or use defaults
   String get adminName => widget.userData?.adminName ?? "Super Admin";
@@ -86,7 +109,7 @@ class _AdminPageState extends State<AdminPage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: Text('Admin Dashboard', style: GoogleFonts.poppins(fontSize: 20.sp, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF6B46C1), // Purple color matching banner
         foregroundColor: Colors.white,
         elevation: 2,
@@ -141,28 +164,28 @@ class _AdminPageState extends State<AdminPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
-                  radius: 30,
+                  radius: 30.r,
                   backgroundColor: Colors.white,
                   child: Icon(
                     Icons.admin_panel_settings,
-                    size: 30,
+                    size: 30.sp,
                     color: const Color(0xFF6B46C1), // Matching purple theme
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.h),
                 Text(
                   adminName,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   adminEmail,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Colors.white70,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                   ),
                 ),
               ],
@@ -439,7 +462,7 @@ class _AdminPageState extends State<AdminPage> {
       leading: Icon(icon, color: const Color(0xFF6B46C1)), // Matching purple theme
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w500),
+        style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 16.sp),
       ),
       children: children,
     );
@@ -450,7 +473,7 @@ class _AdminPageState extends State<AdminPage> {
     return ExpansionTile(
       title: Text(
         title,
-        style: const TextStyle(fontSize: 14),
+        style: GoogleFonts.poppins(fontSize: 14.sp),
       ),
       children: children,
     );
@@ -459,11 +482,11 @@ class _AdminPageState extends State<AdminPage> {
   // Helper method for sub-menu items with optional onTap parameter
   Widget _buildDrawerSubItem(String title, {VoidCallback? onTap}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 32.0),
+      padding: EdgeInsets.only(left: 32.0.w),
       child: ListTile(
         title: Text(
           title,
-          style: const TextStyle(fontSize: 14),
+          style: GoogleFonts.poppins(fontSize: 14.sp),
         ),
         onTap: onTap ?? () {
           Navigator.pop(context); // Close drawer
@@ -479,7 +502,7 @@ class _AdminPageState extends State<AdminPage> {
       leading: Icon(icon, color: const Color(0xFF6B46C1)), // Matching purple theme
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w500),
+        style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 16.sp),
       ),
       onTap: () {
         if (index != null) {
@@ -497,25 +520,20 @@ class _AdminPageState extends State<AdminPage> {
       case 0:
         return _buildDashboard();
       case 1:
-        return _buildComingSoon('Product Management');
+        return DayBookHistory();
       case 2:
-        return _buildComingSoon('Account Management');
+        return ViewProductList();
       case 3:
-        return _buildComingSoon('Billing System');
-      case 4:
-        return _buildComingSoon('Account Opening Forms');
-      case 5:
-        return _buildComingSoon('HR Management');
-      case 6:
-        return _buildComingSoon('Settings');
+        return _buildComingSoon('Latest Order');
       default:
         return _buildDashboard();
     }
   }
 
+
   Widget _buildDashboard() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -523,46 +541,46 @@ class _AdminPageState extends State<AdminPage> {
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFF6B46C1), // Same purple as appBar
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.w),
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 30,
+                    radius: 30.r,
                     backgroundColor: Colors.white.withOpacity(0.2),
-                    child: const Icon(
+                    child: Icon(
                       Icons.admin_panel_settings,
-                      size: 30,
+                      size: 30.sp,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: 15),
+                  SizedBox(width: 15.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Welcome, $adminName!',
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: GoogleFonts.poppins(
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 5),
+                        SizedBox(height: 5.h),
                         Text(
                           'Here\'s your dashboard overview for today',
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.sp,
                             color: Colors.white.withOpacity(0.9),
                           ),
                         ),
                         Text(
                           'Last updated: ${DateTime.now().toString().split(' ')[1].substring(0, 5)}',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.sp,
                             color: Colors.white.withOpacity(0.7),
                           ),
                         ),
@@ -611,16 +629,16 @@ class _AdminPageState extends State<AdminPage> {
 
   Widget _buildDashboardContainer(String title, List<Map<String, dynamic>> items, bool showViewAll) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            blurRadius: 8.r,
+            offset: Offset(0, 4.h),
           ),
         ],
       ),
@@ -633,39 +651,38 @@ class _AdminPageState extends State<AdminPage> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: GoogleFonts.poppins(
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               if (showViewAll)
                 TextButton(
                   onPressed: () {},
-                  child: const Text(
+                  child: Text(
                     'View All',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B46C1),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.sp,
+                      color: const Color(0xFF6B46C1),
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14.h), // Changed const SizedBox to SizedBox
             GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              crossAxisSpacing: 12.w,
+              mainAxisSpacing: 12.h,
               childAspectRatio: 0.65, // Increased height to prevent overflow
-            ),
-            itemBuilder: (context, gridIndex) => _buildDashboardGridItem(
-              items[gridIndex],
-            ),
+            ),itemBuilder: (context, gridIndex) =>
+                _buildDashboardGridItem(items[gridIndex]),
           ),
+
         ],
       ),
     );
@@ -704,43 +721,41 @@ class _AdminPageState extends State<AdminPage> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 60,
-              height: 60,
+              width: 56.w,
+              height: 56.w,
               decoration: BoxDecoration(
                 color: stat['color'],
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: Icon(
                 stat['icon'],
-                size: 28,
+                size: 26.sp,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Text(
-                stat['title'],
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                  height: 1.3,
-                ),
+            SizedBox(height: 8.h),
+            Text(
+              stat['title'],
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 11.5.sp,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+                color: Colors.black87,
               ),
             ),
           ],
         ),
+
       ),
     );
   }
@@ -754,23 +769,23 @@ class _AdminPageState extends State<AdminPage> {
         children: [
           Icon(
             Icons.construction,
-            size: 80,
+            size: 80.sp,
             color: Colors.grey[400],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 24,
+            style: GoogleFonts.poppins(
+              fontSize: 24.sp,
               fontWeight: FontWeight.bold,
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           Text(
             'This feature is coming soon!',
-            style: TextStyle(
-              fontSize: 16,
+            style: GoogleFonts.poppins(
+              fontSize: 16.sp,
               color: Colors.grey[500],
             ),
           ),
@@ -837,14 +852,14 @@ class _AdminPageState extends State<AdminPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          title: Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          content: Text('Are you sure you want to logout?', style: GoogleFonts.poppins(fontSize: 14.sp)),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: GoogleFonts.poppins()),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -877,7 +892,7 @@ class _AdminPageState extends State<AdminPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
               ),
-              child: const Text('Logout'),
+              child: Text('Logout', style: GoogleFonts.poppins(color: Colors.white)),
             ),
           ],
         );
@@ -972,15 +987,15 @@ class _AdminPageState extends State<AdminPage> {
 
   Widget _buildProfileInfo(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: EdgeInsets.symmetric(vertical: 8.0.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 100.w,
             child: Text(
               '$label:',
-              style: const TextStyle(
+              style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
               ),
@@ -989,7 +1004,7 @@ class _AdminPageState extends State<AdminPage> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 14),
+              style: GoogleFonts.poppins(fontSize: 14.sp),
             ),
           ),
         ],
@@ -1035,7 +1050,7 @@ class _AdminPageState extends State<AdminPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Change Password'),
+              title: Text('Change Password', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
               content: SingleChildScrollView(
                 child: Form(
                   key: _changePasswordFormKey,
@@ -1049,9 +1064,11 @@ class _AdminPageState extends State<AdminPage> {
                         readOnly: mobileNo.isNotEmpty, // Disable if already filled from user data
                         decoration: InputDecoration(
                           labelText: 'Mobile Number',
+                          labelStyle: GoogleFonts.poppins(),
                           hintText: mobileNo.isNotEmpty
                               ? 'Your registered mobile number'
                               : 'Enter 10-digit mobile number',
+                          hintStyle: GoogleFonts.poppins(),
                           prefixIcon: const Icon(Icons.phone_android),
                           border: const OutlineInputBorder(),
                           counterText: '',
@@ -1140,7 +1157,7 @@ class _AdminPageState extends State<AdminPage> {
                       : () {
                     Navigator.of(dialogContext).pop();
                   },
-                  child: const Text('Cancel'),
+                  child: Text('Cancel', style: GoogleFonts.poppins()),
                 ),
                 ElevatedButton(
                   onPressed: isChangingPassword
@@ -1220,7 +1237,7 @@ class _AdminPageState extends State<AdminPage> {
                       AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                      : const Text('Change Password'),
+                       : Text('Change Password', style: GoogleFonts.poppins()),
                 ),
               ],
             );
@@ -1230,114 +1247,68 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  void _navigateToHome() {
-    // TODO: Implement navigation to Home screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Home'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
 
-  void _navigateToDayBook() {
-    // TODO: Implement navigation to Day Book screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Day Book'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
 
-  void _navigateToAttendanceHistory() {
-    // TODO: Implement navigation to Attendance History screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Attendance History'),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
+
+
 
   Widget _buildFooter() {
     return Container(
-      height: 80,
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      height: 70,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildFooterTextButton(
-            text: 'Home',
-            onPressed: _navigateToHome,
-            icon: Icons.home,
-            textColor: const Color(0xFF6B46C1), // Matching purple theme
-          ),
-          _buildFooterTextButton(
-            text: 'Day Book',
-            onPressed: _navigateToDayBook,
-            icon: Icons.book,
-            textColor: Colors.green[700],
-          ),
-          _buildFooterTextButton(
-            text: 'Attendance ',
-            onPressed: _navigateToAttendanceHistory,
-            icon: Icons.history,
-            textColor: Colors.orange[700],
-          ),
+          _footerItem(0, Icons.grid_view, "Dashboard", _navigateToHome),
+          _footerItem(1, Icons.history, "History", _navigateToDayBook),
+          _footerItem(2, Icons.search, "Search", _navigateToAttendanceHistory),
+          _footerItem(3, Icons.shopping_cart, "Latest Order", () {
+            setState(() => _currentIndex = 3);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildFooterTextButton({
-    required String text,
-    required VoidCallback onPressed,
-    required IconData icon,
-    Color? textColor,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.transparent,
-        ),
+
+
+  Widget _footerItem(
+      int index,
+      IconData icon,
+      String label,
+      VoidCallback onTap,
+      )
+  {
+    final bool isSelected = _currentIndex == index;
+
+
+    return InkWell(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              size: 20,
-              color: textColor ?? const Color(0xFF6B46C1), // Matching purple theme
+              size: 24,
+              color: isSelected ? const Color(0xFF6B46C1) : Colors.grey,
             ),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: textColor ?? const Color(0xFF6B46C1), // Matching purple theme
-              ),
-            ),
+            AnimatedSize(
+              duration: Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: isSelected
+                  ? Text(label)
+                  : SizedBox(),
+            )
+
           ],
         ),
       ),
     );
   }
+
+
+
+
 }

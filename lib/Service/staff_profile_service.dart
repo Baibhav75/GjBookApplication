@@ -4,7 +4,7 @@ import '/Model/staff_profile_model.dart';
 
 class StaffProfileService {
   final String baseUrl =
-      "https://gj.realhomes.co.in/API/EmployeeProfile/EmployeeProfile";
+      "https://g17bookworld.com/API/EmployeeProfile/EmployeeProfile";
 
   Future<StaffProfileModel?> fetchProfile(String mobileNo) async {
     final url = Uri.parse("$baseUrl?MobileNo=$mobileNo");

@@ -6,7 +6,7 @@ import '/Model/day_book_model.dart';
 
 class DayBookService {
   // Base URL
-  static const String baseUrl = 'https://gj.realhomes.co.in/API/AddDayBook';
+  static const String baseUrl = 'https://g17bookworld.com/API/AddDayBook';
 
   final http.Client client;
 

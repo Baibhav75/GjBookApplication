@@ -140,7 +140,6 @@ class _CounterMainPageState extends State<CounterMainPage> {
             },
           ),
 
-          const Spacer(),
 
           // Logout Button
           ListTile(

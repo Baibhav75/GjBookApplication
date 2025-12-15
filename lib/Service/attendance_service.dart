@@ -5,7 +5,7 @@ import '../Model/attendance_checkin_model.dart';
 
 class AttendanceService {
   static const String apiUrl =
-      "https://gj.realhomes.co.in/API/AttendenceManagement/MarkAttendance";
+      "https://g17bookworld.com/API/AttendenceManagement/MarkAttendance";
 
   static Future<AttendanceCheckInModel?> markAttendance({
     required String employeeId,

@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
 
-class SchoolPageScreen extends StatefulWidget {
-  const SchoolPageScreen  ({Key? key}) : super(key: key);
+import '../staffPage/staffhistory.dart';
+
+class Hrmainpage extends StatefulWidget {
+  const Hrmainpage ({Key? key}) : super(key: key);
 
   @override
-  State<SchoolPageScreen  > createState() => _SchoolPageScreenState();
+  State<Hrmainpage > createState() => _HrmainpageState();
 }
 
-class _SchoolPageScreenState extends State<SchoolPageScreen > {
+class _HrmainpageState extends State<Hrmainpage > {
   int _currentIndex = 0;
 
   @override
@@ -21,8 +23,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
       drawer: _buildDrawer(),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFFEF6C00),
-
+        backgroundColor: const Color(0xFF19CAB9),
         elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
@@ -48,18 +49,17 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
       body: _getPage(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFFEF6C00),
-
+        selectedItemColor: const Color(0xFF19CAB9),
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() => _currentIndex = index);
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.payment), label: "Student"),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Teachers"),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Class"),
-          BottomNavigationBarItem(icon: Icon(Icons.assessment), label: "Active Today"),
+          BottomNavigationBarItem(icon: Icon(Icons.payment), label: "Collect Fee"),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Search"),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Receipts"),
+          BottomNavigationBarItem(icon: Icon(Icons.assessment), label: "Reports"),
         ],
       ),
     );
@@ -78,7 +78,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
             width: double.infinity,
             padding: const EdgeInsets.all(25),
             decoration: const BoxDecoration(
-              color: Color(0xFFEF6C00),
+              color: Color(0xFF19CAB9),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,11 +86,11 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                 CircleAvatar(
                   radius: 32,
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.person, color: Colors.deepOrangeAccent, size: 40),
+                  child: Icon(Icons.person, color: Colors.teal, size: 40),
                 ),
                 SizedBox(height: 10),
                 Text(
-                  "School User",
+                  "Counter User",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -98,7 +98,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                   ),
                 ),
                 Text(
-                  "School01",
+                  "counter01",
                   style: TextStyle(
                     color: Colors.white70,
                   ),
@@ -109,7 +109,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
 
           // Drawer Items
           ListTile(
-            leading: const Icon(Icons.dashboard, color: Colors.deepOrangeAccent),
+            leading: const Icon(Icons.dashboard, color: Colors.teal),
             title: const Text("Dashboard"),
             onTap: () {
               setState(() => _currentIndex = 0);
@@ -118,7 +118,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
           ),
 
           ListTile(
-            leading: const Icon(Icons.person, color: Colors.deepOrangeAccent),
+            leading: const Icon(Icons.person, color: Colors.teal),
             title: const Text("Profile"),
             onTap: () {
               // navigate to profile page (if exists)
@@ -234,78 +234,27 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
               crossAxisSpacing: 12, // Reduced spacing
               childAspectRatio: 0.85, // Optimal ratio
               children: [
-                _menuItem("Student", Icons.present_to_all, Colors.green, () {
-                  setState(() => _currentIndex = 1);
+                _menuItem("Attendance\nRegular", Icons.present_to_all, Colors.green, () {
+                  // Navigate to staffhistory screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const staffhistory(), // Use correct class name
+                    ),
+                  );
                 }),
-                _menuItem("Teacher", Icons.today, Colors.teal, () {
+
+                _menuItem("Today\nAttendance", Icons.today, Colors.orange, () {
                   setState(() => _currentIndex = 2);
                 }),
-                _menuItem("Class", Icons.calendar_month, Colors.purple, () {
+                _menuItem("Monthly\nRepeat", Icons.calendar_month, Colors.purple, () {
                   setState(() => _currentIndex = 3);
                 }),
-                _menuItem("ActiveToday", Icons.inventory_2, Colors.blue, () {
+                _menuItem("Available\nStock", Icons.inventory_2, Colors.blue, () {
                   setState(() => _currentIndex = 4);
                 }),
                 _menuItem("Sell Now", Icons.shopping_cart_checkout, Colors.blue, () {}),
                 _menuItem("Order Now", Icons.add_shopping_cart, Colors.red, () {}),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          //quick Activity
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                "Quick Activity",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Slightly smaller
-              ),
-              Text(
-                "View All",
-                style: TextStyle(
-                  color: Colors.deepOrangeAccent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12), // Reduced from 15
-
-          Container(
-            padding: const EdgeInsets.all(12), // Reduced from 20
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade300,
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 4,
-              mainAxisSpacing: 8, // Reduced spacing
-              crossAxisSpacing: 8, // Reduced spacing
-              childAspectRatio: 0.85, // Optimal ratio
-              children: [
-                _menuItem("Add Student", Icons.person_add, Colors.blue, () {
-                  setState(() => _currentIndex = 1);
-                }),
-                _menuItem("Mark Attendance", Icons.check_circle, Colors.green, () {
-                  setState(() => _currentIndex = 2);
-                }),
-                _menuItem("upload Results", Icons.assignment, Colors.orange, () {
-                  setState(() => _currentIndex = 3);
-                }),
-                _menuItem("Send Notification", Icons.inventory_2, Colors.blue, () {
-                  setState(() => _currentIndex = 4);
-                }),
               ],
             ),
           ),
@@ -410,10 +359,9 @@ class _AnimatedBannerState extends State<AnimatedBanner>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.deepOrangeAccent,
-              Colors.deepOrangeAccent,
-              Colors.orange,
-              Colors.orangeAccent,
+              Colors.teal,
+              Colors.teal,
+              Colors.tealAccent,
 
             ],
           ),

@@ -186,11 +186,8 @@ class _ViewProductListState extends State<ViewProductList> {
 
           const SizedBox(height: 10),
 
-          // Content Area
-          Expanded(child: _buildContent()),
 
-          // Footer Buttons
-          _buildFooter(),
+
         ],
       ),
     );
@@ -243,83 +240,8 @@ class _ViewProductListState extends State<ViewProductList> {
     );
   }
 
-  Widget _buildFooter() {
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildFooterTextButton(
-            text: 'Home',
-            onPressed: _navigateToHome,
-            icon: Icons.home,
-            textColor: Colors.blue[700],
-          ),
-          _buildFooterTextButton(
-            text: 'Day Book',
-            onPressed: _navigateToDayBook,
-            icon: Icons.book,
-            textColor: Colors.green[700],
-          ),
-          _buildFooterTextButton(
-            text: 'Attendance',
-            onPressed: _navigateToAttendanceHistory,
-            icon: Icons.history,
-            textColor: Colors.orange[700],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildFooterTextButton({
-    required String text,
-    required VoidCallback onPressed,
-    required IconData icon,
-    Color? textColor,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.transparent,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: textColor ?? Colors.blue[700],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: textColor ?? Colors.blue[700],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildContent() {
     if (_isLoading) {
