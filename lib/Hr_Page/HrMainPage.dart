@@ -239,7 +239,7 @@ class _HrmainpageState extends State<Hrmainpage > {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const staffhistory(), // Use correct class name
+                      builder: (context) => const HistoryPage(mobileNo: '',), // Use correct class name
                     ),
                   );
                 }),

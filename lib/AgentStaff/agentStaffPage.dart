@@ -124,7 +124,7 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
               Navigator.pop(context); // close drawer first
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => staffhistory()),
+                MaterialPageRoute(builder: (context) => HistoryPage(mobileNo: '',)),
               );
             },
           ),
@@ -254,7 +254,7 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
                 _menuItem("Attendance", Icons.done, Colors.orange, () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>  staffhistory()),
+                    MaterialPageRoute(builder: (context) =>  HistoryPage(mobileNo: '',)),
                   );
                 }),
 

@@ -1,5 +1,7 @@
 import 'package:bookworld/Hr_Page/HrMainPage.dart';
 import 'package:flutter/material.dart';
+import 'package:bookworld/Model/hr_login_model.dart';
+import 'package:bookworld/Service/hr_login_service.dart';
 
 class hrLoginScreen extends StatefulWidget {
   const hrLoginScreen({super.key});
@@ -25,10 +27,12 @@ class _hrLoginScreenState extends State<hrLoginScreen>
   late Animation<double> iconScale;
 
   bool _obscure = true;
+  bool _isLoading = false;
 
   final TextEditingController _mobile = TextEditingController();
   final TextEditingController _pass = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+
+  final HrLoginService _loginService = HrLoginService();
 
   @override
   void initState() {
@@ -39,7 +43,6 @@ class _hrLoginScreenState extends State<hrLoginScreen>
       duration: const Duration(milliseconds: 900),
     );
 
-    // Fade Animations
     fade1 = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.4)),
     );
@@ -53,23 +56,24 @@ class _hrLoginScreenState extends State<hrLoginScreen>
       CurvedAnimation(parent: _controller, curve: const Interval(0.3, 0.8)),
     );
 
-    // Slide Animations
     slide1 = Tween<Offset>(begin: const Offset(0, .3), end: Offset.zero)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     slide2 = Tween<Offset>(begin: const Offset(0, .3), end: Offset.zero)
         .animate(CurvedAnimation(
-        parent: _controller, curve: const Interval(0.1, 0.7, curve: Curves.easeOut)));
+        parent: _controller,
+        curve: const Interval(0.1, 0.7, curve: Curves.easeOut)));
 
     slide3 = Tween<Offset>(begin: const Offset(0, .3), end: Offset.zero)
         .animate(CurvedAnimation(
-        parent: _controller, curve: const Interval(0.2, 0.8, curve: Curves.easeOut)));
+        parent: _controller,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOut)));
 
     slide4 = Tween<Offset>(begin: const Offset(0, .3), end: Offset.zero)
         .animate(CurvedAnimation(
-        parent: _controller, curve: const Interval(0.3, 1.0, curve: Curves.easeOut)));
+        parent: _controller,
+        curve: const Interval(0.3, 1.0, curve: Curves.easeOut)));
 
-    // Icon bounce animation
     iconScale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
@@ -85,6 +89,42 @@ class _hrLoginScreenState extends State<hrLoginScreen>
     super.dispose();
   }
 
+  /// 🔐 LOGIN FUNCTION
+  Future<void> _login() async {
+    if (_mobile.text.isEmpty || _pass.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter mobile & password')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      HrLoginModel result = await _loginService.hrLogin(
+        mobile: _mobile.text.trim(),
+        password: _pass.text.trim(),
+      );
+
+      if (result.status.toLowerCase() == 'success') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const Hrmainpage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color primaryGreen = Color(0xFF19CAB9);
@@ -94,20 +134,11 @@ class _hrLoginScreenState extends State<hrLoginScreen>
         backgroundColor: primaryGreen,
         title: const Text(
           'HR Login',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600, // Optional: makes text bold
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
-        ),
-        iconTheme: const IconThemeData(
-          color: Colors.white, // This sets all AppBar icons to white
         ),
       ),
       body: SafeArea(
@@ -118,14 +149,14 @@ class _hrLoginScreenState extends State<hrLoginScreen>
               children: [
                 const SizedBox(height: 40),
 
-                /// *** Icon Animation ***
                 ScaleTransition(
                   scale: iconScale,
-                  child: Icon(Icons.work_outline, size: 90, color: primaryGreen),
+                  child:
+                  Icon(Icons.work_outline, size: 90, color: primaryGreen),
                 ),
+
                 const SizedBox(height: 16),
 
-                /// *** Title Animation ***
                 FadeTransition(
                   opacity: fade1,
                   child: SlideTransition(
@@ -133,17 +164,15 @@ class _hrLoginScreenState extends State<hrLoginScreen>
                     child: const Text(
                       "HR Login",
                       style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.teal, // Changed to white
-                      ),
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.teal),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 35),
 
-                /// *** Mobile Field Animation ***
                 FadeTransition(
                   opacity: fade2,
                   child: SlideTransition(
@@ -159,7 +188,6 @@ class _hrLoginScreenState extends State<hrLoginScreen>
 
                 const SizedBox(height: 16),
 
-                /// *** Password Field Animation ***
                 FadeTransition(
                   opacity: fade3,
                   child: SlideTransition(
@@ -170,8 +198,10 @@ class _hrLoginScreenState extends State<hrLoginScreen>
                       icon: Icons.lock,
                       obscure: _obscure,
                       suffix: IconButton(
-                        icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setState(() => _obscure = !_obscure),
+                        icon: Icon(
+                            _obscure ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () =>
+                            setState(() => _obscure = !_obscure),
                       ),
                     ),
                   ),
@@ -179,7 +209,6 @@ class _hrLoginScreenState extends State<hrLoginScreen>
 
                 const SizedBox(height: 25),
 
-                /// *** Login Button Animation ***
                 FadeTransition(
                   opacity: fade4,
                   child: SlideTransition(
@@ -188,32 +217,28 @@ class _hrLoginScreenState extends State<hrLoginScreen>
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => Hrmainpage()),
-                          );
-                        },
+                        onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryGreen,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                            : const Text(
                           "Login",
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white, // <-- TEXT COLOR UPDATED
-                          ),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white),
                         ),
-
                       ),
                     ),
                   ),
                 ),
-
               ],
             ),
           ),
@@ -245,7 +270,8 @@ class _hrLoginScreenState extends State<hrLoginScreen>
           prefixIcon: Icon(icon, color: Colors.grey[700]),
           suffixIcon: suffix,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         ),
       ),
     );

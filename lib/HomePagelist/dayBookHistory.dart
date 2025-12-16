@@ -109,7 +109,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         return DateTimeRange(start: todayStart, end: todayEnd);
 
       case 'Weekly':
-        // Current week: Monday to Sunday (or today if today is before Sunday)
+      // Current week: Monday to Sunday (or today if today is before Sunday)
         final daysFromMonday = now.weekday - 1; // Monday = 0, Sunday = 6
         final startOfWeek = todayStart.subtract(Duration(days: daysFromMonday));
         final endOfWeekDate = startOfWeek.add(const Duration(days: 6));
@@ -118,7 +118,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         return DateTimeRange(start: startOfWeek, end: _getEndOfDay(endDate));
 
       case 'Monthly':
-        // Current month only (from start of month to today)
+      // Current month only (from start of month to today)
         final startOfMonth = DateTime(now.year, now.month, 1);
         return DateTimeRange(start: startOfMonth, end: todayEnd);
 
@@ -140,9 +140,9 @@ class _DayBookHistoryState extends State<DayBookHistory> {
   /// Filters transactions by date range to ensure they match the selected filter
   /// This provides client-side filtering to ensure accuracy regardless of API response
   List<Transaction> _filterTransactionsByDateRange(
-    List<Transaction> transactions,
-    DateTimeRange dateRange,
-  ) {
+      List<Transaction> transactions,
+      DateTimeRange dateRange,
+      ) {
     final rangeStart = dateRange.start;
     final rangeEnd = dateRange.end;
 
@@ -213,8 +213,8 @@ class _DayBookHistoryState extends State<DayBookHistory> {
 
   /// Calculates total debit and credit amounts from a list of transactions
   ({double debit, double credit}) _calculateTotals(
-    List<Transaction> transactions,
-  ) {
+      List<Transaction> transactions,
+      ) {
     double totalDebit = 0.0;
     double totalCredit = 0.0;
 
@@ -242,6 +242,24 @@ class _DayBookHistoryState extends State<DayBookHistory> {
     }
   }
 
+  String _formatShortDate(String dateTimeString) {
+    try {
+      final DateTime dateTime = DateTime.parse(dateTimeString);
+      return DateFormat('dd/MMM').format(dateTime);
+    } catch (e) {
+      return dateTimeString;
+    }
+  }
+
+  String _formatTime(String dateTimeString) {
+    try {
+      final DateTime dateTime = DateTime.parse(dateTimeString);
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return dateTimeString;
+    }
+  }
+
   void _handleViewDetails(Transaction transaction) {
     showDialog(
       context: context,
@@ -262,36 +280,14 @@ class _DayBookHistoryState extends State<DayBookHistory> {
     _loadTransactions(forceRefresh: true);
   }
 
-  Widget _buildImageCell(Transaction transaction) {
-    if (!transaction.hasImage) {
-      return const Text('No Image', style: TextStyle(color: Colors.grey));
-    }
-
-    return GestureDetector(
-      onTap: () => _handleViewImage(transaction),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Colors.blue[50],
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.blue[100]!),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.image, size: 16, color: Colors.blue),
-            SizedBox(width: 4),
-            Text('View', style: TextStyle(fontSize: 12, color: Colors.blue)),
-          ],
-        ),
-      ),
-    );
+  Color _getAmountColor(String flag) {
+    return flag == 'Debit' ? Colors.red[700]! : Colors.green[700]!;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Day Book History'),
         backgroundColor: Colors.blue[900],
@@ -303,44 +299,31 @@ class _DayBookHistoryState extends State<DayBookHistory> {
             builder: (context, isLoading, child) {
               return isLoading
                   ? const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      ),
-                    )
+                padding: EdgeInsets.all(8.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.white,
+                    ),
+                  ),
+                ),
+              )
                   : IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: _handleRefresh,
-                      tooltip: 'Refresh',
-                    );
+                icon: const Icon(Icons.refresh),
+                onPressed: _handleRefresh,
+                tooltip: 'Refresh',
+              );
             },
           ),
         ],
       ),
       body: Column(
         children: [
-          // Filter Section
-          _buildFilterSection(),
-
-          // Search Box
-          _buildSearchBox(),
-
-          // Error Message
-          ValueListenableBuilder<String>(
-            valueListenable: _errorMessage,
-            builder: (context, errorMessage, child) {
-              return errorMessage.isNotEmpty
-                  ? _buildErrorMessage(errorMessage)
-                  : const SizedBox();
-            },
-          ),
+          // Header with filter and search
+          _buildHeaderSection(),
 
           // Results Count and Summary
           _buildSummarySection(),
@@ -354,7 +337,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
     );
   }
 
-  Widget _buildFilterSection() {
+  Widget _buildHeaderSection() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -363,33 +346,89 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Filter by Period',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
+          // Filter Section
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildFilterButton(null, Icons.list, 'All'),
-              const SizedBox(width: 12),
-              _buildFilterButton('Today', Icons.today),
-              const SizedBox(width: 12),
-              _buildFilterButton('Weekly', Icons.calendar_view_week),
-              const SizedBox(width: 12),
-              _buildFilterButton('Monthly', Icons.calendar_today),
+              Text(
+                'Filter by Period',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildFilterButton(null, Icons.list, 'All'),
+                  const SizedBox(width: 8),
+                  _buildFilterButton('Today', Icons.today),
+                  const SizedBox(width: 8),
+                  _buildFilterButton('Weekly', Icons.calendar_view_week),
+                  const SizedBox(width: 8),
+                  _buildFilterButton('Monthly', Icons.calendar_today),
+                ],
+              ),
             ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Search Box
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterTransactions();
+                        },
+                      )
+                          : null,
+                      hintText: "Search by name, voucher, or remarks...",
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                    onChanged: (value) => _filterTransactions(),
+                  ),
+                ),
+                ValueListenableBuilder<String>(
+                  valueListenable: _errorMessage,
+                  builder: (context, errorMessage, child) {
+                    return errorMessage.isNotEmpty
+                        ? IconButton(
+                      icon: Icon(Icons.error_outline,
+                          color: Colors.red[700]),
+                      onPressed: () => _errorMessage.value = '',
+                    )
+                        : const SizedBox();
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -403,15 +442,14 @@ class _DayBookHistoryState extends State<DayBookHistory> {
     return Expanded(
       child: GestureDetector(
         onTap: () => _handleFilterChange(filter),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          height: 50,
+        child: Container(
+          height: 40,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.blue[900] : Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
+            color: isSelected ? Colors.blue[900]! : Colors.grey[100],
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: isSelected ? Colors.blue[900]! : Colors.grey[300]!,
-              width: 2,
+              width: 1,
             ),
           ),
           child: Row(
@@ -419,91 +457,20 @@ class _DayBookHistoryState extends State<DayBookHistory> {
             children: [
               Icon(
                 icon,
-                size: 20,
+                size: 16,
                 color: isSelected ? Colors.white : Colors.grey[600],
               ),
               const SizedBox(width: 6),
               Text(
                 displayLabel,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isSelected ? Colors.white : Colors.grey[700],
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBox() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search, color: Colors.grey),
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.grey),
-                    onPressed: () {
-                      _searchController.clear();
-                      _filterTransactions();
-                    },
-                  )
-                : null,
-            hintText: "Search by Mobile, Particular, Remarks, or Voucher No",
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
-          onChanged: (value) => _filterTransactions(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorMessage(String errorMessage) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.red[50],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red[200]!),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                errorMessage,
-                style: TextStyle(color: Colors.red[700], fontSize: 14),
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.close, color: Colors.red[700], size: 20),
-              onPressed: () => _errorMessage.value = '',
-            ),
-          ],
         ),
       ),
     );
@@ -519,35 +486,26 @@ class _DayBookHistoryState extends State<DayBookHistory> {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: Colors.white,
+          child: Row(
             children: [
-              // ✅ Top text (will wrap automatically)
-              Text(
-                'Showing ${_filteredTransactions.length} of ${_allTransactions.length} transactions',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              // Results count
 
-              const SizedBox(height: 8),
 
-              // ✅ Wrap instead of Row (NO OVERFLOW)
+              // Balance summary
+              // Balance summary (RESPONSIVE – NO OVERFLOW)
               Wrap(
+
                 spacing: 8,
                 runSpacing: 6,
+                alignment: WrapAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       'Debit: ${_formatCurrency(totals.debit)}',
@@ -559,13 +517,10 @@ class _DayBookHistoryState extends State<DayBookHistory> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       'Credit: ${_formatCurrency(totals.credit)}',
@@ -578,6 +533,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
                   ),
                 ],
               ),
+
             ],
           ),
         );
@@ -613,7 +569,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
               return _buildEmptyState();
             }
 
-            return _buildTransactionTable();
+            return _buildTransactionList();
           },
         );
       },
@@ -648,6 +604,10 @@ class _DayBookHistoryState extends State<DayBookHistory> {
               onPressed: _handleRefresh,
               icon: const Icon(Icons.refresh),
               label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[900],
+                foregroundColor: Colors.white,
+              ),
             ),
           ],
         ),
@@ -684,289 +644,189 @@ class _DayBookHistoryState extends State<DayBookHistory> {
     );
   }
 
-  Widget _buildTransactionTable() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Scrollbar(
-        controller: _verticalScrollController,
-        thumbVisibility: true,
-        child: Scrollbar(
-          controller: _horizontalScrollController,
-          thumbVisibility: true,
-          notificationPredicate: (notif) => notif.depth == 1,
-          child: SingleChildScrollView(
-            controller: _horizontalScrollController,
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              controller: _verticalScrollController,
-              child: DataTable(
-                headingRowColor: MaterialStateColor.resolveWith(
-                  (states) => Colors.blue[50]!,
-                ),
-                columnSpacing: 12,
-                horizontalMargin: 12,
-                dataRowMinHeight: 50,
-                dataRowMaxHeight: 60,
-                columns: const [
-                  DataColumn(
-                    label: Text(
-                      "Sr No",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    numeric: true,
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Date",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Mobile",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Particular",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Type",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Debit",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Credit",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Receipt",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Expense",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Image",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      "Action",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-                rows: List.generate(
-                  _filteredTransactions.length,
-                  (index) => _buildDataRow(index, _filteredTransactions[index]),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  DataRow _buildDataRow(int index, Transaction transaction) {
-    return DataRow(
-      color: MaterialStateProperty.resolveWith<Color?>((
-        Set<MaterialState> states,
-      ) {
-        if (index.isEven) {
-          return Colors.grey[50];
-        }
-        return null;
-      }),
-      cells: [
-        DataCell(Center(child: Text('${index + 1}'))),
-        DataCell(
-          SizedBox(
-            width: 100,
-            child: Text(
-              _formatDateTime(transaction.createdDateTime),
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-        ),
-        DataCell(
-          SizedBox(
-            width: 90,
-            child: Text(
-              transaction.mobileNo ?? 'N/A',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-        ),
-        DataCell(
-          SizedBox(
-            width: 120,
-            child: Tooltip(
-              message: transaction.particularName,
-              child: Text(
-                transaction.particularName,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: transaction.flag == 'Debit'
-                  ? Colors.red[50]
-                  : Colors.green[50],
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              transaction.flag,
-              style: TextStyle(
-                color: transaction.flag == 'Debit'
-                    ? Colors.red[700]
-                    : Colors.green[700],
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          transaction.debit != null
-              ? Text(
-                  _formatCurrency(transaction.debit!),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                    fontSize: 12,
-                  ),
-                )
-              : const Text('-', style: TextStyle(fontSize: 12)),
-        ),
-        DataCell(
-          transaction.credit != null
-              ? Text(
-                  _formatCurrency(transaction.credit!),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 12,
-                  ),
-                )
-              : const Text('-', style: TextStyle(fontSize: 12)),
-        ),
-        DataCell(
-          SizedBox(
-            width: 70,
-            child: Text(
-              transaction.receiptBowcherNo ?? 'N/A',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-        ),
-        DataCell(
-          SizedBox(
-            width: 70,
-            child: Text(
-              transaction.expenseBowcherNo ?? 'N/A',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-        ),
-        DataCell(_buildImageCell(transaction)),
-        DataCell(_buildActionButton(transaction)),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(Transaction transaction) {
-    return PopupMenuButton<String>(
-      onSelected: (value) {
-        switch (value) {
-          case 'view_details':
-            _handleViewDetails(transaction);
-            break;
-          case 'view_image':
-            _handleViewImage(transaction);
-            break;
-        }
+  Widget _buildTransactionList() {
+    return ListView.builder(
+      controller: _verticalScrollController,
+      padding: const EdgeInsets.all(8),
+      itemCount: _filteredTransactions.length,
+      itemBuilder: (context, index) {
+        final transaction = _filteredTransactions[index];
+        return _buildTransactionCard(index, transaction);
       },
-      itemBuilder: (BuildContext context) => [
-        const PopupMenuItem<String>(
-          value: 'view_details',
+    );
+  }
+
+  Widget _buildTransactionCard(int index, Transaction transaction) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: InkWell(
+        onTap: () => _handleViewDetails(transaction),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              Icon(Icons.remove_red_eye, size: 18, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('View Details'),
+              // Serial Number
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Center(
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Main Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // First Row: Particular Name and Date
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            transaction.particularName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatShortDate(transaction.createdDateTime),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Second Row: Details
+                    Row(
+                      children: [
+                        // Transaction Type Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: transaction.flag == 'Debit'
+                                ? Colors.red[50]
+                                : Colors.green[50],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            transaction.flag,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: transaction.flag == 'Debit'
+                                  ? Colors.red[700]
+                                  : Colors.green[700],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Receipt Voucher
+                        if (transaction.receiptBowcherNo != null &&
+                            transaction.receiptBowcherNo!.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(Icons.receipt,
+                                  size: 12, color: Colors.grey[500]),
+                              const SizedBox(width: 4),
+                              Text(
+                                'R: ${transaction.receiptBowcherNo}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Right Side: Amount and Actions
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Amount
+                  Text(
+                    _formatCurrency(transaction.amount),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: _getAmountColor(transaction.flag),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Time and Actions
+                  Row(
+                    children: [
+                      // Time
+                      Text(
+                        _formatTime(transaction.createdDateTime),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Image Icon (if available)
+                      if (transaction.hasImage)
+                        IconButton(
+                          icon: Icon(Icons.image,
+                              size: 18, color: Colors.blue[600]),
+                          onPressed: () => _handleViewImage(transaction),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+
+                      // View Details Button
+                      IconButton(
+                        icon: Icon(Icons.visibility_outlined,
+                            size: 18, color: Colors.grey[600]),
+                        onPressed: () => _handleViewDetails(transaction),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
-        ),
-        if (transaction.hasImage)
-          const PopupMenuItem<String>(
-            value: 'view_image',
-            child: Row(
-              children: [
-                Icon(Icons.image, size: 18, color: Colors.green),
-                SizedBox(width: 8),
-                Text('View Image'),
-              ],
-            ),
-          ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.blue[50],
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.blue[100]!),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Action',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.blue,
-              ),
-            ),
-            SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down, size: 16, color: Colors.blue),
-          ],
         ),
       ),
     );
@@ -1037,115 +897,269 @@ class TransactionDetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.receipt, color: Colors.blue),
-                const SizedBox(width: 8),
-                const Text(
-                  'Transaction Details',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        insetPadding: const EdgeInsets.all(16), // ✅ mobile safe margin
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: 650, // ✅ prevents overflow on small phones
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.receipt_long,
+                      color: Colors.blue[900],
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Transaction Details',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Details Grid
+              _buildDetailGrid(context),
+
+
+              const SizedBox(height: 20),
+
+              // Remarks Section
+              if (transaction.remarks != null &&
+                  transaction.remarks!.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Remarks',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: Text(
+                        transaction.remarks!,
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
+
+              if (transaction.hasImage) ...[
+                const SizedBox(height: 20),
+                const Text(
+                  'Attached Image',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    showDialog(
+                      context: context,
+                      builder: (context) =>
+                          ImageViewDialog(imageUrl: transaction.imageUrl),
+                    );
+                  },
+                  child: Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: transaction.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) =>
+                        const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.grey),
+                              SizedBox(height: 4),
+                              Text('Failed to load image'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            _buildDetailRow(
-              'Date',
-              _formatDateTime(transaction.createdDateTime),
-            ),
-            _buildDetailRow('Mobile', transaction.mobileNo ?? 'N/A'),
-            _buildDetailRow('Particular', transaction.particularName),
-            _buildDetailRow('Transaction Type', transaction.flag),
-            _buildDetailRow('Amount', _formatCurrency(transaction.amount)),
-            if (transaction.debit != null)
-              _buildDetailRow('Debit', _formatCurrency(transaction.debit!)),
-            if (transaction.credit != null)
-              _buildDetailRow('Credit', _formatCurrency(transaction.credit!)),
-            if (transaction.totalBalance != null)
-              _buildDetailRow(
-                'Balance',
-                _formatCurrency(transaction.totalBalance!),
-              ),
-            _buildDetailRow('Remarks', transaction.remarks ?? 'N/A'),
-            _buildDetailRow(
-              'Receipt Voucher',
-              transaction.receiptBowcherNo ?? 'N/A',
-            ),
-            _buildDetailRow(
-              'Expense Voucher',
-              transaction.expenseBowcherNo ?? 'N/A',
-            ),
-            _buildDetailRow('Remark', transaction.remark ?? 'N/A'),
-            if (transaction.hasImage) ...[
-              const SizedBox(height: 16),
-              const Text(
-                'Image:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pop();
-                  showDialog(
-                    context: context,
-                    builder: (context) =>
-                        ImageViewDialog(imageUrl: transaction.imageUrl),
-                  );
-                },
-                child: Container(
-                  height: 100,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
+
+              const SizedBox(height: 20),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      label: const Text('Close'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                  child: CachedNetworkImage(
-                    imageUrl: transaction.imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) =>
-                        const Center(child: CircularProgressIndicator()),
-                    errorWidget: (context, url, error) =>
-                        const Center(child: Icon(Icons.error)),
-                  ),
-                ),
+                  const SizedBox(width: 12),
+                  if (transaction.hasImage)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          showDialog(
+                            context: context,
+                            builder: (context) =>
+                                ImageViewDialog(imageUrl: transaction.imageUrl),
+                          );
+                        },
+                        icon: const Icon(Icons.image),
+                        label: const Text('View Image'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[900],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
-          ],
+          ),
         ),
       ),
+        ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+
+  Widget _buildDetailGrid(BuildContext context) {
+    final isSmallScreen = MediaQuery.of(context).size.width < 360;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: _detailItems().map((item) {
+            return SizedBox(
+              width: isSmallScreen
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth / 2) - 6,
+              child: _buildDetailItem(item.$1, item.$2),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+
+  List<(String, String)> _detailItems() {
+    return [
+      ('Date', _formatDateTime(transaction.createdDateTime)),
+      ('Mobile', transaction.mobileNo ?? 'N/A'),
+      ('Particular', transaction.particularName),
+      ('Type', transaction.flag),
+      ('Amount', _formatCurrency(transaction.amount)),
+      if (transaction.debit != null)
+        ('Debit', _formatCurrency(transaction.debit!)),
+      if (transaction.credit != null)
+        ('Credit', _formatCurrency(transaction.credit!)),
+      if (transaction.totalBalance != null)
+        ('Balance', _formatCurrency(transaction.totalBalance!)),
+      ('Receipt No.', transaction.receiptBowcherNo ?? 'N/A'),
+      ('Expense No.', transaction.expenseBowcherNo ?? 'N/A'),
+      if (transaction.remark != null && transaction.remark!.isNotEmpty)
+        ('Remark', transaction.remark!),
+    ];
+  }
+
+
+
+  Widget _buildDetailItem(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
             ),
           ),
-          Expanded(child: Text(value)),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+            softWrap: true,
+          ),
         ],
       ),
     );
   }
+
+
+
 
   String _formatCurrency(double amount) {
     return '₹${NumberFormat('#,##0.00').format(amount)}';
@@ -1154,7 +1168,7 @@ class TransactionDetailDialog extends StatelessWidget {
   String _formatDateTime(String dateTimeString) {
     try {
       final DateTime dateTime = DateTime.parse(dateTimeString);
-      return DateFormat('dd-MMM-yyyy HH:mm').format(dateTime);
+      return DateFormat('dd-MMM-yyyy, HH:mm').format(dateTime);
     } catch (e) {
       return dateTimeString;
     }

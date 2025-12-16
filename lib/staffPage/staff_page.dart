@@ -1,6 +1,10 @@
 import 'dart:io';
-import 'package:bookworld/staffPage/staffhistory.dart';
+import 'package:bookworld/staffPage/schoolAgent.dart';
+
+import '/staffPage/staffhistory.dart';
+
 import 'package:bookworld/staffPage/surver_detail.dart';
+import 'package:bookworld/Model/survey_model.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:bookworld/staffPage/addSchoolPage.dart';
 import 'package:bookworld/staffPage/attendanceCheckIn.dart';
@@ -132,7 +136,7 @@ class _StaffPageState extends State<StaffPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => staffhistory(),
+                  builder: (_) => StaffHistoryPage(mobileNo: '',),
                 ),
               );
             },
@@ -279,11 +283,19 @@ class _StaffPageState extends State<StaffPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => staffhistory()),
+                    MaterialPageRoute(
+                      builder: (_) => const HistoryPage(mobileNo: '',),
+                    ),
                   );
                 },
-                child: _dashboardItem(Icons.history, "Attendance History", Colors.orange),
+                child: _dashboardItem(
+                  Icons.history,
+                  "Attendance History",
+                  Colors.orange,
+                ),
               ),
+
+
 
 
 
@@ -332,6 +344,16 @@ class _StaffPageState extends State<StaffPage> {
                   );
                 },
                 child: _dashboardItem(Icons.search, "Add Survey", Colors.cyan),
+              ),
+
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SchoolAgentPage()),// school agent
+                  );
+                },
+                child: _dashboardItem(Icons.cast_for_education, "Add school list", Colors.cyan),
               ),
             ],
 
