@@ -88,18 +88,34 @@ class _StaffPageState extends State<StaffPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              // 🔥 ADD ANIMATED BANNER BELOW APPBAR
               AnimatedBanner(),
-              SizedBox(height: 20),
-
+              const SizedBox(height: 20),
               _dashboardOverview(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 80), // ⬅️ SPACE FOR FOOTER
             ],
           ),
         ),
       ),
+
+      // 🔥 ADD THIS
+      bottomNavigationBar: AnimatedFooter(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+
+          // OPTIONAL: NAVIGATION LOGIC
+          if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const HistoryPage(mobileNo: '')));
+          }
+          if (index == 3) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => StaffHistoryPage(mobileNo: staffMobile)));
+          }
+        },
+      ),
     );
+
   }
 
   // ---------------------------------------------------
@@ -242,7 +258,7 @@ class _StaffPageState extends State<StaffPage> {
             ],
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
 
           GridView.count(
             crossAxisCount: 4,
@@ -350,7 +366,7 @@ class _StaffPageState extends State<StaffPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => SchoolAgentPage()),// school agent
+                    MaterialPageRoute(builder: (_) => schoolAgent()),// school agent
                   );
                 },
                 child: _dashboardItem(Icons.cast_for_education, "Add school list", Colors.cyan),
@@ -362,6 +378,7 @@ class _StaffPageState extends State<StaffPage> {
       ),
     );
   }
+
 
   Widget _dashboardItem(IconData icon, String title, Color color) {
     return Column(
@@ -487,6 +504,112 @@ class _StaffPageState extends State<StaffPage> {
     }
   }
 }
+// ---------------------------------------------------
+// 🔥 ANIMATED FOOTER (CUSTOM BOTTOM BAR)
+// ---------------------------------------------------
+class AnimatedFooter extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const AnimatedFooter({
+    Key? key,
+    required this.currentIndex,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 72, // ✅ reduced height
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _item(Icons.grid_view, "Dashboard", 0),
+          _item(Icons.history, "Attendance history", 1),
+          _item(Icons.search, "Search", 2),
+          _item(Icons.account_circle, "profile", 3),
+          _item(Icons.bar_chart, "Reports", 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _item(IconData icon, String label, int index) {
+    final bool isSelected = currentIndex == index;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onTap(index),
+      child: SizedBox(
+        width: 64,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 🔥 ICON ANIMATION
+            AnimatedScale(
+              scale: isSelected ? 1.25 : 1.0,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected
+                    ? const Color(0xFF0C6BE3)
+                    : Colors.grey.shade500,
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // 🔥 TEXT SMOOTH SLIDE + FADE
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.4),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: isSelected
+                  ? Text(
+                label,
+                key: ValueKey(label),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0C6BE3),
+                ),
+              )
+                  : const SizedBox(key: ValueKey("empty")),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
 
 // -------------------------------------------------------------
 // ANIMATED BANNER WIDGET (BEAUTIFUL SLIDE + GRADIENT)

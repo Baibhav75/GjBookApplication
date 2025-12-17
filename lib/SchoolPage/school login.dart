@@ -129,12 +129,17 @@ class _SchoolLoginPageState extends State<SchoolLoginPage> {
                 const SizedBox(height: 30),
 
                 // Header
-                Icon(
-                  Icons.school,
-                  size: 80,
-                  color: Colors.orange[800],
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/MOLL Services Logo.png',
+                    width: 95,
+                    height: 95,
+                    fit: BoxFit.contain,
+                  ),
                 ),
-                const SizedBox(height: 20),
+
+                const SizedBox(height: 10),
                 Text(
                   'School Portal',
                   style: TextStyle(

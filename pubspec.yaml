@@ -53,6 +53,7 @@ dependencies:
   file_picker: ^10.3.6
   open_file: ^3.5.10
   flutter_screenutil: ^5.9.3
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:
@@ -66,8 +67,8 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/GJlapplogo.png"
-  adaptive_icon_foreground: "assets/GJlapplogo.png"
+  image_path: "assets/appicon.png"
+  adaptive_icon_foreground: "assets/appicon.png"
   adaptive_icon_background: "#FFFFFF"
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -91,6 +92,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/bookimg.png
+    - assets/MOLL Services Logo.png
+    - assets/G17 book word.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

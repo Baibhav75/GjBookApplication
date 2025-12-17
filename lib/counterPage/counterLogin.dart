@@ -67,10 +67,19 @@ class _CounterLoginPageState extends State<CounterLoginPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 25),
 
-            Icon(Icons.point_of_sale, size: 85, color: primaryColor),
-            const SizedBox(height: 15),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                'assets/MOLL Services Logo.png',
+                width: 125,
+                height: 125,
+                fit: BoxFit.contain,
+              ),
+            ),
+
+            const SizedBox(height: 10),
 
             Text(
               "Counter Portal",

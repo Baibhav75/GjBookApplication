@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
-
 import 'agentStaffPage.dart';
+import 'getManPage.dart';
 
-class agentStaffLoginPage extends StatefulWidget {
-  const agentStaffLoginPage({Key? key}) : super(key: key);
+class AgentStaffLoginPage extends StatefulWidget {
+  const AgentStaffLoginPage({Key? key}) : super(key: key);
 
   @override
-  State<agentStaffLoginPage> createState() => _StaffLoginPageState();
+  State<AgentStaffLoginPage> createState() => _AgentStaffLoginPageState();
 }
 
-class _StaffLoginPageState extends State<agentStaffLoginPage> {
+class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
+
+  // ✅ POSITION DROPDOWN
+  String? _selectedPosition;
+  final List<String> _positions = [
+    "GetMan",
+    "Staff Login",
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +29,7 @@ class _StaffLoginPageState extends State<agentStaffLoginPage> {
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: const Text(
-          "Staff Login ",
+          "Staff Login",
           style: TextStyle(color: Colors.white, fontSize: 20),
         ),
         leading: IconButton(
@@ -37,13 +45,20 @@ class _StaffLoginPageState extends State<agentStaffLoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Icon
-              Icon(Icons.group, size: 80, color: Colors.blue),
+              /// LOGO
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/MOLL Services Logo.png',
+                  width: 125,
+                  height: 125,
+                  fit: BoxFit.contain,
+                ),
+              ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
 
-              // Title
-              Text(
+              const Text(
                 "Staff Login",
                 style: TextStyle(
                   fontSize: 26,
@@ -54,15 +69,13 @@ class _StaffLoginPageState extends State<agentStaffLoginPage> {
 
               const SizedBox(height: 40),
 
-              // MOBILE NUMBER FIELD
+              /// MOBILE NUMBER
               TextField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
                   hintText: "Mobile Number",
                   prefixIcon: const Icon(Icons.phone_android),
-                  filled: true,
-                  fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -71,7 +84,7 @@ class _StaffLoginPageState extends State<agentStaffLoginPage> {
 
               const SizedBox(height: 20),
 
-              // PASSWORD FIELD
+              /// PASSWORD
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -90,8 +103,31 @@ class _StaffLoginPageState extends State<agentStaffLoginPage> {
                       });
                     },
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// ✅ CHOOSE POSITION
+              DropdownButtonFormField<String>(
+                value: _selectedPosition,
+                hint: const Text("Choose Position"),
+                items: _positions.map((position) {
+                  return DropdownMenuItem<String>(
+                    value: position,
+                    child: Text(position),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPosition = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.work),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -100,7 +136,7 @@ class _StaffLoginPageState extends State<agentStaffLoginPage> {
 
               const SizedBox(height: 30),
 
-              // LOGIN BUTTON
+              /// LOGIN BUTTON
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -112,17 +148,41 @@ class _StaffLoginPageState extends State<agentStaffLoginPage> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const agentStaffHomePage ()),
-                    );
+                    if (_mobileController.text.isEmpty ||
+                        _passwordController.text.isEmpty ||
+                        _selectedPosition == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Please fill all fields"),
+                        ),
+                      );
+                      return;
+                    }
+
+                    // ✅ ROLE BASED LOGIN
+                    if (_selectedPosition == "GetMan") {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const GetManPage(),
+                        ),
+                      );
+                    } else if (_selectedPosition == "Staff Login") {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const agentStaffHomePage(),
+                        ),
+                      );
+                    }
                   },
+
                   child: const Text(
                     "Login",
                     style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),

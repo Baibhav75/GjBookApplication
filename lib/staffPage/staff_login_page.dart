@@ -94,10 +94,22 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
         child: Form(
           key: _formKey,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 30),
-              Icon(Icons.people, size: 90, color: Colors.green[800]),
-              const SizedBox(height: 10),
+              // Logo
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  'assets/MOLL Services Logo.png',
+                  width: 98, // increased size
+                  height: 98,
+                  fit: BoxFit.contain,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Title
               Text(
                 "AgentStaff Portal",
                 style: TextStyle(
@@ -106,19 +118,24 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                   color: Colors.green[800],
                 ),
               ),
+
               const SizedBox(height: 30),
 
               // Mobile Number
               TextFormField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
-                decoration: _inputDecoration("Mobile Number", Icons.phone_android),
+                decoration: _inputDecoration(
+                  "Mobile Number",
+                  Icons.phone_android,
+                ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return "Enter mobile number";
                   if (v.length < 10) return "Invalid number";
                   return null;
                 },
               ),
+
               const SizedBox(height: 20),
 
               // Password
@@ -129,8 +146,12 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                   labelText: "Password",
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+                    icon: Icon(
+                      _obscure ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() => _obscure = !_obscure);
+                    },
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -143,22 +164,8 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
 
-              // Employee Type Dropdown
-             /* DropdownButtonFormField<String>(
-                value: dropdownEmployeeType,
-                items: ["Agent", "Staff", "Admin"]
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    dropdownEmployeeType = v!;
-                  });
-                },
-                decoration: _inputDecoration("Employee Type", Icons.person),
-              ),*/
-              /*const SizedBox(height: 30),*/
+              const SizedBox(height: 30),
 
               // Login Button
               SizedBox(
@@ -168,26 +175,33 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green[800],
-                    foregroundColor: Colors.white, // This makes the text color white
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
                       : const Text(
                     "Login",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white, // Alternative: set color directly in TextStyle
                     ),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
+
       ),
     );
   }

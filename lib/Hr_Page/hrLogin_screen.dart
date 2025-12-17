@@ -147,15 +147,24 @@ class _hrLoginScreenState extends State<hrLoginScreen>
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 25),
 
                 ScaleTransition(
                   scale: iconScale,
                   child:
-                  Icon(Icons.work_outline, size: 90, color: primaryGreen),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      'assets/MOLL Services Logo.png',
+                      width: 125,
+                      height: 125,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
                 FadeTransition(
                   opacity: fade1,

@@ -189,12 +189,19 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   Widget _buildHeader() {
     return Column(
       children: [
-        Icon(
-          Icons.admin_panel_settings,
-          size: _headerIconSize,
-          color: _primaryColor,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            'assets/MOLL Services Logo.png',
+            width: 125,
+            height: 125,
+            fit: BoxFit.contain,
+          ),
         ),
-        const SizedBox(height: 20),
+
+
+
+        const SizedBox(height: 10),
         Text(
           'Admin Portal',
           style: TextStyle(

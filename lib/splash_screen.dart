@@ -9,69 +9,85 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
   late Animation<double> _textOpacityAnimation;
+  late Animation<double> _rotationAnimation;
+
   final AuthService _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize animation controller
+    // Animation Controller (slower for clarity)
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 2800),
     );
 
-    // Create scale animation (big to small)
+    // Scale Animation (BIG to normal)
     _scaleAnimation = Tween<double>(
-      begin: 2.5, // Start very big
-      end: 1.0,   // End at normal size
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.elasticOut,
-    ));
+      begin: 3.2,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
 
-    // Create opacity animation for image (fade in)
+    // Image Opacity Animation
     _opacityAnimation = Tween<double>(
-      begin: 0.0, // Start invisible
-      end: 1.0,   // End fully visible
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInCubic,
-    ));
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.1, 0.8, curve: Curves.easeIn),
+      ),
+    );
 
-    // Create opacity animation for text (delayed fade in)
+    // Text Opacity Animation (delayed)
     _textOpacityAnimation = Tween<double>(
-      begin: 0.0, // Start invisible
-      end: 1.0,   // End fully visible
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.3, 1.0, curve: Curves.easeIn), // Start after image animation
-    ));
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
+      ),
+    );
 
-    // Start animation
+    // Rotation Animation (slight tilt)
+    _rotationAnimation = Tween<double>(
+      begin: -0.15,
+      end: 0.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
     _controller.forward();
-
     _navigateToAppropriateScreen();
   }
 
-  _navigateToAppropriateScreen() async {
-    // Wait for animation and minimum splash time
+  Future<void> _navigateToAppropriateScreen() async {
     await Future.delayed(const Duration(seconds: 3));
-    
+
     if (!mounted) return;
-    
-    // Check for stored credentials and auto-login
+
     final initialScreen = await _authService.getInitialScreen();
-    
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => initialScreen),
+        MaterialPageRoute(builder: (_) => initialScreen),
       );
     }
   }
@@ -93,52 +109,47 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animated Image with scale and opacity
+                // Animated Logo
                 Opacity(
                   opacity: _opacityAnimation.value,
-                  child: Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(40),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.3 * _opacityAnimation.value),
-                            blurRadius: 30,
-                            spreadRadius: 5,
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(40),
-                        child: Image.asset(
-                          'assets/images/bookimg.png',
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback if image not found
-                            return Container(
-                              decoration: BoxDecoration(
+                  child: Transform.rotate(
+                    angle: _rotationAnimation.value,
+                    child: Transform.scale(
+                      scale: _scaleAnimation.value,
+                      child: Container(
+                        width: 220,
+                        height: 220,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white
+                                  .withOpacity(0.6 * _opacityAnimation.value),
+                              blurRadius: 45,
+                              spreadRadius: 12,
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.25),
+                              blurRadius: 25,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(40),
+                          child: Image.asset(
+                            'assets/MOLL Services Logo.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(40),
-                              ),
-                              child: Image.asset(
-                                'assets/bookimg.png',
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.contain,
-                              ),
-
-                            );
-                          },
+                                child: Image.asset(
+                                  'assets/bookimg.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -147,16 +158,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                 const SizedBox(height: 40),
 
-                // App title with delayed fade animation
+                // App Title
                 Opacity(
                   opacity: _textOpacityAnimation.value,
-                  child: Text(
+                  child: const Text(
                     'GJ Book World',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      letterSpacing: 2.0,
+                      letterSpacing: 2,
                       shadows: [
                         Shadow(
                           blurRadius: 15,
@@ -170,10 +181,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                 const SizedBox(height: 15),
 
-                // Subtitle with delayed fade animation
+                // Subtitle
                 Opacity(
                   opacity: _textOpacityAnimation.value,
-                  child: Text(
+                  child: const Text(
                     'Education Management System',
                     style: TextStyle(
                       fontSize: 18,
@@ -186,20 +197,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                 const SizedBox(height: 50),
 
-                // Loading indicator with delayed appearance
+                // Loader
                 Opacity(
-                  opacity: _controller.value > 0.7 ? 1.0 : 0.0,
+                  opacity: _controller.value > 0.75 ? 1.0 : 0.0,
                   child: Column(
-                    children: [
+                    children: const [
                       CircularProgressIndicator(
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        color: Colors.white,
                         strokeWidth: 3,
                       ),
-                      const SizedBox(height: 20),
-                      const Text(
+                      SizedBox(height: 20),
+                      Text(
                         'Loading...',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: Colors.white,
                           fontSize: 14,
                         ),
                       ),
