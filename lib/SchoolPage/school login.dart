@@ -74,26 +74,7 @@ class _SchoolLoginPageState extends State<SchoolLoginPage> {
     });
   }
 
-  void _quickLogin() async {
-    // Save counter-like credentials (no user input required)
-    try {
-      await _storageService.saveSchoolCredentials(
-        schoolId: _defaultSchoolId,
-        username: _defaultUsername,
-        password: _defaultPassword,
-      );
-    } catch (e) {
-      print('Error saving credentials: $e');
-    }
-    
-    // Direct login without any credentials
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const SchoolPageScreen()),
-      );
-    }
-  }
+
 
   @override
   void dispose() {
@@ -242,7 +223,7 @@ class _SchoolLoginPageState extends State<SchoolLoginPage> {
                       ),
                     )
                         : const Text(
-                      'Login to School Portal',
+                      'Login',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -253,90 +234,8 @@ class _SchoolLoginPageState extends State<SchoolLoginPage> {
                 const SizedBox(height: 15),
 
                 // Quick Login Button (No credentials needed)
-                SizedBox(
-                  width: double.infinity,
-                  height: 45,
-                  child: OutlinedButton(
-                    onPressed: _quickLogin,
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      side: BorderSide(color: Colors.green[400]!),
-                    ),
-                    child: Text(
-                      'Quick Login (No Credentials)',
-                      style: TextStyle(
-                        color: Colors.green[600],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
 
                 // Auto-fill Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 45,
-                  child: OutlinedButton(
-                    onPressed: _autoFillCredentials,
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      side: BorderSide(color: Colors.orange[300]!),
-                    ),
-                    child: Text(
-                      'Auto-fill Demo Credentials',
-                      style: TextStyle(
-                        color: Colors.orange[800],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Info Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.orange[100]!),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Demo Credentials (Optional)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange[900],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'School ID: $_defaultSchoolId\nUsername: $_defaultUsername\nPassword: $_defaultPassword',
-                        style: TextStyle(
-                          color: Colors.orange[800],
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'You can use Quick Login button to skip credential entry',
-                        style: TextStyle(
-                          color: Colors.orange[700],
-                          fontSize: 10,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),

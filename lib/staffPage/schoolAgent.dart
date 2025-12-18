@@ -5,6 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:bookworld/Model/school_agent_Model.dart';
 import 'package:bookworld/services/school_agent_service.dart';
 import 'dart:async'; // For Timer/Debounce
+import '/Service/update_school_by_agent_service.dart';
+import 'package:bookworld/Model/update_school_by_agent_model.dart';
+
 
 class schoolAgent extends StatefulWidget {
   const schoolAgent({Key? key}) : super(key: key);
@@ -188,6 +191,9 @@ class _schoolAgentState extends State<schoolAgent> {
   final TextEditingController _ownerHouseAddressCtl = TextEditingController();
   final TextEditingController _ownerCurrentAddressCtl = TextEditingController();
   final TextEditingController _ownerEmailIdCtl = TextEditingController();
+
+  final UpdateSchoolByAgentService _updateService =
+  UpdateSchoolByAgentService();
 
   bool _willPrincipalChange = false;
 
@@ -551,20 +557,11 @@ class _schoolAgentState extends State<schoolAgent> {
     _ownerCurrentAddressCtl.dispose();
     _ownerEmailIdCtl.dispose();
 
-
-
-
-
-
-
-
-
     _debounce?.cancel();
     _agentIdCtl.removeListener(_onAgentIdChanged);
     super.dispose();
 
   }
-
   // ---------------------------
   // Image picker helper
   // ---------------------------
@@ -576,7 +573,6 @@ class _schoolAgentState extends State<schoolAgent> {
       });
     }
   }
-
   // ---------------------------
   // Reusable widgets
   // ---------------------------
@@ -702,119 +698,59 @@ class _schoolAgentState extends State<schoolAgent> {
   // ---------------------------
   // Save / Submit handler
   // ---------------------------
-  void _onSave() {
+  void _onSave() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fix validation errors')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fix validation errors')),
+      );
       return;
     }
 
-    // Collect class-wise list
-    final classCounts = <int>[];
-    for (final ctl in _classCtrls) {
-      final v = int.tryParse(ctl.text.trim()) ?? 0;
-      classCounts.add(v);
+    // 🔹 Find selected school
+    Data? selectedSchool;
+    try {
+      selectedSchool = _fetchedSchools.firstWhere(
+            (s) => s.schoolName == _selectedSchoolCtl.text.trim(),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a valid school')),
+      );
+      return;
     }
 
-    final payload = <String, dynamic>{
-      'agentId': _agentIdCtl.text.trim(),
-      'agentName': _agentNameCtl.text.trim(),
+    setState(() => _isLoading = true);
 
-      'selectedSchool': _selectedSchoolCtl.text.trim(),
-      'schoolName': _schoolNameCtl.text.trim(),
-      'address': _addressCtl.text.trim(),
-      'district': _districtCtl.text.trim(),
-      'tahsil': _tahsilCtl.text.trim(),
-      'block': _blockCtl.text.trim(),
-      'village': _villageCtl.text.trim(),
-      'mobile': _mobileCtl.text.trim(),
-      'rentalOrOwn': _rentalOwnIndex == 0 ? 'Rent' : 'Own',
-      'areaOfSchool': _areaCtl.text.trim(),
-      'totalLab': _totalLabCtl.text.trim(),
-      'conferenceHall': _conferenceCtl.text.trim(),
-      'buildingFloor': _buildingFloorCtl.text.trim(),
-      'playgroundArea': _playgroundCtl.text.trim(),
-      'prabandhak': {
-        'name': _prabandhakNameCtl.text.trim(),
-        'mobile': _prabandhakMobileCtl.text.trim(),
-        'wakeupTime': _prabandhakWakeupCtl.text.trim(),
-        'sleepingTime': _prabandhakSleepCtl.text.trim(),
-        'address': _prabandhakAddressCtl.text.trim(),
-      },
-      'principal': {
-        'name': _principalNameCtl.text.trim(),
-        'mobile': _principalMobileCtl.text.trim(),
-        'wakeupTime': _principalWakeupCtl.text.trim(),
-        'sleepingTime': _principalSleepCtl.text.trim(),
-        'callTime': _principalCallTimeCtl.text.trim(),
-        'address': _principalAddressCtl.text.trim(),
-      },
-      'facilities': {
-        'classRooms': _classRoomsCtl.text.trim(),
-        'chemistryLab': _chemistryLabCtl.text.trim(),
-        'biologyLab': _biologyLabCtl.text.trim(),
-        'compositeScienceLab': _compositeLabCtl.text.trim(),
-        'mathLab': _mathLabCtl.text.trim(),
-        'computerLab': _computerLabCtl.text.trim(),
-        'library': _libraryCtl.text.trim(),
-        'toiletFloorwise': _toiletFloorwiseCtl.text.trim(),
-        'drinkingWaterFloorwise': _drinkingWaterCtl.text.trim(),
-        'rampOrLift': _rampLiftCtl.text.trim(),
-        'indoorGameRoom': _indoorGameCtl.text.trim(),
-        'musicActivityRoom': _musicRoomCtl.text.trim(),
-        'infirmaryRoom': _infirmaryCtl.text.trim(),
-        'principalRoom': _principalRoomCtl.text.trim(),
-        'staffRoom': _staffRoomCtl.text.trim(),
-        'officeRoom': _officeRoomCtl.text.trim(),
-        'wellnessRoom': _wellnessRoomCtl.text.trim(),
-      },
-      'classWiseCounts': {
-        'nursery': int.tryParse(_nurseryCtl.text.trim()) ?? 0,
-        'lkg': int.tryParse(_lkgCtl.text.trim()) ?? 0,
-        'ukg': int.tryParse(_ukgCtl.text.trim()) ?? 0,
-        'classes': classCounts, // Class 1..12
-        // ⭐ NEW LINE ADDED
-        'totalStudents': int.tryParse(_totalStudentsCtl.text.trim()) ?? 0,
+    try {
+      final request = UpdateSchoolByAgentRequest(
+        id: selectedSchool.id!,
+        agentId: _agentIdCtl.text.trim(),
+        schoolAddress: _addressCtl.text.trim(),
+        district: _districtCtl.text.trim(),
+      );
 
-      },
-      'schoolDetails': {
-        'establishYear': _establishYearCtl.text.trim(),
-        'schoolType': _selectedSchoolType,
-        'medium': _selectedMedium,
-        'board': _selectedBoard,
-        'branchAvailable': _branchAvailable,
-        'areaType': _selectedAreaType,
-        'nearbySchool': _nearbySchoolCtl.text.trim(),
-      },
-      'photoProvided': _pickedImage != null,
+      final response = await _updateService.updateSchool(request);
 
-      'feeStructure': {
-        'nurseryToUkgFee': _feeNurUkgCtl.text.trim(),
-        'nurseryToUkgYearly': _feeNurUkgYearlyCtl.text.trim(),
-        'class1To5Fee': _feeClass1to5Ctl.text.trim(),
-        'class1To5Yearly': _feeClass1to5YearlyCtl.text.trim(),
-        'class6To8Fee': _feeClass6to8Ctl.text.trim(),
-        'class9To10Fee': _feeClass9to10Ctl.text.trim(),
-        'class11To12Fee': _feeClass11to12Ctl.text.trim(),
-        'class11To12Yearly': _feeClass11to12YearlyCtl.text.trim(),
-      },
-      'teacherTable': List.generate(_classList.length, (i) => {
-        'class': _classList[i],
-        'teacher': _teacherNameCtrls[i].text.trim(),
-        'subject': _subjectCtrls[i].text.trim(),
-        'mobile': _teacherMobileCtrls[i].text.trim(),
-        'publication': _publicationCtrls[i].text.trim(),
-      }),
+      if (!mounted) return;
 
-
-    };
-
-    // For demonstration we print payload and show success
-    // Replace this with your API call (multipart if sending image)
-    // ignore: avoid_print
-    print('Ready to submit payload: ${payload.toString()}');
-
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('School saved (demo).')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Update failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
+
 
   // ---------------------------
   // Layout
@@ -872,8 +808,6 @@ class _schoolAgentState extends State<schoolAgent> {
                             ? Transform.scale(scale: 0.5, child: const CircularProgressIndicator()) 
                             : null,
                       ),
-
-
                       _buildTextInput(
                         label: 'AgentStaff Name',
                         controller: _agentNameCtl,

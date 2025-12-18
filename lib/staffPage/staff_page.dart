@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:bookworld/staffPage/schoolAgent.dart';
 
 import '/staffPage/staffhistory.dart';
+import '/staffPage/add_school_survey_page.dart';
 
 import 'package:bookworld/staffPage/surver_detail.dart';
 import 'package:bookworld/Model/survey_model.dart';
@@ -366,11 +367,12 @@ class _StaffPageState extends State<StaffPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => schoolAgent()),// school agent
+                    MaterialPageRoute(builder: (_) =>AddSchoolSurveyPage ()),// school agent
                   );
                 },
                 child: _dashboardItem(Icons.cast_for_education, "Add school list", Colors.cyan),
               ),
+
             ],
 
           ),
