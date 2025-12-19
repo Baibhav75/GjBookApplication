@@ -24,7 +24,10 @@ class Attendance {
   final int id;
   final String employeeId;
   final String employeeName;
+
+  /// 👇 ACTUAL MOBILE FIELD FROM API
   final String mobile;
+
   final String? workDuration;
   final DateTime checkInTime;
   final DateTime? checkOutTime;
@@ -47,9 +50,14 @@ class Attendance {
     this.checkOutImage,
   });
 
+  /// ⭐ IMPORTANT GETTER
+  /// AttendanceService me item.empMobNo use ho raha hai
+  /// Isliye hum yahan mapping de rahe hain
+  String get empMobNo => mobile;
+
   factory Attendance.fromJson(Map<String, dynamic> json) {
     return Attendance(
-      id: json['Id'],
+      id: json['Id'] ?? 0,
       employeeId: json['EmployeeId'] ?? '',
       employeeName: json['Emp_Name'] ?? '',
       mobile: json['EmpMobNo'] ?? '',

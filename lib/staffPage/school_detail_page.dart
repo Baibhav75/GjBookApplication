@@ -1,5 +1,7 @@
+import 'package:bookworld/staffPage/schoolAgent.dart';
 import 'package:flutter/material.dart';
 import '../Model/schoolByAgent_model.dart';
+import 'add_school_survey_page.dart';
 
 class SchoolDetailPage extends StatelessWidget {
   final Data school;
@@ -87,8 +89,16 @@ class SchoolDetailPage extends StatelessWidget {
               ),
             ),
             onPressed: () {
-              // TODO: navigate to edit page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => schoolAgent(
+                    agentId: school.agentId, // Pass the agent ID to the schoolAgent page
+                  ),
+                ),
+              );
             },
+
           ),
         ),
       ),

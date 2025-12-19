@@ -13,6 +13,26 @@ class agentStaffHomePage extends StatefulWidget {
 
 class _agentStaffHomePageState extends State<agentStaffHomePage> {
   int _currentIndex = 0;
+  String _staffMobileNo = ''; // Added to store staff mobile number
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStaffMobileNo(); // Load staff mobile number on init
+  }
+
+  // Method to load staff mobile number
+  void _loadStaffMobileNo() async {
+    try {
+      final storage = SecureStorageService();
+      final credentials = await storage.getStaffCredentials();
+      setState(() {
+        _staffMobileNo = credentials['mobileNo'] ?? '';
+      });
+    } catch (e) {
+      print("Error loading staff mobile number: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,8 +144,11 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
               Navigator.pop(context); // close drawer first
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => HistoryPage(mobileNo: '',)),
+                MaterialPageRoute(
+                  builder: (context) => HistoryPage(mobileNo: _staffMobileNo),
+                ),
               );
+
             },
           ),
 
@@ -254,8 +277,11 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
                 _menuItem("Attendance", Icons.done, Colors.orange, () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>  HistoryPage(mobileNo: '',)),
+                    MaterialPageRoute(
+                      builder: (context) => HistoryPage(mobileNo: _staffMobileNo),
+                    ),
                   );
+
                 }),
 
 

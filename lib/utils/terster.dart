@@ -130,9 +130,9 @@ class _StaffPageState extends State<StaffPage> {
             title: const Text("Attendance History"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const HistoryPage(mobileNo: '')),
+              // Disabled for security reasons - would show empty history
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Feature disabled for security')),
               );
             },
           ),
@@ -238,11 +238,9 @@ class _StaffPageState extends State<StaffPage> {
 
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const HistoryPage(mobileNo: '',),
-                    ),
+                  // Disabled for security reasons - would show empty history
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Feature disabled for security')),
                   );
                 },
                 child: _dashboardItem(
@@ -371,8 +369,10 @@ class _StaffPageState extends State<StaffPage> {
         setState(() => _currentIndex = index);
 
         if (index == 1) {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const HistoryPage(mobileNo: '')));
+          // Disabled for security reasons - would show empty history
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Feature disabled for security')),
+          );
         } else if (index == 2) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => AddSurvey()));
         }

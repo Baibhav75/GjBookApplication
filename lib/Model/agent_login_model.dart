@@ -5,6 +5,7 @@ class AgentLoginModel {
   final String employeeType;
   final String agentAdminEmail;
   final String agentPassword;
+  final String mobileNo; // Added mobile number field
 
   AgentLoginModel({
     required this.status,
@@ -13,6 +14,7 @@ class AgentLoginModel {
     required this.employeeType,
     required this.agentAdminEmail,
     required this.agentPassword,
+    required this.mobileNo, // Added mobile number parameter
   });
 
   factory AgentLoginModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class AgentLoginModel {
       employeeType: json['EmployeeType'] ?? "",
       agentAdminEmail: json['AgentAdminEmail'] ?? "",
       agentPassword: json['AgentPassword'] ?? "",
+      mobileNo: json['MobileNo'] ?? "", // Added mobile number from JSON
     );
   }
 }

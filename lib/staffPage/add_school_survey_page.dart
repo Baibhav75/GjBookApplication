@@ -4,7 +4,13 @@ import '../Service/school_by_agent_service.dart';
 import 'school_detail_page.dart';
 
 class AddSchoolSurveyPage extends StatefulWidget {
-  const AddSchoolSurveyPage({Key? key}) : super(key: key);
+  /// 🔑 AgentId will come dynamically (EmployeeId from Profile)
+  final String agentId;
+
+  const AddSchoolSurveyPage({
+    Key? key,
+    required this.agentId,
+  }) : super(key: key);
 
   @override
   State<AddSchoolSurveyPage> createState() => _AddSchoolSurveyPageState();
@@ -18,7 +24,6 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
   List<Data> _filteredSchools = [];
 
   bool _isLoading = true;
-  String agentId = "GJ12345678"; // 🔴 Dynamic later
 
   @override
   void initState() {
@@ -27,45 +32,66 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
     _searchController.addListener(_filterSchools);
   }
 
+  /// ---------------- FETCH SCHOOLS BY AGENT ----------------
   Future<void> _loadSchools() async {
     setState(() => _isLoading = true);
 
     try {
-      final schools = await _service.fetchSchoolsByAgent(agentId);
-      _allSchools = schools;
-      _filteredSchools = schools;
+      final schools =
+      await _service.fetchSchoolsByAgent(widget.agentId);
+
+      setState(() {
+        _allSchools = schools;
+        _filteredSchools = schools;
+      });
     } catch (e) {
-      debugPrint("Error: $e");
+      debugPrint("School fetch error: $e");
     }
 
     setState(() => _isLoading = false);
   }
 
+  /// ---------------- SEARCH FILTER ----------------
   void _filterSchools() {
     final query = _searchController.text.toLowerCase();
 
     setState(() {
       _filteredSchools = _allSchools.where((school) {
-        return (school.schoolName ?? "").toLowerCase().contains(query) ||
-            (school.principalName ?? "").toLowerCase().contains(query) ||
-            (school.prabandhakName ?? "").toLowerCase().contains(query);
+        return (school.schoolName ?? "")
+            .toLowerCase()
+            .contains(query) ||
+            (school.principalName ?? "")
+                .toLowerCase()
+                .contains(query) ||
+            (school.prabandhakName ?? "")
+                .toLowerCase()
+                .contains(query);
       }).toList();
     });
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  /// ---------------- MAIN UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F2F8),
       appBar: AppBar(
         backgroundColor: const Color(0xFF7C4DFF),
-        title: const Text("Survey List",
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Survey List",
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadSchools,
-          )
+          ),
         ],
       ),
       body: Column(
@@ -82,6 +108,7 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
     );
   }
 
+  /// ---------------- SEARCH BAR ----------------
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -101,6 +128,7 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
     );
   }
 
+  /// ---------------- HEADER ROW ----------------
   Widget _buildHeaderRow() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -119,9 +147,15 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
     );
   }
 
+  /// ---------------- SURVEY LIST ----------------
   Widget _buildSurveyList() {
     if (_filteredSchools.isEmpty) {
-      return const Center(child: Text("No schools found"));
+      return const Center(
+        child: Text(
+          "No schools found",
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
     }
 
     return ListView.builder(
@@ -142,10 +176,13 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
             children: [
               SizedBox(
                 width: 40,
-                child: Text("${index + 1}",
-                    style: const TextStyle(
-                        color: Color(0xFF7C4DFF),
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  "${index + 1}",
+                  style: const TextStyle(
+                    color: Color(0xFF7C4DFF),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               Expanded(
                 child: Text(
@@ -157,26 +194,28 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7C4DFF),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 icon: const Icon(
                   Icons.remove_red_eye,
                   size: 18,
-                  color: Colors.white, // ✅ icon white
+                  color: Colors.white,
                 ),
                 label: const Text(
                   "View",
-                  style: TextStyle(color: Colors.white), // 👈 text white
+                  style: TextStyle(color: Colors.white),
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => SchoolDetailPage(school: school),
+                      builder: (_) =>
+                          SchoolDetailPage(school: school),
                     ),
                   );
                 },
-              )
+              ),
             ],
           ),
         );
@@ -185,5 +224,6 @@ class _AddSchoolSurveyPageState extends State<AddSchoolSurveyPage> {
   }
 }
 
+/// ---------------- HEADER TEXT STYLE ----------------
 const TextStyle _headerStyle =
 TextStyle(color: Colors.white, fontWeight: FontWeight.w600);

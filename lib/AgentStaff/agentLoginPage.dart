@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'agentStaffPage.dart';
 import 'getManPage.dart';
+import '../Service/secure_storage_service.dart';
 
 class AgentStaffLoginPage extends StatefulWidget {
   const AgentStaffLoginPage({Key? key}) : super(key: key);
@@ -159,6 +160,9 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
                       return;
                     }
 
+                    // Save mobile number for later use
+                    _saveMobileNumber(_mobileController.text);
+
                     // ✅ ROLE BASED LOGIN
                     if (_selectedPosition == "GetMan") {
                       Navigator.pushReplacement(
@@ -189,4 +193,21 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
       ),
     );
   }
+
+  // Method to save mobile number
+  void _saveMobileNumber(String mobileNo) async {
+    try {
+      final storage = SecureStorageService();
+      // We'll save the mobile number with a temporary key for now
+      // In a real implementation, this would be saved properly during actual login
+      await storage.saveStaffCredentials(
+        username: mobileNo, // Using mobile as username for now
+        password: _passwordController.text,
+        mobileNo: mobileNo, // Save the mobile number
+      );
+    } catch (e) {
+      print("Error saving mobile number: $e");
+    }
+  }
 }
+

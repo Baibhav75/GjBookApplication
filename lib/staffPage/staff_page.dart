@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/staffPage/schoolAgent.dart';
 
+import '../Service/staff_profile_service.dart';
 import '/staffPage/staffhistory.dart';
 import '/staffPage/add_school_survey_page.dart';
 
@@ -29,6 +31,11 @@ class StaffPage extends StatefulWidget {
   final String password;
   final String mobile;
 
+
+
+
+
+
   const StaffPage({
     Key? key,
     required this.agentName,
@@ -51,6 +58,13 @@ class _StaffPageState extends State<StaffPage> {
   late String staffId;
   late String staffMobile;
 
+  // ✅ DASHBOARD DEFAULT DATA
+  late String userName;
+  late String mobileNo;
+  double totalTarget = 50000;
+  double expenseLimit = 15000;
+  double totalLimit = 30000;
+
   @override
   void initState() {
     super.initState();
@@ -58,9 +72,37 @@ class _StaffPageState extends State<StaffPage> {
     staffName = widget.agentName;
     staffEmail = widget.email;
     staffPosition = widget.employeeType;
-    staffId = "EMP-${widget.password}";
     staffMobile = widget.mobile;
+
+    // ✅ banner ke liye
+    userName = staffName;
+    mobileNo = staffMobile;
+
+
+    _saveEmployeeId(); // 🔥 CALL HERE
   }
+  Future<void> _saveEmployeeId() async {
+    try {
+      final service = StaffProfileService();
+      final profile = await service.fetchProfile(widget.mobile);
+
+      if (profile != null && profile.employeeId.isNotEmpty) {
+        await SecureStorageService().saveStaffCredentials(
+          username: widget.mobile,
+          password: widget.password,
+          employeeType: widget.employeeType,
+          agentName: widget.agentName,
+          employeeId: profile.employeeId, // ✅ REAL EMPLOYEE ID
+        );
+
+        debugPrint("Employee ID saved: ${profile.employeeId}");
+      }
+    } catch (e) {
+      debugPrint("Failed to save employee ID: $e");
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +131,14 @@ class _StaffPageState extends State<StaffPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AnimatedBanner(),
+              AnimatedBanner(
+                userName: staffName,
+                mobileNo: staffMobile,
+                totalTarget: 50000,
+                expenseLimit: 15000,
+                totalLimit: 30000,
+              ),
+
               const SizedBox(height: 20),
               _dashboardOverview(),
               const SizedBox(height: 80), // ⬅️ SPACE FOR FOOTER
@@ -107,11 +156,12 @@ class _StaffPageState extends State<StaffPage> {
           // OPTIONAL: NAVIGATION LOGIC
           if (index == 1) {
             Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const HistoryPage(mobileNo: '')));
+                MaterialPageRoute(builder: (_) => HistoryPage(mobileNo: staffMobile)
+                ));
           }
           if (index == 3) {
             Navigator.push(context,
-                MaterialPageRoute(builder: (_) => StaffHistoryPage(mobileNo: staffMobile)));
+                MaterialPageRoute(builder: (_) => StaffProfilePage(mobileNo: staffMobile)));
           }
         },
       ),
@@ -139,7 +189,7 @@ class _StaffPageState extends State<StaffPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => StaffHistoryPage(mobileNo: staffMobile),
+                  builder: (_) => StaffProfilePage(mobileNo: staffMobile),
                 ),
               );
             },
@@ -153,7 +203,7 @@ class _StaffPageState extends State<StaffPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => StaffHistoryPage(mobileNo: '',),
+                  builder: (_) => StaffProfilePage(mobileNo: staffMobile,),
                 ),
               );
             },
@@ -301,9 +351,10 @@ class _StaffPageState extends State<StaffPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const HistoryPage(mobileNo: '',),
+                      builder: (_) => HistoryPage(mobileNo: staffMobile),
                     ),
                   );
+
                 },
                 child: _dashboardItem(
                   Icons.history,
@@ -331,8 +382,18 @@ class _StaffPageState extends State<StaffPage> {
                 onTap: () {
                   Navigator.push(
                     context,
+                    MaterialPageRoute(builder: (_) => schoolAgent()),
+                  );
+                },
+                child: _dashboardItem(Icons.edit, "survey edit", Colors.deepPurpleAccent),
+              ),
+
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
                     MaterialPageRoute(
-                      builder: (_) => StaffHistoryPage(
+                      builder: (_) => StaffProfilePage(
                         mobileNo: staffMobile,
                       ),
                     ),
@@ -364,13 +425,32 @@ class _StaffPageState extends State<StaffPage> {
               ),
 
               GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  final storage = SecureStorageService();
+
+                  final employeeId = await storage.getStaffEmployeeId();
+
+                  if (employeeId == null || employeeId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Employee ID not found")),
+                    );
+                    return;
+                  }
+
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) =>AddSchoolSurveyPage ()),// school agent
+                    MaterialPageRoute(
+                      builder: (_) => AddSchoolSurveyPage(
+                        agentId: employeeId, // ✅ dynamic AgentId
+                      ),
+                    ),
                   );
                 },
-                child: _dashboardItem(Icons.cast_for_education, "Add school list", Colors.cyan),
+                child: _dashboardItem(
+                  Icons.cast_for_education,
+                  "Add school list",
+                  Colors.cyan,
+                ),
               ),
 
             ],
@@ -618,13 +698,27 @@ class AnimatedFooter extends StatelessWidget {
 // -------------------------------------------------------------
 
 class AnimatedBanner extends StatefulWidget {
+  final String userName;
+  final String mobileNo;
+  final double totalTarget;
+  final double expenseLimit;
+  final double totalLimit;
+
+  const AnimatedBanner({
+    Key? key,
+    required this.userName,
+    required this.mobileNo,
+    required this.totalTarget,
+    required this.expenseLimit,
+    required this.totalLimit,
+  }) : super(key: key);
+
   @override
-  _AnimatedBannerState createState() => _AnimatedBannerState();
+  State<AnimatedBanner> createState() => _AnimatedBannerState();
 }
 
 class _AnimatedBannerState extends State<AnimatedBanner>
     with SingleTickerProviderStateMixin {
-
   late AnimationController _controller;
   late Animation<Offset> _slide;
 
@@ -634,16 +728,18 @@ class _AnimatedBannerState extends State<AnimatedBanner>
 
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 2),
+      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
     _slide = Tween<Offset>(
-      begin: Offset(-0.05, 0),
-      end: Offset(0.05, 0),
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+      begin: const Offset(-0.04, 0),
+      end: const Offset(0.04, 0),
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
@@ -658,41 +754,142 @@ class _AnimatedBannerState extends State<AnimatedBanner>
       position: _slide,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               Colors.blue.shade800,
-              Colors.blue.shade500,
+              Colors.blue.shade600,
               Colors.lightBlueAccent,
             ],
           ),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black12,
+              color: Colors.black26,
               blurRadius: 8,
               offset: Offset(0, 4),
             )
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.campaign, color: Colors.white, size: 30),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                "Welcome Back! Have a productive day ahead 🚀",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+            // -------------------------------------------------
+            // TOP ROW : USER INFO
+            // -------------------------------------------------
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 22,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, color: Colors.blue, size: 26),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.userName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "📞 ${widget.mobileNo}",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.campaign, color: Colors.white, size: 26),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // -------------------------------------------------
+            // DIVIDER
+            // -------------------------------------------------
+            Container(
+              height: 1,
+              width: double.infinity,
+              color: Colors.white.withOpacity(0.3),
+            ),
+
+            const SizedBox(height: 14),
+
+            // -------------------------------------------------
+            // STATS ROW
+            // -------------------------------------------------
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _statItem(
+                  "Target",
+                  "₹${widget.totalTarget.toStringAsFixed(0)}",
+                ),
+                _statItem(
+                  "Expense",
+                  "₹${widget.expenseLimit.toStringAsFixed(0)}",
+                ),
+                _statItem(
+                  "Limit",
+                  "₹${widget.totalLimit.toStringAsFixed(0)}",
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // -------------------------------------------------
+            // FOOTER MESSAGE
+            // -------------------------------------------------
+            const Text(
+              "Have a productive day ahead 🚀",
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
-            )
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  // -------------------------------------------------
+  // SMALL STAT ITEM WIDGET
+  // -------------------------------------------------
+  Widget _statItem(String title, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

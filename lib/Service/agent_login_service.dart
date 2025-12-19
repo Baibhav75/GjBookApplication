@@ -17,7 +17,10 @@ class AgentLoginService {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        return AgentLoginModel.fromJson(jsonData);
+        // Add the mobile number to the response data
+        final modifiedData = Map<String, dynamic>.from(jsonData);
+        modifiedData['MobileNo'] = mobile;
+        return AgentLoginModel.fromJson(modifiedData);
       } else {
         return null;
       }

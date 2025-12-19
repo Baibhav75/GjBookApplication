@@ -3,18 +3,22 @@ import 'package:intl/intl.dart';
 import '/Model/attendance_history_model.dart';
 import '/Service/attendance_history_service.dart';
 
+/// A page that displays attendance history for a specific staff member
+/// 
+/// This page requires a [mobileNo] parameter to fetch the attendance records
+/// for the corresponding staff member.
 class HistoryPage extends StatefulWidget {
-  final String mobileNo; // 👈 ADD THIS
+  /// The mobile number of the staff member whose attendance history to display
+  final String mobileNo;
 
   const HistoryPage({
     super.key,
-    required this.mobileNo, // 👈 REQUIRED PARAM
+    required this.mobileNo,
   });
 
   @override
   State<HistoryPage> createState() => _StaffHistoryPageState();
 }
-
 
 class _StaffHistoryPageState extends State<HistoryPage> {
   late Future<List<Attendance>> _future;
@@ -22,12 +26,29 @@ class _StaffHistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
-    _future = AttendanceService.getAttendanceHistory(widget.mobileNo);
+    // Validate the mobile number before making the API call
+    if (widget.mobileNo.isEmpty) {
+      // We'll handle this error in the UI
+      _future = Future.error(Exception('Mobile number is required'));
+    } else {
+      _future = AttendanceService.getAttendanceHistory(widget.mobileNo);
+    }
   }
 
-
-
+  /// Reloads the attendance history data
   Future<void> _reload() async {
+    // Validate the mobile number before making the API call
+    if (widget.mobileNo.isEmpty) {
+      // Show an error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mobile number is required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     setState(() {
       _future = AttendanceService.getAttendanceHistory(widget.mobileNo);
     });
@@ -35,13 +56,11 @@ class _StaffHistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-     return Scaffold(
+    return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         backgroundColor: Colors.blue,
         elevation: 1,
-
-        // ✅ Title text white
         title: const Text(
           "Staff Attendance",
           style: TextStyle(
@@ -49,34 +68,85 @@ class _StaffHistoryPageState extends State<HistoryPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-
-        // ✅ Back button & action icons white
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
-
-        // (optional) status bar icon brightness
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: RefreshIndicator(
         onRefresh: _reload,
         child: FutureBuilder<List<Attendance>>(
           future: _future,
           builder: (context, snapshot) {
+            // ================= LOADING =================
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Loading attendance history...'),
+                  ],
+                ),
+              );
             }
 
+            // ================= ERROR =================
             if (snapshot.hasError) {
-              return Center(child: Text(snapshot.error.toString()));
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Error loading attendance history',
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      snapshot.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _reload,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
             }
 
             final data = snapshot.data ?? [];
 
+            // ================= EMPTY =================
             if (data.isEmpty) {
-              return const Center(child: Text("No attendance found"));
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.history_toggle_off,
+                        size: 48, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No attendance records found',
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your attendance history will appear here once you check in.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              );
             }
 
+            // ================= LIST =================
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: data.length,
@@ -88,10 +158,9 @@ class _StaffHistoryPageState extends State<HistoryPage> {
         ),
       ),
     );
-
   }
 
-  // ================= CARD UI =================
+  // ================= ATTENDANCE CARD =================
 
   Widget _attendanceCard(Attendance a) {
     final dateFmt = DateFormat('dd MMM yyyy');
@@ -107,12 +176,11 @@ class _StaffHistoryPageState extends State<HistoryPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // HEADER
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor:
-                  completed ? Colors.green : Colors.orange,
+                  backgroundColor: completed ? Colors.green : Colors.orange,
                   child: Text(
                     a.employeeName.isNotEmpty ? a.employeeName[0] : "?",
                     style: const TextStyle(
@@ -160,7 +228,8 @@ class _StaffHistoryPageState extends State<HistoryPage> {
               ],
             ),
 
-            if (a.checkInLocation != null || a.checkOutLocation != null) ...[
+            if (a.checkInLocation != null ||
+                a.checkOutLocation != null) ...[
               const Divider(height: 24),
               if (a.checkInLocation != null)
                 _location("Check-In", a.checkInLocation!),

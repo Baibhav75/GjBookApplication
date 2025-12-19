@@ -8,10 +8,10 @@ import 'dart:async'; // For Timer/Debounce
 import '/Service/update_school_by_agent_service.dart';
 import 'package:bookworld/Model/update_school_by_agent_model.dart';
 
-
 class schoolAgent extends StatefulWidget {
-  const schoolAgent({Key? key}) : super(key: key);
+  final String? agentId; // Add agentId parameter
 
+  const schoolAgent({Key? key, this.agentId}) : super(key: key); // Accept agentId in constructor
   @override
   State<schoolAgent> createState() => _schoolAgentState();
 }
@@ -204,6 +204,12 @@ class _schoolAgentState extends State<schoolAgent> {
     super.initState();
     if (_knownSchools.isNotEmpty) {
       _selectedSchoolCtl.text = _knownSchools.first;
+    }
+    
+    // If agentId is provided, populate it and fetch schools automatically
+    if (widget.agentId != null && widget.agentId!.isNotEmpty) {
+      _agentIdCtl.text = widget.agentId!;
+      _fetchSchools(widget.agentId!);
     }
     
     // Listen for Agent ID changes with debounce
@@ -1617,11 +1623,7 @@ class _schoolAgentState extends State<schoolAgent> {
                           Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text("No")),
                         ],
                       ),
-
-
-
-
-
+                      
 
                       const SizedBox(height: 20),
                       Align(

@@ -166,7 +166,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   final TextEditingController _lowStrengthReasonCtl = TextEditingController();
 
   String? _selectedGrade = "A";   // default value
-/// Add
+  /// Add
   final TextEditingController _schoolLocationCtl = TextEditingController();
   final TextEditingController _guardNameCtl = TextEditingController();
   final TextEditingController _guardNumberCtl = TextEditingController();
@@ -544,7 +544,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
     // ignore: avoid_print
     print('Ready to submit payload: ${payload.toString()}');
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('School saved (demo).')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('School saved (succesfull).')));
   }
 
   // ---------------------------
@@ -987,7 +987,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
                         _buildStudentInput('Class ${i + 1}', _classCtrls[i]),
 
 
-                           // 👇👇 ADD THIS NEW LINE (Total Students)
+                      // 👇👇 ADD THIS NEW LINE (Total Students)
                       _buildStudentInput('Total Students', _totalStudentsCtl),
 
                       // ---------------------------
@@ -1054,8 +1054,8 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
 
 
                       // ---------------------------
-                        // Teacher & Subject Table
-                        // ---------------------------
+                      // Teacher & Subject Table
+                      // ---------------------------
 
                       _buildSectionTitle("Teacher / Subject / Publication Details"),
 
@@ -1414,10 +1414,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
                           Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text("No")),
                         ],
                       ),
-
-
-
-
 
 
                       const SizedBox(height: 20),

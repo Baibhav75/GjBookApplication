@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import '../Model/staff_profile_model.dart';
 import '../Service/staff_profile_service.dart';
 
-class StaffHistoryPage extends StatefulWidget {
+class StaffProfilePage extends StatefulWidget {
   final String mobileNo;
 
-  const StaffHistoryPage({super.key, required this.mobileNo});
+  const StaffProfilePage({super.key, required this.mobileNo});
 
   @override
-  State<StaffHistoryPage> createState() => _StaffHistoryPageState();
+  State<StaffProfilePage> createState() => _StaffProfilePageState();
 }
 
-class _StaffHistoryPageState extends State<StaffHistoryPage> {
+class _StaffProfilePageState extends State<StaffProfilePage> {
   StaffProfileModel? profile;
   bool isLoading = true;
   int _currentIndex = 0;
@@ -152,7 +152,7 @@ class _StaffHistoryPageState extends State<StaffHistoryPage> {
           ),
 
           _sectionTitle("Basic Information"),
-          _buildItem("Employee ID", profile!.employeeId, Icons.badge),
+          _buildItem("Agent Id", profile!.employeeId, Icons.badge),
           _buildItem("Email", profile!.email, Icons.email),
           _buildItem("Mobile", profile!.mobile, Icons.phone),
           _buildItem("Alternate No", profile!.alternate, Icons.phone_android),

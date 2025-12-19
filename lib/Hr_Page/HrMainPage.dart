@@ -234,14 +234,27 @@ class _HrmainpageState extends State<Hrmainpage > {
               crossAxisSpacing: 12, // Reduced spacing
               childAspectRatio: 0.85, // Optimal ratio
               children: [
-                _menuItem("Attendance\nRegular", Icons.present_to_all, Colors.green, () {
+                _menuItem("Attendance\nRegular", Icons.present_to_all, Colors.green, () async {
                   // Navigate to staffhistory screen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HistoryPage(mobileNo: '',), // Use correct class name
-                    ),
-                  );
+                  // Get current user's mobile number from secure storage
+                  final storage = SecureStorageService();
+                  final credentials = await storage.getStaffCredentials();
+                  final mobileNo = credentials['mobileNo'] ?? '';
+                  
+                  if (mobileNo.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HistoryPage(mobileNo: mobileNo),
+                      ),
+                    );
+
+                  } else {
+                    // Show error if mobile number is not available
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Unable to load attendance history')),
+                    );
+                  }
                 }),
 
                 _menuItem("Today\nAttendance", Icons.today, Colors.orange, () {
