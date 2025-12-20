@@ -8,6 +8,8 @@ class SecureStorageService {
   static const String _keyUserType = 'user_type';
   static const String _keyIsLoggedIn = 'is_logged_in';
 
+
+
   // Admin keys
   static const String _keyAdminMobileNo = 'admin_mobile_no';
   static const String _keyAdminPassword = 'admin_password';
@@ -289,6 +291,7 @@ class SecureStorageService {
   }
 
   /// Clear all stored credentials
+  /// Clear all stored credentials
   Future<void> clearAllCredentials() async {
     try {
       await _storage.delete(key: _keyUserType);
@@ -306,7 +309,8 @@ class SecureStorageService {
       await _storage.delete(key: _keyStaffEmployeeType);
       await _storage.delete(key: _keyStaffAgentName);
       await _storage.delete(key: _keyStaffEmployeeId);
-      await _storage.delete(key: _keyStaffMobileNo); // Clear mobile number
+      await _storage.delete(key: _keyStaffMobileNo);
+
       // Clear school credentials
       await _storage.delete(key: _keySchoolId);
       await _storage.delete(key: _keySchoolUsername);
@@ -318,4 +322,27 @@ class SecureStorageService {
       throw Exception('Failed to clear credentials: $e');
     }
   }
+  /// ✅ Save Agent / GetMan credentials (NO PASSWORD)
+  Future<void> saveAgentGetManCredentials({
+    required String mobileNo,
+    required String role, // Agent / GetMan
+    required String name,
+    required String email,
+  }) async {
+    try {
+      await _storage.write(key: _keyUserType, value: role.toLowerCase());
+      await _storage.write(key: _keyIsLoggedIn, value: 'true');
+
+      await _storage.write(key: _keyStaffMobileNo, value: mobileNo);
+      await _storage.write(key: _keyStaffEmployeeType, value: role);
+      await _storage.write(key: _keyStaffAgentName, value: name);
+      await _storage.write(key: _keyAdminEmail, value: email);
+    } catch (e) {
+      throw Exception(
+        'Failed to save Agent/GetMan credentials: $e',
+      );
+    }
+  }
+
+
 }

@@ -32,10 +32,6 @@ class StaffPage extends StatefulWidget {
   final String mobile;
 
 
-
-
-
-
   const StaffPage({
     Key? key,
     required this.agentName,
@@ -102,8 +98,6 @@ class _StaffPageState extends State<StaffPage> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,7 +162,6 @@ class _StaffPageState extends State<StaffPage> {
     );
 
   }
-
   // ---------------------------------------------------
   // DRAWER
   // ---------------------------------------------------
@@ -203,7 +196,7 @@ class _StaffPageState extends State<StaffPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => StaffProfilePage(mobileNo: staffMobile,),
+                  builder: (_) => HistoryPage(mobileNo: staffMobile,),
                 ),
               );
             },

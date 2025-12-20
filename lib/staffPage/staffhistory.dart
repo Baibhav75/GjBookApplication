@@ -3,10 +3,6 @@ import 'package:intl/intl.dart';
 import '/Model/attendance_history_model.dart';
 import '/Service/attendance_history_service.dart';
 
-/// A page that displays attendance history for a specific staff member
-/// 
-/// This page requires a [mobileNo] parameter to fetch the attendance records
-/// for the corresponding staff member.
 class HistoryPage extends StatefulWidget {
   /// The mobile number of the staff member whose attendance history to display
   final String mobileNo;

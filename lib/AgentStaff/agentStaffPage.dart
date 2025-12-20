@@ -13,26 +13,34 @@ class agentStaffHomePage extends StatefulWidget {
 
 class _agentStaffHomePageState extends State<agentStaffHomePage> {
   int _currentIndex = 0;
-  String _staffMobileNo = ''; // Added to store staff mobile number
+  String _staffName = '';
+  String _staffMobileNo = '';
+// Added to store staff mobile number
 
+  @override
   @override
   void initState() {
     super.initState();
-    _loadStaffMobileNo(); // Load staff mobile number on init
+    _loadStaffDetails();
   }
 
   // Method to load staff mobile number
-  void _loadStaffMobileNo() async {
+  void _loadStaffDetails() async {
     try {
       final storage = SecureStorageService();
+
+      final mobile = await storage.getStaffMobileNo();
       final credentials = await storage.getStaffCredentials();
+
       setState(() {
-        _staffMobileNo = credentials['mobileNo'] ?? '';
+        _staffMobileNo = mobile ?? '';
+        _staffName = credentials['agentName'] ?? 'Agent User';
       });
     } catch (e) {
-      print("Error loading staff mobile number: $e");
+      debugPrint("Error loading agent details: $e");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -102,29 +110,30 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                CircleAvatar(
+              children: [
+                const CircleAvatar(
                   radius: 32,
                   backgroundColor: Colors.white,
                   child: Icon(Icons.person, color: Colors.blue, size: 40),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
-                  "Staff User",
-                  style: TextStyle(
+                  _staffName.isNotEmpty ? _staffName : "Agent User",
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  "Staff01",
-                  style: TextStyle(
+                  _staffMobileNo,
+                  style: const TextStyle(
                     color: Colors.white70,
                   ),
                 ),
               ],
             ),
+
           ),
 
           // Drawer Items
@@ -225,7 +234,11 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          AnimatedBanner(),   // <-- 🔥 Added here
+          AnimatedBanner(
+            name: _staffName,
+            mobileNo: _staffMobileNo,
+          ),
+          // <-- 🔥 Added here
 
           const SizedBox(height: 25),
 
@@ -361,13 +374,21 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
 }
 
 class AnimatedBanner extends StatefulWidget {
+  final String name;
+  final String mobileNo;
+
+  const AnimatedBanner({
+    Key? key,
+    required this.name,
+    required this.mobileNo,
+  }) : super(key: key);
+
   @override
-  _AnimatedBannerState createState() => _AnimatedBannerState();
+  State<AnimatedBanner> createState() => _AnimatedBannerState();
 }
 
 class _AnimatedBannerState extends State<AnimatedBanner>
     with SingleTickerProviderStateMixin {
-
   late AnimationController _controller;
   late Animation<Offset> _slide;
 
@@ -377,16 +398,15 @@ class _AnimatedBannerState extends State<AnimatedBanner>
 
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 2),
+      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
     _slide = Tween<Offset>(
-      begin: Offset(-0.05, 0),
-      end: Offset(0.05, 0),
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+      begin: const Offset(-0.04, 0),
+      end: const Offset(0.04, 0),
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -401,38 +421,89 @@ class _AnimatedBannerState extends State<AnimatedBanner>
       position: _slide,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
+        constraints: const BoxConstraints(minHeight: 130),
         decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             colors: [
-              Colors.blue.shade800,
+              Colors.blue.shade900,
+              Colors.blue.shade700,
               Colors.blue.shade500,
-              Colors.lightBlueAccent,
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            )
+              color: Colors.blue.shade900.withOpacity(0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: Row(
           children: [
-            Icon(Icons.campaign, color: Colors.white, size: 30),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                "Welcome Back! Have a productive day ahead 🚀",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                shape: BoxShape.circle,
               ),
-            )
+              child: const Icon(
+                Icons.person_outline,
+                color: Colors.white,
+                size: 34,
+              ),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Welcome",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.85),
+                      fontSize: 13,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.name.isNotEmpty ? widget.name : "Agent User",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.mobileNo,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.verified,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
           ],
         ),
       ),
