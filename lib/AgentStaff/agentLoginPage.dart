@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+
 import '../Model/agent_getman_login_model.dart';
+import '../Model/security_guard_login_model.dart';
+
 import '../Service/agent_getman_login_service.dart';
+import '../Service/security_guard_login_service.dart';
 import '../Service/secure_storage_service.dart';
+
 import 'agentStaffPage.dart';
 import 'getmanHomePage.dart';
-import '../Model/security_guard_login_model.dart';
-import '../Service/security_guard_login_service.dart';
 
 class AgentStaffLoginPage extends StatefulWidget {
   const AgentStaffLoginPage({Key? key}) : super(key: key);
@@ -25,14 +28,16 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
 
   String? _selectedPosition;
 
-  /// API expects Position = Agent / GetMan
+  /// Available roles
   final List<String> _positions = ["Agent", "SecurityGuard"];
+
+  // ---------------------------------------------------------------------------
+  // 🔐 LOGIN HANDLER
+  // ---------------------------------------------------------------------------
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate() || _selectedPosition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
-      );
+      _showMessage("Please fill all fields");
       return;
     }
 
@@ -40,68 +45,91 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
 
     try {
       final storage = SecureStorageService();
+      final mobile = _mobileController.text.trim();
+      final password = _passwordController.text.trim();
 
-      // 🔹 SECURITY GUARD LOGIN
+      // ================= SECURITY GUARD LOGIN =================
       if (_selectedPosition == "SecurityGuard") {
         final SecurityGuardLoginModel result =
         await SecurityGuardLoginService.login(
-          mobile: _mobileController.text.trim(),
-          password: _passwordController.text.trim(),
+          mobile: mobile,
+          password: password,
         );
 
-        if (result.isSuccess) {
-          await storage.saveAgentGetManCredentials(
-            mobileNo: _mobileController.text.trim(),
-            role: "SECURITYGUARD",
-            name: result.name,
-            email: result.email,
-          );
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const getmanHomePage()),
-          );
-        } else {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(result.message)));
+        if (!result.isSuccess) {
+          _showMessage(result.message);
+          return;
         }
+
+        await storage.saveAgentGetManCredentials(
+          mobileNo: mobile,
+          role: "SECURITY_GUARD",
+          name: result.name,
+          email: result.email,
+        );
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const getmanHomePage()),
+        );
       }
 
-      // 🔹 AGENT LOGIN
+      // ================= AGENT LOGIN =================
       else {
-        final response = await AgentGetManLoginService.login(
-          mobile: _mobileController.text.trim(),
-          password: _passwordController.text.trim(),
+        final AgentGetManLoginModel response =
+        await AgentGetManLoginService.login(
+          mobile: mobile,
+          password: password,
           position: "Agent",
         );
 
-        if (response.isSuccess) {
-          await storage.saveAgentGetManCredentials(
-            mobileNo: _mobileController.text.trim(),
-            role: "AGENT",
-            name: response.agentName,
-            email: response.agentAdminEmail,
-          );
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const agentStaffHomePage()),
-          );
-        } else {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(response.message)));
+        if (!response.isSuccess) {
+          _showMessage(response.message);
+          return;
         }
+
+        await storage.saveAgentGetManCredentials(
+          mobileNo: mobile,
+          role: "AGENT",
+          name: response.agentName,
+          email: response.agentAdminEmail,
+        );
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const agentStaffHomePage()),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login failed. Please try again")),
-      );
+      _showMessage("Login failed. Please try again");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // 🧠 HELPER
+  // ---------------------------------------------------------------------------
 
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  void dispose() {
+    _mobileController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // ---------------------------------------------------------------------------
+  // 🎨 UI
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +162,7 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
               ),
               const SizedBox(height: 30),
 
+              // ---------------- POSITION ----------------
               DropdownButtonFormField<String>(
                 value: _selectedPosition,
                 hint: const Text("Choose Position"),
@@ -155,11 +184,14 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
               ),
               const SizedBox(height: 20),
 
+              // ---------------- MOBILE ----------------
               TextFormField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
                 validator: (v) =>
-                v == null || v.length != 10 ? "Invalid mobile number" : null,
+                v == null || v.length != 10
+                    ? "Invalid mobile number"
+                    : null,
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.phone),
                   hintText: "Mobile Number",
@@ -168,27 +200,32 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
               ),
               const SizedBox(height: 20),
 
+              // ---------------- PASSWORD ----------------
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 validator: (v) =>
-                v == null || v.length < 4 ? "Invalid password" : null,
+                v == null || v.length < 6
+                    ? "Password must be at least 6 characters"
+                    : null,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock),
                   hintText: "Password",
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
                   ),
                 ),
               ),
               const SizedBox(height: 30),
 
+              // ---------------- LOGIN BUTTON ----------------
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -201,7 +238,8 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                     "Login",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                        color: Colors.white, fontSize: 16),
                   ),
                 ),
               ),

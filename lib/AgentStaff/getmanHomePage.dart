@@ -2,6 +2,8 @@ import 'package:bookworld/AgentStaff/getManPage.dart';
 import 'package:flutter/material.dart';
 import '../Service/secure_storage_service.dart';
 import '../home_screen.dart';
+import '../staffPage/attendanceCheckIn.dart';
+import '../staffPage/staffProfile.dart';
 import 'GetManHistoryPage.dart';
 
 class getmanHomePage extends StatefulWidget {
@@ -129,14 +131,19 @@ class _getmanHomePageState extends State<getmanHomePage> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const GetManHistoryPage()),
+                MaterialPageRoute(builder: (_) => const AttendanceCheckIn()),
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.person, color: Colors.green),
             title: const Text("profile"),
-            onTap: () {
+             onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StaffProfilePage(mobileNo: '',)),
+              );
             },
           ),
 
@@ -206,7 +213,12 @@ class _getmanHomePageState extends State<getmanHomePage> {
               mainAxisSpacing: 25,
               crossAxisSpacing: 25,
               children: [
-                _menuItem("Attendance", Icons.done, Colors.orange, () {}),
+                _menuItem("Attendance", Icons.done, Colors.orange, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AttendanceCheckIn()),
+                  );
+                }),
 
                 _menuItem("History", Icons.history, Colors.purple, () {
                 }),

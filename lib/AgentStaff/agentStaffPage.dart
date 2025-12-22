@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../Service/secure_storage_service.dart';
 import '../home_screen.dart';
 import '../staffPage/staffhistory.dart';
+import 'RealAgentProfile.dart';
 
 class agentStaffHomePage extends StatefulWidget {
   const agentStaffHomePage({Key? key}) : super(key: key);
@@ -303,7 +304,12 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
                 }),
 
                 _menuItem("profile", Icons.person_off, Colors.blue, () {
-                  setState(() => _currentIndex = 4);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RealAgentProfilePage(mobileNo: _agentMobileNo),
+                    ),
+                  );
                 }),
 
                 _menuItem("", Icons.shopping_cart_checkout, Colors.teal, () {

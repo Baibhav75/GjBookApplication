@@ -10,6 +10,8 @@ import 'package:bookworld/staffPage/attendanceCheckOut.dart';
 import 'package:bookworld/SchoolPage/school_page_screen.dart';
 import 'package:bookworld/counterPage/counter_main_page.dart';
 import 'package:bookworld/home_screen.dart';
+import 'package:bookworld/AgentStaff/agentStaffPage.dart';
+import 'package:bookworld/AgentStaff/getmanHomePage.dart';
 
 /// Authentication service to manage user login state and auto-login
 class AuthService {
@@ -89,11 +91,29 @@ class AuthService {
   /// -------------------------------------------------------------------------
   Future<Widget> _getStaffScreen() async {
     try {
+      // First check if this is an Agent/SecurityGuard user
+      final mobileNo = await _storageService.getStaffMobileNo();
+      final employeeType = await _storageService.getStaffEmployeeType();
+      
+      // If we have Agent/SecurityGuard credentials
+      if (mobileNo != null && employeeType != null && 
+          (employeeType == "AGENT" || employeeType == "SECURITY_GUARD")) {
+        // For Agent/SecurityGuard users, we don't have password stored
+        // So we need to redirect to appropriate home page based on role
+        
+        if (employeeType == "SECURITY_GUARD") {
+          return const getmanHomePage();
+        } else {
+          return const agentStaffHomePage();
+        }
+      }
+      
+      // Regular staff login flow
       final credentials = await _storageService.getStaffCredentials();
 
       final username = credentials['username']; // Mobile
       final password = credentials['password'];
-      final employeeType = credentials['employeeType'] ?? "AgentStaff";
+      final empType = credentials['employeeType'] ?? "AgentStaff";
 
       if (username == null || password == null) {
         await _storageService.clearAllCredentials();
@@ -103,7 +123,7 @@ class AuthService {
       final loginResponse = await _agentLoginService.login(
         mobile: username,
         password: password,
-        employeeType: employeeType,
+        employeeType: empType,
       );
 
       if (loginResponse != null && loginResponse.status == "Success") {

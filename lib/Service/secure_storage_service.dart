@@ -8,8 +8,6 @@ class SecureStorageService {
   static const String _keyUserType = 'user_type';
   static const String _keyIsLoggedIn = 'is_logged_in';
 
-
-
   // Admin keys
   static const String _keyAdminMobileNo = 'admin_mobile_no';
   static const String _keyAdminPassword = 'admin_password';
@@ -141,6 +139,11 @@ class SecureStorageService {
   /// ⭐ Attendance ke liye MOST IMPORTANT
   Future<String?> getStaffMobileNo() async {
     return await _storage.read(key: _keyStaffMobileNo);
+  }
+
+  /// Get staff employee type
+  Future<String?> getStaffEmployeeType() async {
+    return await _storage.read(key: _keyStaffEmployeeType);
   }
 
   Future<String?> getStaffEmployeeId() async {
@@ -325,22 +328,19 @@ class SecureStorageService {
   /// ✅ Save Agent / GetMan credentials (NO PASSWORD)
   Future<void> saveAgentGetManCredentials({
     required String mobileNo,
-    required String role, // Agent / GetMan
+    required String role, // AGENT / SECURITY_GUARD
     required String name,
     required String email,
   }) async {
     try {
-      await _storage.write(key: _keyUserType, value: role.toLowerCase());
+      await _storage.write(key: _keyUserType, value: 'staff');
       await _storage.write(key: _keyIsLoggedIn, value: 'true');
 
       await _storage.write(key: _keyStaffMobileNo, value: mobileNo);
       await _storage.write(key: _keyStaffEmployeeType, value: role);
       await _storage.write(key: _keyStaffAgentName, value: name);
-      await _storage.write(key: _keyAdminEmail, value: email);
     } catch (e) {
-      throw Exception(
-        'Failed to save Agent/GetMan credentials: $e',
-      );
+      throw Exception('Failed to save Agent/GetMan credentials: $e');
     }
   }
 
