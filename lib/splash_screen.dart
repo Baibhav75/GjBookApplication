@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'package:bookworld/Service/auth_service.dart';
+import 'package:bookworld/Service/secure_storage_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -17,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _textOpacityAnimation;
   late Animation<double> _rotationAnimation;
 
-  final AuthService _authService = AuthService();
+  final SecureStorageService _storageService = SecureStorageService();
 
   @override
   void initState() {
@@ -82,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    final initialScreen = await _authService.getInitialScreen();
+    final initialScreen = await _storageService.getInitialScreen();
 
     if (mounted) {
       Navigator.pushReplacement(

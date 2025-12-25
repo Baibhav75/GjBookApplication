@@ -9,22 +9,39 @@ class SecurityGuardLoginService {
   static Future<SecurityGuardLoginModel> login({
     required String mobile,
     required String password,
+    required String position, // 🔥 NEW
   }) async {
-    final uri = Uri.parse(_baseUrl).replace(queryParameters: {
-      'MobileNo': mobile,
-      'Password': password,
-      'Position': 'SecurityGuard',
-    });
+    try {
+      final uri = Uri.parse(_baseUrl).replace(queryParameters: {
+        'MobileNo': mobile,
+        'Password': password,
+        'Position': position, // 🔥 DYNAMIC
+      });
 
-    final response =
-    await http.get(uri).timeout(const Duration(seconds: 20));
+      print("Login Request: $uri");
 
-    if (response.statusCode == 200) {
-      return SecurityGuardLoginModel.fromJson(
-        jsonDecode(response.body),
-      );
-    } else {
-      throw Exception('SecurityGuard login failed');
+      final response =
+      await http.get(uri).timeout(const Duration(seconds: 20));
+
+      print("Login Response Status: ${response.statusCode}");
+      print("Login Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        try {
+          final jsonData = jsonDecode(response.body);
+          return SecurityGuardLoginModel.fromJson(jsonData);
+        } catch (jsonError) {
+          print("JSON Decode Error: $jsonError");
+          throw Exception("Invalid response format from server");
+        }
+      } else {
+        throw Exception('Login failed with status ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Login error: $e');
     }
   }
 }

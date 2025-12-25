@@ -13,10 +13,10 @@ class HistoryPage extends StatefulWidget {
   });
 
   @override
-  State<HistoryPage> createState() => _StaffHistoryPageState();
+  State<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _StaffHistoryPageState extends State<HistoryPage> {
+class _HistoryPageState extends State<HistoryPage> {
   late Future<List<Attendance>> _future;
 
   @override

@@ -9,6 +9,7 @@ import '../Service/secure_storage_service.dart';
 
 import 'agentStaffPage.dart';
 import 'getmanHomePage.dart';
+import 'testPage.dart'; // ✅ ADD THIS
 
 class AgentStaffLoginPage extends StatefulWidget {
   const AgentStaffLoginPage({Key? key}) : super(key: key);
@@ -28,8 +29,28 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
 
   String? _selectedPosition;
 
-  /// Available roles
-  final List<String> _positions = ["Agent", "SecurityGuard"];
+  /// ✅ ALL STAFF POSITIONS
+  final List<String> _positions = [
+    "Accounts",
+    "Billing",
+    "Bouncer Man",
+    "Collection Recovery",
+    "Computer Operator",
+    "Driver",
+    "Field Recovery",
+    "Godown Incharge",
+    "Housekeeper",
+    "IT",
+    "Labours",
+    "Manager",
+    "Receptionist",
+    "Sales",
+    "Sales Officer",
+    "Security Guard",
+    "Services Incharge",
+    "Stock",
+    "Supervisor",
+  ];
 
   // ---------------------------------------------------------------------------
   // 🔐 LOGIN HANDLER
@@ -48,12 +69,13 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
       final mobile = _mobileController.text.trim();
       final password = _passwordController.text.trim();
 
-      // ================= SECURITY GUARD LOGIN =================
-      if (_selectedPosition == "SecurityGuard") {
+      // ================= SECURITY GUARD =================
+      if (_selectedPosition == "Security Guard") {
         final SecurityGuardLoginModel result =
         await SecurityGuardLoginService.login(
           mobile: mobile,
           password: password,
+          position: _selectedPosition!,
         );
 
         if (!result.isSuccess) {
@@ -63,9 +85,10 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
 
         await storage.saveAgentGetManCredentials(
           mobileNo: mobile,
-          role: "SECURITY_GUARD",
+          role: result.position.toUpperCase().replaceAll(" ", "_"),
           name: result.name,
           email: result.email,
+          employeeId: result.employeeId,
         );
 
         if (!mounted) return;
@@ -75,13 +98,13 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
         );
       }
 
-      // ================= AGENT LOGIN =================
+      // ================= ALL OTHER POSITIONS → TEST PAGE =================
       else {
         final AgentGetManLoginModel response =
         await AgentGetManLoginService.login(
           mobile: mobile,
           password: password,
-          position: "Agent",
+          position: _selectedPosition!,
         );
 
         if (!response.isSuccess) {
@@ -91,23 +114,24 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
 
         await storage.saveAgentGetManCredentials(
           mobileNo: mobile,
-          role: "AGENT",
+          role: _selectedPosition!.toUpperCase().replaceAll(" ", "_"),
           name: response.agentName,
           email: response.agentAdminEmail,
+          employeeId: response.employeeId,
         );
 
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const agentStaffHomePage()),
+          MaterialPageRoute(
+            builder: (_) => const agentStaffHomePage(), // ✅ ALL GO HERE
+          ),
         );
       }
     } catch (e) {
       _showMessage("Login failed. Please try again");
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -218,8 +242,8 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
                           ? Icons.visibility
                           : Icons.visibility_off,
                     ),
-                    onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
               ),
@@ -238,8 +262,8 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                     "Login",
-                    style: TextStyle(
-                        color: Colors.white, fontSize: 16),
+                    style:
+                    TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
               ),

@@ -4,6 +4,7 @@ class SecurityGuardLoginModel {
   final String name;
   final String email;
   final String position;
+  final String employeeId;
 
   SecurityGuardLoginModel({
     required this.status,
@@ -11,6 +12,7 @@ class SecurityGuardLoginModel {
     required this.name,
     required this.email,
     required this.position,
+    required this.employeeId,
   });
 
   factory SecurityGuardLoginModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class SecurityGuardLoginModel {
       name: json['AgentName'] ?? '',
       email: json['AgentAdminEmail'] ?? '',
       position: json['Position'] ?? '',
+      employeeId: json['EmployeeId'] ?? '',
     );
   }
 

@@ -1,91 +1,91 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import '../Model/attendance_checkin_model.dart';
+import '/Model/ AttendanceCheckOutModel.dart';
 
-class AttendanceService {
-  static const String apiUrl =
+class AgentAttendanceOutService {
+  static const String baseUrl =
       "https://g17bookworld.com/API/AttendenceManagement/MarkAttendance";
 
-  static Future<AttendanceCheckInModel?> markAttendance({
+  Future<AttendanceCheckOutModel?> submitAttendance({
     required String employeeId,
     required String mobile,
-    required String checkInTime,
-    required String location,
-    required double latitude,
-    required double longitude,
-    required String? state,
-    required File image,
+    required String type, // CheckOut
+    required String? address,
+    required DateTime timestamp,
+    File? imageFile,
+    double? lat,
+    double? lng,
   }) async {
     try {
       // Validate inputs before sending
       if (employeeId.trim().isEmpty) {
-        print("API ERROR: EmployeeId is empty");
-        return AttendanceCheckInModel(
+        print("API ERROR: EmployeeId is empty for checkout");
+        return AttendanceCheckOutModel(
           status: false,
-          message: "Employee ID is required",
           type: "error",
+          message: "Employee ID is required",
         );
       }
 
       if (mobile.trim().isEmpty) {
-        print("API ERROR: Mobile number is empty");
-        return AttendanceCheckInModel(
+        print("API ERROR: Mobile number is empty for checkout");
+        return AttendanceCheckOutModel(
           status: false,
+          type: "error",
           message: "Mobile number is required",
-          type: "error",
         );
       }
 
-      if (location.trim().isEmpty) {
-        print("API ERROR: Location is empty");
-        return AttendanceCheckInModel(
+      if (address == null || address.trim().isEmpty) {
+        print("API ERROR: Address is empty for checkout");
+        return AttendanceCheckOutModel(
           status: false,
+          type: "error",
           message: "Location is required",
-          type: "error",
         );
       }
 
-      if (!image.existsSync()) {
+      if (imageFile != null && !imageFile.existsSync()) {
         print("API ERROR: Image file does not exist");
-        return AttendanceCheckInModel(
+        return AttendanceCheckOutModel(
           status: false,
-          message: "Image file is missing",
           type: "error",
+          message: "Image file is missing",
         );
       }
 
-      var request = http.MultipartRequest("POST", Uri.parse(apiUrl));
+      var request = http.MultipartRequest("POST", Uri.parse(baseUrl));
 
-      // Ensure all fields are trimmed and non-empty
+      // Use same field structure as check-in API
       request.fields['EmployeeId'] = employeeId.trim();
       request.fields['EmpMobNo'] = mobile.trim();
-      request.fields['CheckInTime'] = checkInTime.trim();
-      request.fields['CheckInLocation'] = location.trim();
-      request.fields['Latitude'] = latitude.toString();
-      request.fields['Longitude'] = longitude.toString();
-      request.fields['Type'] = "CheckIn";
-      
-      // ADDING STATE - Likely culprit for "Object reference not set"
-      request.fields['State'] = state?.trim() ?? '';
+      request.fields['CheckOutTime'] = timestamp.toIso8601String();
+      request.fields['CheckOutLocation'] = address.trim();
+      request.fields['Latitude'] = lat?.toString() ?? "";
+      request.fields['Longitude'] = lng?.toString() ?? "";
+      request.fields['Type'] = type; // "CheckOut"
 
-      request.files.add(await http.MultipartFile.fromPath(
-        "CheckinImage",
-        image.path,
-      ));
+      if (imageFile != null && imageFile.existsSync()) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'CheckoutImage',
+          imageFile.path,
+        ));
+      }
 
       // Debug logging
-      print("Sending attendance check-in request:");
+      print("Sending attendance checkout request:");
       print("EmployeeId: ${request.fields['EmployeeId']}");
       print("EmpMobNo: ${request.fields['EmpMobNo']}");
-      print("CheckInTime: ${request.fields['CheckInTime']}");
-      print("CheckInLocation: ${request.fields['CheckInLocation']}");
+      print("CheckOutTime: ${request.fields['CheckOutTime']}");
+      print("CheckOutLocation: ${request.fields['CheckOutLocation']}");
       print("Latitude: ${request.fields['Latitude']}");
       print("Longitude: ${request.fields['Longitude']}");
       print("Type: ${request.fields['Type']}");
-      print("State: ${request.fields['State']}");
-      print("Image path: ${image.path}");
-      print("Image exists: ${image.existsSync()}");
+      if (imageFile != null) {
+        print("Image path: ${imageFile.path}");
+        print("Image exists: ${imageFile.existsSync()}");
+      }
 
       var response = await request.send();
       var body = await response.stream.bytesToString();
@@ -97,10 +97,10 @@ class AttendanceService {
       // Validate response body
       if (body.isEmpty || body.trim().isEmpty) {
         print("API ERROR: Empty response body");
-        return AttendanceCheckInModel(
+        return AttendanceCheckOutModel(
           status: false,
-          message: "Empty response from server",
           type: "error",
+          message: "Empty response from server",
         );
       }
 
@@ -108,20 +108,20 @@ class AttendanceService {
       if (body.toLowerCase().contains("object reference not set") ||
           body.toLowerCase().contains("null reference")) {
         print("API ERROR: Server returned null reference error");
-        return AttendanceCheckInModel(
+        return AttendanceCheckOutModel(
           status: false,
-          message: "Server error: Required information is missing. Please check all fields.",
           type: "error",
+          message: "Server error: Required information is missing.",
         );
       }
 
       // Check HTTP status code
       if (response.statusCode != 200) {
         print("API ERROR: HTTP ${response.statusCode} - $body");
-        return AttendanceCheckInModel(
+        return AttendanceCheckOutModel(
           status: false,
-          message: "Server error: ${response.statusCode}",
           type: "error",
+          message: "Server error: ${response.statusCode}",
         );
       }
 
@@ -132,10 +132,10 @@ class AttendanceService {
       } catch (jsonError) {
         print("API ERROR: Invalid JSON - $jsonError");
         print("Response body: $body");
-        return AttendanceCheckInModel(
+        return AttendanceCheckOutModel(
           status: false,
-          message: "Invalid response format",
           type: "error",
+          message: "Invalid response format",
         );
       }
 
@@ -143,20 +143,20 @@ class AttendanceService {
       if (jsonRes is! Map<String, dynamic>) {
         print("API ERROR: Response is not a Map - ${jsonRes.runtimeType}");
         print("Response body: $body");
-        return AttendanceCheckInModel(
+        return AttendanceCheckOutModel(
           status: false,
-          message: "Invalid response structure",
           type: "error",
+          message: "Invalid response structure",
         );
       }
 
-      return AttendanceCheckInModel.fromJson(jsonRes);
+      return AttendanceCheckOutModel.fromJson(jsonRes);
     } catch (e) {
       print("API ERROR: $e");
-      return AttendanceCheckInModel(
+      return AttendanceCheckOutModel(
         status: false,
-        message: "Something went wrong: ${e.toString()}",
         type: "error",
+        message: "Something went wrong: ${e.toString()}",
       );
     }
   }

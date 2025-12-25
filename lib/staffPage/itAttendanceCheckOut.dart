@@ -4,34 +4,37 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../AgentStaff/agentStaffPage.dart';
+import '../Service/ItAttandanceOut_service.dart';
 import '/Service/agent_login_service.dart';
 import '/Model/agent_login_model.dart';
 import '/Service/secure_storage_service.dart';
-import '/Service/attendance_out_service.dart';
 import '/Service/staff_profile_service.dart';
-import 'staff_page.dart';
 
 
-/// Checkout screen that completes the attendance flow.
-class AttendanceCheckOut extends StatefulWidget {
-  const AttendanceCheckOut({
+
+/// IT Checkout screen that completes the attendance flow.
+class ItAttendanceCheckOut extends StatefulWidget {
+  const ItAttendanceCheckOut({
     super.key,
     required this.checkInTime,
     this.checkInPhoto,
     required this.checkInPosition,
     required this.checkInAddress,
+    this.employeeId,
   });
 
   final DateTime checkInTime;
   final File? checkInPhoto;
   final Position? checkInPosition;
   final String? checkInAddress;
+  final String? employeeId; // Accept passed employee ID
 
   @override
-  State<AttendanceCheckOut> createState() => _AttendanceCheckOutState();
+  State<ItAttendanceCheckOut> createState() => _ItAttendanceCheckOutState();
 }
 
-class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
+class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
   final ImagePicker _picker = ImagePicker();
 
   bool _isCheckingOut = false;
@@ -53,6 +56,9 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
   @override
   void initState() {
     super.initState();
+    // Initialize with passed employee ID if available
+    _employeeId = widget.employeeId;
+    
     _loadUserData();
     _initLocation();
     _startDurationTimer();
@@ -63,13 +69,27 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       final storageService = SecureStorageService();
       final credentials = await storageService.getStaffCredentials();
       
+      // Get mobile number directly from storage first (more reliable for Agent/IT staff)
+      final storedMobile = await storageService.getStaffMobileNo();
+      
       if (mounted) {
         setState(() {
           _userName = credentials['agentName'];
-          _userMobile = credentials['username'];
-          // Try to get employee ID from credentials or use mobile as fallback
-          _employeeId = credentials['employeeId'] ?? _userMobile;
+          
+          // Use stored mobile as primary source, fallback to username credential
+          _userMobile = (storedMobile != null && storedMobile.isNotEmpty)
+              ? storedMobile
+              : credentials['username'];
+              
+          // Use passed employee ID from widget if available, otherwise try credentials
+          if (_employeeId == null || _employeeId!.isEmpty) {
+             _employeeId = credentials['employeeId'] ?? _userMobile;
+          }
         });
+        
+        debugPrint('Checkout User Data Loaded:');
+        debugPrint('Mobile: $_userMobile');
+        debugPrint('Employee ID: $_employeeId');
       }
       
       // Try to fetch employee ID from staff profile if mobile is available
@@ -551,7 +571,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       return;
     }
 
-    final service = AttendanceOutService();
+    final service = ItattandanceoutService();
 
     final response = await service.submitAttendance(
       employeeId: _employeeId!.trim(),
@@ -601,48 +621,48 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     // Navigate to StaffPage immediately (don't wait for success message)
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
-      _navigateToStaffPage();
+      _navigateToAgentStaffHomePage();
+
     });
   }
 
   /// Navigate to StaffPage with credentials
-  Future<void> _navigateToStaffPage() async {
+  Future<void> _navigateToAgentStaffHomePage() async {
     if (!mounted) return;
 
     try {
       final storageService = SecureStorageService();
       final credentials = await storageService.getStaffCredentials();
-      
+
       final agentName = credentials['agentName'] ?? _userName ?? '';
-      final employeeType = credentials['employeeType'] ?? 'AgentStaff';
+      final employeeType = credentials['employeeType'] ?? 'AGENT';
       final email = credentials['email'] ?? '';
       final password = credentials['password'] ?? '';
-      final mobile = credentials['username'] ?? _userMobile ?? '';
+
+      // 🔐 Always use stored mobile first
+      final mobile =
+          await storageService.getStaffMobileNo() ??
+              credentials['username'] ??
+              _userMobile ??
+              '';
 
       if (!mounted) return;
 
-      // Navigate to StaffPage
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (_) => StaffPage(
-            agentName: agentName,
-            employeeType: employeeType,
-            email: email,
-            password: password,
-            mobile: mobile,
-          ),
+          builder: (_) => const agentStaffHomePage(),
         ),
-        (route) => false, // Remove all previous routes
+        (route) => false,
       );
     } catch (e) {
-      debugPrint('Error navigating to StaffPage: $e');
-      // Fallback: just pop if navigation fails
+      debugPrint('Error navigating to agentStaffHomePage: $e');
       if (mounted) {
         Navigator.pop(context);
       }
     }
   }
+
 
   /// Show error message
   void _showError(String message) {
@@ -736,13 +756,13 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => StaffPage(agentName: '', employeeType: '', email: '', password: '', mobile: '',), // Your staff page widget
+                builder: (context) => agentStaffHomePage(), // Your staff page widget
               ),
             );
           },
         ),
         title: const Text(
-          'Attendance Checkout',
+          'IT Attendance Checkout',
           style: TextStyle(color: Color(0xFF6B46FF)),
         ),
         iconTheme: const IconThemeData(color: Color(0xFF6B46FF)),
@@ -1080,3 +1100,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     );
   }
 }
+
+
+
+

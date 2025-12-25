@@ -1,10 +1,13 @@
+import 'package:bookworld/AgentStaff/GuardAttendanceIn.dart';
 import 'package:bookworld/AgentStaff/getManPage.dart';
+import 'package:bookworld/Hr_Page/HrAttendanceIn.dart';
 import 'package:flutter/material.dart';
 import '../Service/secure_storage_service.dart';
 import '../home_screen.dart';
 import '../staffPage/attendanceCheckIn.dart';
 import '../staffPage/staffProfile.dart';
 import 'GetManHistoryPage.dart';
+import 'getmanProfile.dart';
 
 class getmanHomePage extends StatefulWidget {
   const getmanHomePage({Key? key}) : super(key: key);
@@ -18,6 +21,7 @@ class _getmanHomePageState extends State<getmanHomePage> {
 
   String _staffName = '';
   String _staffMobileNo = '';
+  String _employeeId = ''; // Add this
 
   @override
   void initState() {
@@ -35,6 +39,8 @@ class _getmanHomePageState extends State<getmanHomePage> {
       setState(() {
         _staffMobileNo = mobile ?? '';
         _staffName = credentials['agentName'] ?? 'Security Guard';
+        // Try to get employeeId from storage, fallback to mobile if not available
+        _employeeId = credentials['employeeId'] ?? mobile ?? '';
       });
     } catch (e) {
       debugPrint("Error loading staff details: $e");
@@ -58,7 +64,7 @@ class _getmanHomePageState extends State<getmanHomePage> {
           ),
         ),
         title: const Text(
-          "Dashboard",
+          "Dashboard guard",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: const [
@@ -120,10 +126,15 @@ class _getmanHomePageState extends State<getmanHomePage> {
                   _staffMobileNo,
                   style: const TextStyle(color: Colors.white70),
                 ),
+                Text(
+                  'ID: $_employeeId',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
               ],
             ),
           ),
 
+          // Attendance Menu Item
           ListTile(
             leading: const Icon(Icons.done, color: Colors.blue),
             title: const Text("Attendance"),
@@ -131,18 +142,28 @@ class _getmanHomePageState extends State<getmanHomePage> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AttendanceCheckIn()),
+                MaterialPageRoute(
+                  builder: (_) => AttendanceCheckIn(
+                    agentName: _staffName,              // ✅ exists
+                    employeeType: 'SecurityGuard',      // ✅ fixed value
+                    mobile: _staffMobileNo,             // ✅ exists
+                  ),
+                ),
               );
+
             },
           ),
+
           ListTile(
             leading: const Icon(Icons.person, color: Colors.green),
-            title: const Text("profile"),
-             onTap: () {
+            title: const Text("Profile"),
+            onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const StaffProfilePage(mobileNo: '',)),
+                MaterialPageRoute(
+                  builder: (_) => GetManProfilePage(mobileNo: _staffMobileNo),
+                ),
               );
             },
           ),
@@ -189,7 +210,11 @@ class _getmanHomePageState extends State<getmanHomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AnimatedBanner(name: _staffName, mobileNo: _staffMobileNo),
+          AnimatedBanner(
+            name: _staffName,
+            mobileNo: _staffMobileNo,
+            employeeId: _employeeId, // Pass employeeId to banner
+          ),
 
           const SizedBox(height: 25),
 
@@ -216,11 +241,17 @@ class _getmanHomePageState extends State<getmanHomePage> {
                 _menuItem("Attendance", Icons.done, Colors.orange, () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => AttendanceCheckIn()),
+                    MaterialPageRoute(
+                      builder: (_) => HrAttendanceIn(
+                        guardName: _staffName,
+
+                      ),
+                    ),
                   );
                 }),
 
                 _menuItem("History", Icons.history, Colors.purple, () {
+                  // Add history page navigation
                 }),
 
                 _menuItem("Get Pass", Icons.badge, Colors.blue, () {
@@ -237,8 +268,8 @@ class _getmanHomePageState extends State<getmanHomePage> {
                   );
                 }),
 
-
                 _menuItem("Change Password", Icons.lock, Colors.red, () {}),
+
                 _menuItem("Logout", Icons.logout, Colors.black, _logout),
               ],
             ),
@@ -249,11 +280,11 @@ class _getmanHomePageState extends State<getmanHomePage> {
   }
 
   Widget _menuItem(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
+      String title,
+      IconData icon,
+      Color color,
+      VoidCallback onTap,
+      ) {
     return InkWell(
       onTap: onTap,
       child: Column(
@@ -296,15 +327,20 @@ class _getmanHomePageState extends State<getmanHomePage> {
 }
 
 // ---------------------------------------------------------------------------
-// ANIMATED BANNER
+// ANIMATED BANNER - Updated to show employeeId
 // ---------------------------------------------------------------------------
 
 class AnimatedBanner extends StatefulWidget {
   final String name;
   final String mobileNo;
+  final String employeeId;
 
-  const AnimatedBanner({Key? key, required this.name, required this.mobileNo})
-    : super(key: key);
+  const AnimatedBanner({
+    Key? key,
+    required this.name,
+    required this.mobileNo,
+    required this.employeeId,
+  }) : super(key: key);
 
   @override
   State<AnimatedBanner> createState() => _AnimatedBannerState();
@@ -381,6 +417,11 @@ class _AnimatedBannerState extends State<AnimatedBanner>
                   widget.mobileNo,
                   style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
+                if (widget.employeeId.isNotEmpty)
+                  Text(
+                    "ID: ${widget.employeeId}",
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
               ],
             ),
           ],

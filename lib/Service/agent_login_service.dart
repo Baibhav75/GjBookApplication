@@ -6,12 +6,12 @@ class AgentLoginService {
   Future<AgentLoginModel?> login({
     required String mobile,
     required String password,
-    required String employeeType,
+    required String position,
   }) async {
     try {
       final url =
       Uri.parse("https://g17bookworld.com/API/AgentLogin/EmployeeLogin"
-          "?MobileNo=$mobile&Password=$password&EmployeeType=$employeeType");
+          "?MobileNo=$mobile&Password=$password&Position=$position");
 
       final response = await http.get(url);
 

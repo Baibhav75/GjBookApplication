@@ -4,6 +4,7 @@ class AgentGetManLoginModel {
   final String agentName;
   final String agentAdminEmail;
   final String position;
+  final String employeeId;
 
   AgentGetManLoginModel({
     required this.status,
@@ -11,6 +12,7 @@ class AgentGetManLoginModel {
     required this.agentName,
     required this.agentAdminEmail,
     required this.position,
+    required this.employeeId,
   });
 
   factory AgentGetManLoginModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class AgentGetManLoginModel {
       agentName: json['AgentName'] ?? '',
       agentAdminEmail: json['AgentAdminEmail'] ?? '',
       position: json['Position'] ?? '',
+      employeeId: json['EmployeeId'] ?? '',
     );
   }
 

@@ -1,8 +1,10 @@
+import 'package:bookworld/staffPage/staff_page.dart';
 import 'package:flutter/material.dart';
+
+import '../AgentStaff/getmanHomePage.dart';
 import '../Service/agent_login_service.dart';
 import '../Service/secure_storage_service.dart';
 import '../Model/agent_login_model.dart';
-import 'staff_page.dart';
 
 class StaffLoginPage extends StatefulWidget {
   const StaffLoginPage({Key? key}) : super(key: key);
@@ -17,7 +19,9 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  String dropdownEmployeeType = "AgentStaff";
+  /// POSITION DROPDOWN
+  String dropdownPosition = "AGENT";
+  final List<String> _positions = ["AGENT",];
 
   bool _isLoading = false;
   bool _obscure = true;
@@ -38,54 +42,65 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
       final AgentLoginModel? result = await _loginService.login(
         mobile: mobile,
         password: password,
-        employeeType: dropdownEmployeeType,
+        position: dropdownPosition,
       );
 
       if (result == null) {
         _showMessage("Something went wrong. Please try again.");
-      } else if (result.status == "Success") {
-        _showMessage("Login Successful");
+        return;
+      }
 
-        // ✅ SAVE LOGIN DATA (IMPORTANT)
-        await _storageService.saveStaffCredentials(
-          username: mobile,
-          password: password,
-          employeeType: dropdownEmployeeType,
-          agentName: result.agentName,
-          mobileNo: mobile, // ✅ MUST
-        );
+      if (result.status.toLowerCase() != "success") {
+        _showMessage(result.message);
+        return;
+      }
 
+      /// SAVE LOGIN DATA
+      await _storageService.saveStaffCredentials(
+        username: mobile,
+        password: password,
+        employeeType: dropdownPosition,
+        agentName: result.agentName,
+        mobileNo: mobile,
+      );
 
+      if (!mounted) return;
 
-        // ✅ NAVIGATE
+      /// ================= ROLE BASED NAVIGATION =================
+      if (dropdownPosition == "AGENT") {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => StaffPage(
               agentName: result.agentName,
-              employeeType: result.employeeType,
-              email: result.agentAdminEmail,
-              password: result.agentPassword,
+              employeeType: dropdownPosition,
+              email: "", // ✅ FIXED
+              password: password,
               mobile: mobile,
             ),
           ),
         );
-      } else {
-        _showMessage(result.message);
+
+      } else if (dropdownPosition == "SecurityGuard") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const getmanHomePage(),
+          ),
+        );
       }
     } catch (e) {
-      _showMessage("Login failed. Please try again.");
       debugPrint("Login Error: $e");
+      _showMessage("Login failed. Please try again.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   // ================= SNACKBAR =================
   void _showMessage(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
   // ================= UI =================
@@ -97,7 +112,6 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
         title: const Text("AgentStaff Login"),
         backgroundColor: Colors.green[800],
         foregroundColor: Colors.white,
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -105,18 +119,13 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
           key: _formKey,
           child: Column(
             children: [
-              // LOGO
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/MOLL Services Logo.png',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.contain,
-                ),
+              Image.asset(
+                'assets/MOLL Services Logo.png',
+                width: 100,
+                height: 100,
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               Text(
                 "AgentStaff Portal",
@@ -129,24 +138,49 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
 
               const SizedBox(height: 30),
 
-              // MOBILE
+              /// POSITION
+              DropdownButtonFormField<String>(
+                value: dropdownPosition,
+                items: _positions
+                    .map(
+                      (pos) => DropdownMenuItem(
+                    value: pos,
+                    child: Text(pos),
+                  ),
+                )
+                    .toList(),
+                onChanged: (value) =>
+                    setState(() => dropdownPosition = value!),
+                validator: (v) =>
+                v == null ? "Please select position" : null,
+                decoration: _inputDecoration(
+                  "Select Position",
+                  Icons.work_outline,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// MOBILE
               TextFormField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
-                decoration: _inputDecoration(
-                  "Mobile Number",
-                  Icons.phone_android,
-                ),
+                decoration:
+                _inputDecoration("Mobile Number", Icons.phone),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return "Enter mobile number";
-                  if (v.length != 10) return "Enter valid 10 digit number";
+                  if (v == null || v.isEmpty) {
+                    return "Enter mobile number";
+                  }
+                  if (v.length != 10) {
+                    return "Enter valid 10 digit number";
+                  }
                   return null;
                 },
               ),
 
               const SizedBox(height: 20),
 
-              // PASSWORD
+              /// PASSWORD
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscure,
@@ -159,9 +193,8 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                           ? Icons.visibility
                           : Icons.visibility_off,
                     ),
-                    onPressed: () {
-                      setState(() => _obscure = !_obscure);
-                    },
+                    onPressed: () =>
+                        setState(() => _obscure = !_obscure),
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -169,15 +202,13 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                   filled: true,
                   fillColor: Colors.white,
                 ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return "Enter password";
-                  return null;
-                },
+                validator: (v) =>
+                v == null || v.isEmpty ? "Enter password" : null,
               ),
 
               const SizedBox(height: 30),
 
-              // LOGIN BUTTON
+              /// LOGIN BUTTON
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -191,13 +222,9 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                     ),
                   ),
                   child: _isLoading
-                      ? const SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
+                      ? const CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
                   )
                       : const Text(
                     "Login",
@@ -215,7 +242,6 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
     );
   }
 
-  // ================= INPUT DECORATION =================
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,

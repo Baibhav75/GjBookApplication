@@ -5,21 +5,19 @@ import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '/staffPage/attendanceCheckOut.dart';
-import '/Service/agent_login_service.dart';
-import '/Model/agent_login_model.dart';
+import '../Service/ItAttendanceIn_service.dart';
+import '/staffPage/itAttendanceCheckOut.dart';
+
 import '/Service/secure_storage_service.dart';
-import '/Model/attendance_checkin_model.dart';
-import '/Service/attendance_service.dart';
-import '/Service/ItAttendanceIn_service.dart';
+import '/Model/ItAttendanceModel.dart';
 import '/Service/staff_profile_service.dart';
 
-class AttendanceCheckIn extends StatefulWidget {
+class ItAttendanceCheckIn extends StatefulWidget {
   final String? agentName;
   final String? employeeType;
   final String? mobile;
 
-  const AttendanceCheckIn({
+  const ItAttendanceCheckIn({
     super.key,
     this.agentName,
     this.employeeType,
@@ -27,10 +25,10 @@ class AttendanceCheckIn extends StatefulWidget {
   });
 
   @override
-  State<AttendanceCheckIn> createState() => _AttendanceCheckInState();
+  State<ItAttendanceCheckIn> createState() => _ItAttendanceCheckInState();
 }
 
-class _AttendanceCheckInState extends State<AttendanceCheckIn> {
+class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
   // Location & Address
   Position? _position;
   String? _address;
@@ -90,6 +88,10 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       final storageService = SecureStorageService();
       final credentials = await storageService.getStaffCredentials();
 
+      // 🔐 Fix: Prioritize getting mobile directly from storage
+      // This matches the fix applied in itAttendanceCheckOut.dart
+      final storedMobile = await storageService.getStaffMobileNo();
+
       if (mounted) {
         setState(() {
           final storedName = widget.agentName ??
@@ -97,20 +99,27 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
               credentials['username'] ??
               '';
           _userName = storedName.trim().isNotEmpty ? storedName : null;
-          _userMobile = widget.mobile ?? credentials['username'] ?? '';
-          
-          // Try to get employee ID from credentials or use mobile as fallback
-          // Mobile number is commonly used as employee ID in many systems
-          _employeeId = credentials['employeeId'] ?? _userMobile;
-          
+
+          _userMobile = (storedMobile != null && storedMobile.isNotEmpty)
+              ? storedMobile
+              : widget.mobile ?? credentials['username'] ?? credentials['mobileNo'] ?? '';
+
+          // Try multiple sources for employee ID
+          // 1. From credentials
+          // 2. From getStaffEmployeeId() (Checked in _fetchEmployeeIdWithFallbacks, but we check here too for speed)
+
+          // Don't fallback to mobile number yet - let _fetchEmployeeIdWithFallbacks do the heavy lifting
+          String? employeeIdFromCreds = credentials['employeeId'];
+          _employeeId = employeeIdFromCreds?.trim().isNotEmpty == true
+              ? employeeIdFromCreds!.trim()
+              : null;
+
           _isLoadingUser = false;
         });
       }
-      
-      // Try to fetch employee ID from staff profile if mobile is available
-      if (_userMobile != null && _userMobile!.isNotEmpty) {
-        await _fetchEmployeeId();
-      }
+
+      // Try to get employee ID using multiple methods
+      await _fetchEmployeeIdWithFallbacks();
     } catch (e) {
       debugPrint('Error loading user data: $e');
       if (mounted) {
@@ -124,35 +133,72 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
     }
   }
 
-  /// Fetch employee ID from staff profile API
-  Future<void> _fetchEmployeeId() async {
-    if (_userMobile == null || _userMobile!.isEmpty) return;
-    
+  /// Fetch employee ID using multiple fallback methods
+  Future<void> _fetchEmployeeIdWithFallbacks() async {
+    if (!mounted) return;
+
     try {
-      final staffProfileService = StaffProfileService();
-      final profile = await staffProfileService.fetchProfile(_userMobile!);
-      
-      if (profile != null && profile.employeeId.isNotEmpty && mounted) {
-        setState(() {
-          _employeeId = profile.employeeId;
-        });
-        debugPrint('Employee ID fetched: $_employeeId');
-      } else {
-        // Fallback to mobile number if profile fetch fails
+      final storageService = SecureStorageService();
+
+      // Method 1: Try getStaffEmployeeId()
+      String? employeeId = await storageService.getStaffEmployeeId();
+      if (employeeId != null && employeeId.trim().isNotEmpty) {
         if (mounted) {
           setState(() {
-            _employeeId = _userMobile;
+            _employeeId = employeeId!.trim();
           });
         }
-        debugPrint('Using mobile number as Employee ID: $_employeeId');
+        debugPrint('Employee ID loaded from storage: $_employeeId');
+        return;
+      }
+
+      // Method 2: Try getUserId()
+      employeeId = await storageService.getUserId();
+      if (employeeId != null && employeeId.trim().isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _employeeId = employeeId!.trim();
+          });
+        }
+        debugPrint('Employee ID loaded from userId: $_employeeId');
+        return;
+      }
+
+      // Method 3: Try fetching from staff profile API if mobile is available
+      if (_userMobile != null && _userMobile!.trim().isNotEmpty) {
+        try {
+          final staffProfileService = StaffProfileService();
+          final profile = await staffProfileService.fetchProfile(_userMobile!);
+
+          if (profile != null && profile.employeeId.trim().isNotEmpty && mounted) {
+            setState(() {
+              _employeeId = profile.employeeId.trim();
+            });
+            debugPrint('Employee ID fetched from profile API: $_employeeId');
+            return;
+          }
+        } catch (e) {
+          debugPrint('Error fetching employee ID from profile API: $e');
+        }
+      }
+
+      // Method 4: Final fallback to mobile number
+      if (mounted && _userMobile != null && _userMobile!.trim().isNotEmpty) {
+        setState(() {
+          _employeeId = _userMobile!.trim();
+        });
+        debugPrint('Using mobile number as Employee ID fallback: $_employeeId');
+      } else {
+        debugPrint('WARNING: No employee ID found and mobile number is also missing');
       }
     } catch (e) {
-      debugPrint('Error fetching employee ID: $e');
-      // Fallback to mobile number
-      if (mounted) {
+      debugPrint('Error in _fetchEmployeeIdWithFallbacks: $e');
+      // Final fallback to mobile number
+      if (mounted && _userMobile != null && _userMobile!.trim().isNotEmpty) {
         setState(() {
-          _employeeId = _userMobile;
+          _employeeId = _userMobile!.trim();
         });
+        debugPrint('Using mobile number as Employee ID (error fallback): $_employeeId');
       }
     }
   }
@@ -248,7 +294,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
   /// Handle GPS disabled - show popup and navigate
   void _handleGPSDisabled() {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -295,7 +341,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
   /// Handle permission denied forever
   void _handlePermissionDeniedForever() {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -342,7 +388,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
   /// Handle permission denied
   void _handlePermissionDenied() {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -389,14 +435,14 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
   /// Navigate to check out page with default values
   void _navigateToCheckOut() {
     if (!mounted) return;
-    
+
     // Create default values for navigation
     final defaultCheckInTime = DateTime.now();
-    
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => AttendanceCheckOut(
+        builder: (context) => ItAttendanceCheckOut(
           checkInTime: defaultCheckInTime,
           checkInPhoto: _photo, // Can be null if GPS was off before photo capture
           checkInPosition: _position,
@@ -455,8 +501,15 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
 
     // Quick validation checks before API call
     if (_employeeId == null || _employeeId!.trim().isEmpty) {
-      _showError("Employee ID is missing. Please wait or login again.");
-      return;
+      // Try one more time to fetch employee ID
+      await _fetchEmployeeIdWithFallbacks();
+
+      // Check again after retry
+      if (_employeeId == null || _employeeId!.trim().isEmpty) {
+        _showError("Employee ID is missing. Please contact admin or login again.");
+        debugPrint('ERROR: Employee ID is still missing after retry. Mobile: $_userMobile');
+        return;
+      }
     }
 
     if (_userMobile == null || _userMobile!.trim().isEmpty) {
@@ -476,14 +529,12 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       final pic = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
 
       if (pic == null) {
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-        }
+        setState(() => _isCheckingIn = false);
         return;
       }
 
       final photoFile = File(pic.path);
-      
+
       // Quick image validation
       if (!photoFile.existsSync()) {
         if (mounted) {
@@ -496,7 +547,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       _photo = photoFile;
 
       // Fast coordinate validation
-      if (_position!.latitude.isNaN || _position!.longitude.isNaN || 
+      if (_position!.latitude.isNaN || _position!.longitude.isNaN ||
           _position!.latitude.isInfinite || _position!.longitude.isInfinite) {
         if (mounted) {
           setState(() => _isCheckingIn = false);
@@ -507,66 +558,84 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
 
       final checkInTime = DateTime.now();
       final checkInTimeString = checkInTime.toIso8601String();
-      
-      // Call backend API with all required details BEFORE navigation
-      // This ensures all attendance data is successfully sent to the backend
-      final result = await ItattendanceinService.markAttendance(
+
+      // NAVIGATE IMMEDIATELY - Don't wait for API call
+      // This makes the check-in process instant and smooth
+      if (!mounted) return;
+
+      // Save check-in data to local storage before navigation
+      try {
+        final storageService = SecureStorageService();
+        await storageService.saveCheckInData(
+          checkInTime: checkInTime,
+          photoPath: photoFile.path,
+          latitude: _position!.latitude,
+          longitude: _position!.longitude,
+          address: _address!,
+        );
+        debugPrint('Check-in data saved locally');
+      } catch (e) {
+        debugPrint('Error saving check-in data: $e');
+        // Continue even if save fails
+      }
+
+      // Navigate instantly after photo capture - before API call
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ItAttendanceCheckOut(
+            checkInTime: checkInTime,
+            checkInPhoto: photoFile,
+            checkInPosition: _position!,
+            checkInAddress: _address!,
+            employeeId: _employeeId!.trim(), // Pass resolved EmployeeID to maintain consistency
+          ),
+        ),
+      );
+
+      // Reset state since navigation happened
+      // (Widget will be disposed, but resetting for safety)
+      _isCheckingIn = false;
+
+      // Send API call in background (non-blocking) - don't await
+      // This allows navigation to happen instantly while API processes in background
+      ItattendanceinService.markAttendance(
         employeeId: _employeeId!.trim(),
         mobile: _userMobile!.trim(),
         checkInTime: checkInTimeString,
         location: _address!.trim(),
-        state: _state ?? 'NA', // Send fallback state as "NA" if null
+        state: _state ?? '', // Pass state to API to fix null reference error
         latitude: _position!.latitude,
         longitude: _position!.longitude,
         image: photoFile,
-      );
+      ).then((result) {
+        // Handle API response in background (non-blocking)
+        if (result != null) {
+          debugPrint('Check-in API response: ${result.status} - ${result.message}');
 
-      if (result != null && result.status == true) {
-        // API call successful - save check-in data and navigate to CheckOut page
-        try {
-          final storageService = SecureStorageService();
-          await storageService.saveCheckInData(
-            checkInTime: checkInTime,
-            photoPath: photoFile.path,
-            latitude: _position!.latitude,
-            longitude: _position!.longitude,
-            address: _address!,
-          );
-          debugPrint('Check-in data saved locally');
-        } catch (e) {
-          debugPrint('Error saving check-in data: $e');
-          // Continue even if save fails
+          // Log errors but don't block user - they're already on checkout page
+          if (result.status == false) {
+            final message = result.message?.trim().toLowerCase() ?? '';
+            if (!message.contains("already checked-out") &&
+                !message.contains("already checked out")) {
+              debugPrint('Check-in API error: ${result.message}');
+            }
+          }
+        } else {
+          debugPrint('Check-in API returned null');
         }
+      }).catchError((error) {
+        // Log errors but don't interrupt user flow
+        debugPrint('Check-in API error: $error');
+      });
 
-        // Navigate to CheckOut page after successful API call
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AttendanceCheckOut(
-                checkInTime: checkInTime,
-                checkInPhoto: photoFile,
-                checkInPosition: _position!,
-                checkInAddress: _address!,
-              ),
-            ),
-          );
-        }
-      } else {
-        // API call failed - show error message and stay on same screen
-        if (mounted) {
-          setState(() => _isCheckingIn = false);
-          String errorMessage = result?.message?.isNotEmpty == true 
-              ? result!.message! 
-              : 'Failed to submit attendance. Please try again.';
-          _showError(errorMessage);
-        }
-      }
+      // Return immediately - navigation already happened
+      return;
     } catch (e, stackTrace) {
       debugPrint("Check-in error: $e");
       debugPrint("Stack trace: $stackTrace");
-      
-      // Show error and stay on same screen
+
+      // Only show error if navigation hasn't happened yet
       if (mounted) {
         setState(() => _isCheckingIn = false);
         _showError("Error: ${e.toString()}");
@@ -663,7 +732,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
         ),
         centerTitle: true,
         title: const Text(
-          'Attendance',
+          'IT Attendance',
           style: TextStyle(
             color: Color(0xFF6B46FF),
             fontWeight: FontWeight.w600,
@@ -1038,14 +1107,14 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
   /// Build summary card
   Widget _buildSummaryCard() {
     // Get work duration from API response if available
-    final todayDuration = _todayWorkDuration?.isNotEmpty == true 
-        ? _todayWorkDuration! 
+    final todayDuration = _todayWorkDuration?.isNotEmpty == true
+        ? _todayWorkDuration!
         : '0 h 0 m';
-    
-    final weekDuration = _weekWorkDuration?.isNotEmpty == true 
-        ? _weekWorkDuration! 
+
+    final weekDuration = _weekWorkDuration?.isNotEmpty == true
+        ? _weekWorkDuration!
         : '0 h 0 m';
-    
+
     final status = _lastCheckInResponse != null && _lastCheckInResponse!.status == true
         ? 'Checked In'
         : 'Ready';
@@ -1127,3 +1196,4 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
     );
   }
 }
+

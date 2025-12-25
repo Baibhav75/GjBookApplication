@@ -4,17 +4,17 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '/Service/agent_login_service.dart';
-import '/Model/agent_login_model.dart';
-import '/Service/secure_storage_service.dart';
+import '../Service/secure_storage_service.dart' show SecureStorageService;
 import '/Service/attendance_out_service.dart';
+import '/Model/ AttendanceCheckOutModel.dart';
 import '/Service/staff_profile_service.dart';
-import 'staff_page.dart';
+import 'getManPage.dart';
+
 
 
 /// Checkout screen that completes the attendance flow.
-class AttendanceCheckOut extends StatefulWidget {
-  const AttendanceCheckOut({
+class GetmanAttendanceCheckout extends StatefulWidget {
+  const GetmanAttendanceCheckout({
     super.key,
     required this.checkInTime,
     this.checkInPhoto,
@@ -28,10 +28,10 @@ class AttendanceCheckOut extends StatefulWidget {
   final String? checkInAddress;
 
   @override
-  State<AttendanceCheckOut> createState() => _AttendanceCheckOutState();
+  State<GetmanAttendanceCheckout> createState() => _AttendanceCheckOutState();
 }
 
-class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
+class _AttendanceCheckOutState extends State<GetmanAttendanceCheckout> {
   final ImagePicker _picker = ImagePicker();
 
   bool _isCheckingOut = false;
@@ -57,12 +57,13 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     _initLocation();
     _startDurationTimer();
   }
+
   /// Load user data from secure storage
   Future<void> _loadUserData() async {
     try {
       final storageService = SecureStorageService();
       final credentials = await storageService.getStaffCredentials();
-      
+
       if (mounted) {
         setState(() {
           _userName = credentials['agentName'];
@@ -71,7 +72,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
           _employeeId = credentials['employeeId'] ?? _userMobile;
         });
       }
-      
+
       // Try to fetch employee ID from staff profile if mobile is available
       if (_userMobile != null && _userMobile!.isNotEmpty) {
         await _fetchEmployeeId();
@@ -80,14 +81,15 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       debugPrint('Error loading user data in checkout: $e');
     }
   }
+
   /// Fetch employee ID from staff profile API
   Future<void> _fetchEmployeeId() async {
     if (_userMobile == null || _userMobile!.isEmpty) return;
-    
+
     try {
       final staffProfileService = StaffProfileService();
       final profile = await staffProfileService.fetchProfile(_userMobile!);
-      
+
       if (profile != null && profile.employeeId.isNotEmpty && mounted) {
         setState(() {
           _employeeId = profile.employeeId;
@@ -122,7 +124,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
   /// Start timer to update duration in real-time (optimized)
   void _startDurationTimer() {
     if (_checkOutTime != null) return; // Stop if checkout completed
-    
+
     _lastUpdateTime = DateTime.now();
     // Update every second for real-time duration display
     Future.delayed(const Duration(seconds: 1), () {
@@ -214,7 +216,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       final p = placemarks.first;
       // Build address parts more efficiently
       final addressParts = <String>[];
-      
+
       if (p.name?.isNotEmpty ?? false) addressParts.add(p.name!);
       if (p.subLocality?.isNotEmpty ?? false) addressParts.add(p.subLocality!);
       if (p.locality?.isNotEmpty ?? false) addressParts.add(p.locality!);
@@ -292,7 +294,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
 
     final fullFormatter = DateFormat('MMM d, yyyy – hh:mm a');
     final finalDuration = checkoutTime.difference(widget.checkInTime);
-    
+
     // Check if checkout location is valid (calculate before widget tree)
     final isValidCheckoutLocation = (_currentAddress ?? '').isNotEmpty &&
         _currentAddress != 'Address will appear here once available' &&
@@ -552,7 +554,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     }
 
     final service = AttendanceOutService();
-
+    
     final response = await service.submitAttendance(
       employeeId: _employeeId!.trim(),
       mobile: _userMobile!.trim(),
@@ -566,13 +568,13 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
 
     // Handle response - always navigate regardless of API response
     if (response == null || response.status == false) {
-      final errorMsg = response?.message?.isNotEmpty == true 
-          ? response!.message! 
+      final errorMsg = response?.message?.isNotEmpty == true
+          ? response!.message!
           : "Checkout API failed";
-      
+
       // Log error but don't block navigation
       debugPrint('Checkout API warning: $errorMsg');
-      
+
       // Show a subtle warning but still proceed
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -612,7 +614,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     try {
       final storageService = SecureStorageService();
       final credentials = await storageService.getStaffCredentials();
-      
+
       final agentName = credentials['agentName'] ?? _userName ?? '';
       final employeeType = credentials['employeeType'] ?? 'AgentStaff';
       final email = credentials['email'] ?? '';
@@ -624,15 +626,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       // Navigate to StaffPage
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => StaffPage(
-            agentName: agentName,
-            employeeType: employeeType,
-            email: email,
-            password: password,
-            mobile: mobile,
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => const GetManPage()),
         (route) => false, // Remove all previous routes
       );
     } catch (e) {
@@ -643,6 +637,10 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
       }
     }
   }
+
+
+
+
 
   /// Show error message
   void _showError(String message) {
@@ -736,7 +734,7 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => StaffPage(agentName: '', employeeType: '', email: '', password: '', mobile: '',), // Your staff page widget
+                builder: (context) => GetManPage(), // Your staff page widget
               ),
             );
           },
@@ -814,55 +812,55 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
   Widget _summaryRow(String label, String value) {
     // Check if value is likely to overflow (addresses are usually long)
     final isLongText = value.length > 30 || label.toLowerCase().contains('address');
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: isLongText
           ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                    fontSize: 14,
-                  ),
-                  maxLines: null,
-                  softWrap: true,
-                ),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(color: Colors.black54),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                    textAlign: TextAlign.end,
-                    maxLines: null,
-                    softWrap: true,
-                  ),
-                ),
-              ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 14,
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+              fontSize: 14,
+            ),
+            maxLines: null,
+            softWrap: true,
+          ),
+        ],
+      )
+          : Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: Colors.black54),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.end,
+              maxLines: null,
+              softWrap: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1080,3 +1078,4 @@ class _AttendanceCheckOutState extends State<AttendanceCheckOut> {
     );
   }
 }
+
