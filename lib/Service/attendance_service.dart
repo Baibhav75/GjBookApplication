@@ -12,151 +12,144 @@ class AttendanceService {
     required String mobile,
     required String checkInTime,
     required String location,
-    required double latitude,
-    required double longitude,
-    required String? state,
     required File image,
+    required String state,
   }) async {
     try {
-      // Validate inputs before sending
+      // 1. Strict Validation
       if (employeeId.trim().isEmpty) {
-        print("API ERROR: EmployeeId is empty");
+        print("API ERROR: Employee ID is missing");
         return AttendanceCheckInModel(
           status: false,
           message: "Employee ID is required",
-          type: "error",
+          type: "validation_error",
         );
       }
 
       if (mobile.trim().isEmpty) {
-        print("API ERROR: Mobile number is empty");
+        print("API ERROR: Mobile number is missing");
         return AttendanceCheckInModel(
           status: false,
           message: "Mobile number is required",
-          type: "error",
+          type: "validation_error",
+        );
+      }
+
+      if (checkInTime.trim().isEmpty) {
+        print("API ERROR: Check-in time is missing");
+        return AttendanceCheckInModel(
+          status: false,
+          message: "Check-in time is required",
+          type: "validation_error",
         );
       }
 
       if (location.trim().isEmpty) {
-        print("API ERROR: Location is empty");
+        print("API ERROR: Location is missing");
         return AttendanceCheckInModel(
           status: false,
           message: "Location is required",
-          type: "error",
+          type: "validation_error",
+        );
+      }
+
+      if (state.trim().isEmpty) {
+        print("API ERROR: State is missing");
+        return AttendanceCheckInModel(
+          status: false,
+          message: "State is required",
+          type: "validation_error",
         );
       }
 
       if (!image.existsSync()) {
-        print("API ERROR: Image file does not exist");
+        print("API ERROR: Image file does not exist at path: ${image.path}");
         return AttendanceCheckInModel(
           status: false,
-          message: "Image file is missing",
-          type: "error",
+          message: "Image file is missing or invalid",
+          type: "validation_error",
         );
       }
 
+      // 2. Prepare Request
       var request = http.MultipartRequest("POST", Uri.parse(apiUrl));
 
-      // Ensure all fields are trimmed and non-empty
+      // 3. Add Fields (Exact case-sensitive names required by backend)
       request.fields['EmployeeId'] = employeeId.trim();
       request.fields['EmpMobNo'] = mobile.trim();
       request.fields['CheckInTime'] = checkInTime.trim();
       request.fields['CheckInLocation'] = location.trim();
-      request.fields['Latitude'] = latitude.toString();
-      request.fields['Longitude'] = longitude.toString();
-      request.fields['Type'] = "CheckIn";
-      
-      // ADDING STATE - Likely culprit for "Object reference not set"
-      request.fields['State'] = state?.trim() ?? '';
+      request.fields['State'] = state.trim();
 
+      // 4. Add File (Exact name 'CheckinImage')
       request.files.add(await http.MultipartFile.fromPath(
         "CheckinImage",
         image.path,
       ));
 
-      // Debug logging
-      print("Sending attendance check-in request:");
-      print("EmployeeId: ${request.fields['EmployeeId']}");
-      print("EmpMobNo: ${request.fields['EmpMobNo']}");
-      print("CheckInTime: ${request.fields['CheckInTime']}");
-      print("CheckInLocation: ${request.fields['CheckInLocation']}");
-      print("Latitude: ${request.fields['Latitude']}");
-      print("Longitude: ${request.fields['Longitude']}");
-      print("Type: ${request.fields['Type']}");
-      print("State: ${request.fields['State']}");
-      print("Image path: ${image.path}");
-      print("Image exists: ${image.existsSync()}");
+      // 5. Debug Logging
+      print("🚀 SENDING ATTENDANCE CHECK-IN REQUEST");
+      print("   URL: $apiUrl");
+      print("   EmployeeId:      '${request.fields['EmployeeId']}'");
+      print("   EmpMobNo:        '${request.fields['EmpMobNo']}'");
+      print("   CheckInTime:     '${request.fields['CheckInTime']}'");
+      print("   CheckInLocation: '${request.fields['CheckInLocation']}'");
+      print("   State:           '${request.fields['State']}'");
+      print("   CheckinImage:    '${image.path}' (Size: ${await image.length()} bytes)");
 
+
+      // 6. Send Request
       var response = await request.send();
       var body = await response.stream.bytesToString();
 
-      // Log response for debugging
-      print("API Response Status: ${response.statusCode}");
-      print("API Response Body: $body");
+      print("📥 ATTENDANCE RESPONSE");
+      print("   Status Code: ${response.statusCode}");
+      print("   Body: $body");
 
-      // Validate response body
-      if (body.isEmpty || body.trim().isEmpty) {
-        print("API ERROR: Empty response body");
-        return AttendanceCheckInModel(
+      // 7. Handle Responses
+      if (body.isEmpty) {
+         return AttendanceCheckInModel(
           status: false,
-          message: "Empty response from server",
-          type: "error",
+          message: "Server returned empty response",
+          type: "server_error",
         );
       }
 
-      // Check if response contains error message directly
-      if (body.toLowerCase().contains("object reference not set") ||
-          body.toLowerCase().contains("null reference")) {
-        print("API ERROR: Server returned null reference error");
-        return AttendanceCheckInModel(
-          status: false,
-          message: "Server error: Required information is missing. Please check all fields.",
-          type: "error",
-        );
-      }
-
-      // Check HTTP status code
       if (response.statusCode != 200) {
-        print("API ERROR: HTTP ${response.statusCode} - $body");
         return AttendanceCheckInModel(
           status: false,
           message: "Server error: ${response.statusCode}",
-          type: "error",
+          type: "http_error",
         );
       }
 
-      // Parse JSON with validation
-      dynamic jsonRes;
+      // 8. Parse JSON
       try {
-        jsonRes = jsonDecode(body);
-      } catch (jsonError) {
-        print("API ERROR: Invalid JSON - $jsonError");
-        print("Response body: $body");
-        return AttendanceCheckInModel(
+        final jsonRes = jsonDecode(body);
+        if (jsonRes is Map<String, dynamic>) {
+           return AttendanceCheckInModel.fromJson(jsonRes);
+        } else {
+           print("API ERROR: JSON is not a Map");
+           return AttendanceCheckInModel(
+            status: false,
+            message: "Invalid server response format",
+            type: "parse_error",
+          );
+        }
+      } catch (e) {
+        print("API ERROR: JSON Parse failed: $e");
+         return AttendanceCheckInModel(
           status: false,
-          message: "Invalid response format",
-          type: "error",
+          message: "Failed to parse server response",
+          type: "parse_error",
         );
       }
-
-      // Validate that jsonRes is a Map
-      if (jsonRes is! Map<String, dynamic>) {
-        print("API ERROR: Response is not a Map - ${jsonRes.runtimeType}");
-        print("Response body: $body");
-        return AttendanceCheckInModel(
-          status: false,
-          message: "Invalid response structure",
-          type: "error",
-        );
-      }
-
-      return AttendanceCheckInModel.fromJson(jsonRes);
     } catch (e) {
-      print("API ERROR: $e");
+      print("API EXCEPTION: $e");
       return AttendanceCheckInModel(
         status: false,
-        message: "Something went wrong: ${e.toString()}",
-        type: "error",
+        message: "An unexpected error occurred: $e",
+        type: "exception",
       );
     }
   }

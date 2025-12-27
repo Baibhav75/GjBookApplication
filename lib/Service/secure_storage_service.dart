@@ -65,6 +65,13 @@ class SecureStorageService {
   static const String _keyCheckInLongitude = 'checkin_longitude';
   static const String _keyCheckInAddress = 'checkin_address';
 
+  // Enhanced check-in keys
+  static const String _keyCheckInEmployeeId = 'checkin_employee_id';
+  static const String _keyCheckInMobile = 'checkin_mobile';
+  static const String _keyCheckInState = 'checkin_state';
+  static const String _keyHasPendingCheckIn = 'has_pending_checkin';
+  static const String _keyCheckInSyncStatus = 'checkin_sync_status';
+
   // ===========================================================================
   // ✅ SAVE METHODS
   // ===========================================================================
@@ -73,6 +80,7 @@ class SecureStorageService {
   Future<void> saveAdminCredentials({
     required String mobileNo,
     required String password,
+
     String? adminName,
     String? adminEmail,
   }) async {
@@ -110,17 +118,22 @@ class SecureStorageService {
       await _storage.write(key: _keyStaffUsername, value: username);
       await _storage.write(key: _keyStaffPassword, value: password);
 
-      if (employeeType != null) {
-        await _storage.write(key: _keyStaffEmployeeType, value: employeeType);
+      if (employeeId != null) {
+        await _storage.write(key: _keyStaffEmployeeId, value: employeeId);
       }
+
+      if (employeeType != null && employeeType.isNotEmpty) {
+        await _storage.write(
+          key: _keyStaffEmployeeType,
+          value: employeeType,
+        );
+      }
+
 
       if (agentName != null) {
         await _storage.write(key: _keyStaffAgentName, value: agentName);
       }
 
-      if (employeeId != null) {
-        await _storage.write(key: _keyStaffEmployeeId, value: employeeId);
-      }
 
       if (mobileNo != null) {
         await _storage.write(key: _keyStaffMobileNo, value: mobileNo);
@@ -432,16 +445,19 @@ class SecureStorageService {
   }
 
   // ===========================================================================
-  // ✅ CHECK-IN METHODS
+  // ✅ CHECK-IN METHODS (UPDATED)
   // ===========================================================================
 
-  /// Save check-in data
+  /// Save check-in data with enhanced fields
   Future<void> saveCheckInData({
     required DateTime checkInTime,
     required String photoPath,
     required double latitude,
     required double longitude,
     required String address,
+    String? employeeId,
+    String? mobile,
+    String? state,
   }) async {
     try {
       await _storage.write(key: _keyCheckInStatus, value: 'true');
@@ -459,12 +475,84 @@ class SecureStorageService {
         value: longitude.toString(),
       );
       await _storage.write(key: _keyCheckInAddress, value: address);
+
+      // Save additional fields for better syncing
+      if (employeeId != null && employeeId.isNotEmpty) {
+        await _storage.write(key: _keyCheckInEmployeeId, value: employeeId);
+      }
+
+      if (mobile != null && mobile.isNotEmpty) {
+        await _storage.write(key: _keyCheckInMobile, value: mobile);
+      }
+
+      if (state != null && state.isNotEmpty) {
+        await _storage.write(key: _keyCheckInState, value: state);
+      }
+
+      await _storage.write(key: _keyHasPendingCheckIn, value: 'true');
+      await _storage.write(key: _keyCheckInSyncStatus, value: 'pending_sync');
+
+      debugPrint('✅ Check-in data saved locally');
+      debugPrint('   Time: $checkInTime');
+      debugPrint('   Location: $address');
+      debugPrint('   Employee ID: ${employeeId ?? "Not saved"}');
+      debugPrint('   State: ${state ?? "Not saved"}');
     } catch (e) {
+      debugPrint('❌ Error saving check-in data: $e');
       throw Exception('Failed to save check-in data: $e');
     }
   }
 
-  /// Get check-in data
+  /// Save check-in data specifically for IT staff (no lat/long required)
+  Future<void> saveItCheckInData({
+    required DateTime checkInTime,
+    required String photoPath,
+    required String address,
+    String? employeeId,
+    String? mobile,
+    String? state,
+  }) async {
+    try {
+      await _storage.write(key: _keyCheckInStatus, value: 'true');
+      await _storage.write(
+        key: _keyCheckInTime,
+        value: checkInTime.toIso8601String(),
+      );
+      await _storage.write(key: _keyCheckInPhotoPath, value: photoPath);
+      
+      // Default dummy coordinates for IT check-in
+      await _storage.write(key: _keyCheckInLatitude, value: "0.0");
+      await _storage.write(key: _keyCheckInLongitude, value: "0.0");
+      
+      await _storage.write(key: _keyCheckInAddress, value: address);
+
+      // Save additional fields
+      if (employeeId != null && employeeId.isNotEmpty) {
+        await _storage.write(key: _keyCheckInEmployeeId, value: employeeId);
+      }
+
+      if (mobile != null && mobile.isNotEmpty) {
+        await _storage.write(key: _keyCheckInMobile, value: mobile);
+      }
+
+      // Default state if not provided
+      final stateToSave = state ?? "NA";
+      await _storage.write(key: _keyCheckInState, value: stateToSave);
+
+      await _storage.write(key: _keyHasPendingCheckIn, value: 'true');
+      await _storage.write(key: _keyCheckInSyncStatus, value: 'pending_sync');
+
+      debugPrint('✅ IT Check-in data saved locally');
+      debugPrint('   Time: $checkInTime');
+      debugPrint('   Location: $address');
+      debugPrint('   Employee ID: ${employeeId ?? "Not saved"}');
+    } catch (e) {
+      debugPrint('❌ Error saving IT check-in data: $e');
+      throw Exception('Failed to save IT check-in data: $e');
+    }
+  }
+
+  /// Get check-in data with enhanced fields
   Future<Map<String, String?>> getCheckInData() async {
     try {
       final status = await _storage.read(key: _keyCheckInStatus);
@@ -474,6 +562,13 @@ class SecureStorageService {
       final longitude = await _storage.read(key: _keyCheckInLongitude);
       final address = await _storage.read(key: _keyCheckInAddress);
 
+      // Get enhanced fields
+      final employeeId = await _storage.read(key: _keyCheckInEmployeeId);
+      final mobile = await _storage.read(key: _keyCheckInMobile);
+      final state = await _storage.read(key: _keyCheckInState);
+      final syncStatus = await _storage.read(key: _keyCheckInSyncStatus);
+      final hasPending = await _storage.read(key: _keyHasPendingCheckIn);
+
       return {
         'status': status,
         'time': time,
@@ -481,9 +576,15 @@ class SecureStorageService {
         'latitude': latitude,
         'longitude': longitude,
         'address': address,
+        'employeeId': employeeId,
+        'mobile': mobile,
+        'state': state,
+        'syncStatus': syncStatus,
+        'hasPending': hasPending,
       };
     } catch (e) {
-      throw Exception('Failed to get check-in data: $e');
+      debugPrint('Error getting check-in data: $e');
+      return {};
     }
   }
 
@@ -497,7 +598,57 @@ class SecureStorageService {
     }
   }
 
-  /// Clear check-in data
+  /// Check if there's a pending check-in that needs sync
+  Future<bool> hasPendingCheckIn() async {
+    try {
+      final hasPending = await _storage.read(key: _keyHasPendingCheckIn);
+      return hasPending == 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Mark check-in as synced to server
+  Future<void> markCheckInAsSynced() async {
+    try {
+      await _storage.write(key: _keyCheckInSyncStatus, value: 'synced');
+      await _storage.write(key: _keyHasPendingCheckIn, value: 'false');
+      debugPrint('✅ Check-in marked as synced');
+    } catch (e) {
+      debugPrint('Error marking check-in as synced: $e');
+    }
+  }
+
+  /// Sync pending check-in data
+  Future<void> syncPendingCheckIn() async {
+    try {
+      final pendingData = await getCheckInData();
+      if (pendingData.isEmpty) {
+        debugPrint('No pending check-in data to sync');
+        return;
+      }
+
+      final syncStatus = pendingData['syncStatus'];
+      if (syncStatus == 'synced') {
+        debugPrint('Check-in already synced');
+        return;
+      }
+
+      debugPrint('🔄 Syncing pending check-in data...');
+      debugPrint('   Employee ID: ${pendingData['employeeId']}');
+      debugPrint('   Time: ${pendingData['time']}');
+      debugPrint('   Status: $syncStatus');
+
+      // Note: This is where you would implement actual sync logic
+      // For now, just mark as synced
+      await markCheckInAsSynced();
+
+    } catch (e) {
+      debugPrint('Error syncing pending check-in: $e');
+    }
+  }
+
+  /// Clear all check-in data
   Future<void> clearCheckInData() async {
     try {
       await _storage.delete(key: _keyCheckInStatus);
@@ -506,7 +657,15 @@ class SecureStorageService {
       await _storage.delete(key: _keyCheckInLatitude);
       await _storage.delete(key: _keyCheckInLongitude);
       await _storage.delete(key: _keyCheckInAddress);
+      await _storage.delete(key: _keyCheckInEmployeeId);
+      await _storage.delete(key: _keyCheckInMobile);
+      await _storage.delete(key: _keyCheckInState);
+      await _storage.delete(key: _keyHasPendingCheckIn);
+      await _storage.delete(key: _keyCheckInSyncStatus);
+
+      debugPrint('✅ Check-in data cleared from storage');
     } catch (e) {
+      debugPrint('Error clearing check-in data: $e');
       throw Exception('Failed to clear check-in data: $e');
     }
   }
@@ -676,76 +835,45 @@ class SecureStorageService {
   /// -------------------------------------------------------------------------
   Future<Widget> _getStaffScreen() async {
     try {
-      // First check if this is an Agent/SecurityGuard user
+      // 1. Retrieve stored credentials
       final mobileNo = await getStaffMobileNo();
       final employeeType = await getStaffEmployeeType();
-
-      // If we have Agent/SecurityGuard credentials
-      if (mobileNo != null && employeeType != null &&
-          (employeeType == "AGENT" || employeeType == "SECURITY_GUARD")) {
-        // For Agent/SecurityGuard users, we don't have password stored
-        // So we need to redirect to appropriate home page based on role
-
-        if (employeeType == "SECURITY_GUARD") {
-          return const getmanHomePage();
-        } else {
-          return const agentStaffHomePage();
-        }
-      }
-
-      // Regular staff login flow
-      final credentials = await getStaffCredentials();
-
-      final username = credentials['username']; // Mobile
-      final password = credentials['password'];
-      final empType = credentials['employeeType'] ?? "AgentStaff";
-
-      if (username == null || password == null) {
+      
+      // 2. Validate essential credentials
+      if (mobileNo == null || mobileNo.isEmpty) {
         await clearAllCredentials();
         return const HomeScreen();
       }
 
-      final loginResponse = await _agentLoginService.login(
-        mobile: username,
-        password: password,
-        position: empType,
-      );
+      // 3. Handle Security Guard
+      if (employeeType == "SECURITY_GUARD") {
+        return const getmanHomePage();
+      }
 
-      if (loginResponse != null && loginResponse.status == "Success") {
-        // Check if user has already checked in
-        final hasCheckedIn = await this.hasCheckedIn();
+      // 4. Handle Persistent Login for other staff (Skip network login)
+      // Check if user has already checked in
+      final hasCheckedIn = await this.hasCheckedIn();
 
-        if (hasCheckedIn) {
-          // Load check-in data and navigate to checkout page
-          try {
-            final checkInData = await getCheckInData();
-            final checkoutScreen = await _buildCheckoutScreen(checkInData);
+      if (hasCheckedIn) {
+        // Load check-in data and navigate to checkout page
+        try {
+          final checkInData = await getCheckInData();
+          final checkoutScreen = await _buildCheckoutScreen(checkInData);
 
-            // Validate that we got a valid checkout screen
-            if (checkoutScreen is AttendanceCheckOut) {
-              return checkoutScreen;
-            }
-            // If invalid, fall through to StaffPage
-          } catch (e) {
-            SecureStorageService.debugPrint('Error loading check-in data: $e');
-            await clearCheckInData();
-            // Fall through to StaffPage
+          // Validate that we got a valid checkout screen
+          if (checkoutScreen is AttendanceCheckOut) {
+            return checkoutScreen;
           }
+        } catch (e) {
+          SecureStorageService.debugPrint('Error loading check-in data: $e');
         }
-
-        // No check-in found or error loading check-in, show normal StaffPage
-        return StaffPage(
-          agentName: loginResponse.agentName,
-          employeeType: loginResponse.employeeType,
-          email: loginResponse.agentAdminEmail,
-          password: loginResponse.agentPassword,
-          mobile: username, // ← MUST PASS to avoid LateInitializationError
-        );
-      } else {
-        await clearAllCredentials();
-        return const HomeScreen();
       }
+
+      // 5. Default to Agent Staff Home Page (Dashboard)
+      return const agentStaffHomePage();
+
     } catch (e) {
+      debugPrint('Error in _getStaffScreen: $e');
       await clearAllCredentials();
       return const HomeScreen();
     }

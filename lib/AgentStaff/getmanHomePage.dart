@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import '../Service/secure_storage_service.dart';
 import '../home_screen.dart';
 import '../staffPage/attendanceCheckIn.dart';
+import '../staffPage/itAttendanceCheckIn.dart';
 import '../staffPage/staffProfile.dart';
 import 'GetManHistoryPage.dart';
+import 'GuardAttendanceOut.dart';
 import 'getmanProfile.dart';
 
 class getmanHomePage extends StatefulWidget {
@@ -143,10 +145,9 @@ class _getmanHomePageState extends State<getmanHomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AttendanceCheckIn(
-                    agentName: _staffName,              // ✅ exists
-                    employeeType: 'SecurityGuard',      // ✅ fixed value
-                    mobile: _staffMobileNo,             // ✅ exists
+                  builder: (_) => ItAttendanceCheckIn(
+                         // ✅ fixed value
+                    // ✅ exists
                   ),
                 ),
               );
@@ -162,7 +163,7 @@ class _getmanHomePageState extends State<getmanHomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => GetManProfilePage(mobileNo: _staffMobileNo),
+                  builder: (_) =>  GuardAttendanceIn(mobile: _staffMobileNo, guardName:_staffName,),
                 ),
               );
             },
@@ -242,8 +243,7 @@ class _getmanHomePageState extends State<getmanHomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => HrAttendanceIn(
-                        guardName: _staffName,
+                      builder: (_) => ItAttendanceCheckIn(
 
                       ),
                     ),

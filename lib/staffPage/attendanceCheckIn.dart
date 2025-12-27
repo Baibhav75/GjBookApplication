@@ -11,7 +11,6 @@ import '/Model/agent_login_model.dart';
 import '/Service/secure_storage_service.dart';
 import '/Model/attendance_checkin_model.dart';
 import '/Service/attendance_service.dart';
-import '/Service/ItAttendanceIn_service.dart';
 import '/Service/staff_profile_service.dart';
 
 class AttendanceCheckIn extends StatefulWidget {
@@ -151,7 +150,7 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       // Fallback to mobile number
       if (mounted) {
         setState(() {
-          _employeeId = _userMobile;
+          _employeeId = _employeeId;
         });
       }
     }
@@ -510,15 +509,13 @@ class _AttendanceCheckInState extends State<AttendanceCheckIn> {
       
       // Call backend API with all required details BEFORE navigation
       // This ensures all attendance data is successfully sent to the backend
-      final result = await ItattendanceinService.markAttendance(
+      final result = await AttendanceService.markAttendance(
         employeeId: _employeeId!.trim(),
         mobile: _userMobile!.trim(),
         checkInTime: checkInTimeString,
         location: _address!.trim(),
-        state: _state ?? 'NA', // Send fallback state as "NA" if null
-        latitude: _position!.latitude,
-        longitude: _position!.longitude,
         image: photoFile,
+        state: _state != null && _state!.isNotEmpty ? _state!.trim() : 'Not Available',
       );
 
       if (result != null && result.status == true) {

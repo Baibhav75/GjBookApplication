@@ -1,4 +1,4 @@
-class AttendanceCheckInModel {
+class ItAttendanceCheckInModel {
   final bool status;
   final String? type;
   final String? message;
@@ -7,7 +7,7 @@ class AttendanceCheckInModel {
   final AttendanceData? data;
   final String? error; // Add error field for better error handling
 
-  AttendanceCheckInModel({
+  ItAttendanceCheckInModel({
     required this.status,
     this.type,
     this.message,
@@ -17,7 +17,7 @@ class AttendanceCheckInModel {
     this.error,
   });
 
-  factory AttendanceCheckInModel.fromJson(Map<String, dynamic> json) {
+  factory ItAttendanceCheckInModel.fromJson(Map<String, dynamic> json) {
     try {
       // Debug print to see what we're receiving
       print("API Raw Response: $json");
@@ -33,7 +33,7 @@ class AttendanceCheckInModel {
         errorMessage = json['message']?.toString() ?? json['Message']?.toString();
       }
 
-      return AttendanceCheckInModel(
+      return ItAttendanceCheckInModel(
         status: json['status'] == true ||
             json['Status'] == true ||
             (json['status'] is String && json['status'].toString().toLowerCase() == 'true') ||
@@ -52,7 +52,7 @@ class AttendanceCheckInModel {
     } catch (e) {
       print("Model parsing error: $e");
       print("Failed JSON: $json");
-      return AttendanceCheckInModel(
+      return ItAttendanceCheckInModel(
         status: false,
         message: "Failed to parse response: $e",
         type: "error",

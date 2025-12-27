@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../AgentStaff/agentStaffPage.dart';
-import '../Service/ItAttandanceOut_service.dart';
+import '../Service/attendance_out_service.dart';
 import '/Service/agent_login_service.dart';
 import '/Model/agent_login_model.dart';
 import '/Service/secure_storage_service.dart';
@@ -571,18 +571,21 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
       return;
     }
 
-    final service = ItattandanceoutService();
+    final service = AttendanceOutService ();
 
     final response = await service.submitAttendance(
       employeeId: _employeeId!.trim(),
       mobile: _userMobile!.trim(),
       type: "CheckOut",
-      address: _currentAddress!.trim(),
+      address: (_currentAddress != null && _currentAddress!.trim().isNotEmpty)
+          ? _currentAddress!.trim()
+          : "Location unavailable",
       timestamp: _checkOutTime!,
       imageFile: _checkOutPhoto,
-      lat: _currentPosition?.latitude,
-      lng: _currentPosition?.longitude,
+      lat: _currentPosition?.latitude ?? 0.0,
+      lng: _currentPosition?.longitude ?? 0.0,
     );
+
 
     // Handle response - always navigate regardless of API response
     if (response == null || response.status == false) {

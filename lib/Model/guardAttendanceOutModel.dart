@@ -1,30 +1,28 @@
+// guardAttendanceOutModel.dart
 import 'dart:convert';
 
-class GuardCheckInModel {
+class GuardCheckOutModel {
   final bool status;
   final String? type;
   final String message;
-  final String? checkInTime;
   final String? checkOutTime;
   final String? workDuration;
   final AttendanceData? data;
 
-  GuardCheckInModel({
+  GuardCheckOutModel({
     required this.status,
     this.type,
     required this.message,
-    this.checkInTime,
     this.checkOutTime,
     this.workDuration,
     this.data,
   });
 
-  factory GuardCheckInModel.fromJson(Map<String, dynamic> json) {
-    return GuardCheckInModel(
+  factory GuardCheckOutModel.fromJson(Map<String, dynamic> json) {
+    return GuardCheckOutModel(
       status: json['status'] ?? false,
       type: json['type'],
       message: json['message'] ?? 'Unknown error',
-      checkInTime: json['checkInTime'],
       checkOutTime: json['checkOutTime'],
       workDuration: json['workDuration'],
       data: json['data'] != null ? AttendanceData.fromJson(json['data']) : null,
@@ -36,11 +34,15 @@ class GuardCheckInModel {
       'status': status,
       'type': type,
       'message': message,
-      'checkInTime': checkInTime,
       'checkOutTime': checkOutTime,
       'workDuration': workDuration,
       'data': data?.toJson(),
     };
+  }
+
+  @override
+  String toString() {
+    return 'GuardCheckOutModel{status: $status, type: $type, message: $message}';
   }
 }
 
