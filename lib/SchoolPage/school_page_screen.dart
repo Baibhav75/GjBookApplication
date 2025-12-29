@@ -1,3 +1,4 @@
+import 'package:bookworld/SchoolPage/schoolProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
@@ -11,6 +12,27 @@ class SchoolPageScreen extends StatefulWidget {
 
 class _SchoolPageScreenState extends State<SchoolPageScreen > {
   int _currentIndex = 0;
+  String _ownerName = '';
+  String _ownerNumber = '';
+  final SecureStorageService _storageService = SecureStorageService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchoolCredentials();
+  }
+
+  Future<void> _loadSchoolCredentials() async {
+    try {
+      final credentials = await _storageService.getSchoolCredentials();
+      setState(() {
+        _ownerName = credentials['username'] ?? '';
+        _ownerNumber = credentials['schoolId'] ?? '';
+      });
+    } catch (e) {
+      print("Error loading school credentials: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +52,26 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: const Text(
-          "Dashboard",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Dashboard",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            if (_ownerName.isNotEmpty || _ownerNumber.isNotEmpty)
+              Text(
+                _ownerName.isNotEmpty ? _ownerName : _ownerNumber,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
         ),
         actions: [
           IconButton(
@@ -82,24 +121,24 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                CircleAvatar(
+              children: [
+                const CircleAvatar(
                   radius: 32,
                   backgroundColor: Colors.white,
                   child: Icon(Icons.person, color: Colors.deepOrangeAccent, size: 40),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
-                  "School User",
-                  style: TextStyle(
+                  _ownerName.isNotEmpty ? _ownerName : "School User",
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  "School01",
-                  style: TextStyle(
+                  _ownerNumber.isNotEmpty ? _ownerNumber : "School01",
+                  style: const TextStyle(
                     color: Colors.white70,
                   ),
                 ),
@@ -121,8 +160,12 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
             leading: const Icon(Icons.person, color: Colors.deepOrangeAccent),
             title: const Text("Profile"),
             onTap: () {
-              // navigate to profile page (if exists)
-              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SchoolProfilePage(mobileNo: _ownerNumber,), // Replace with your actual profile page
+                ),
+              );
             },
           ),
 
@@ -190,7 +233,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AnimatedBanner(),
+          AnimatedBanner(ownerName: _ownerName, ownerNumber: _ownerNumber),
           const SizedBox(height: 20), // Reduced from 25
 
           Row(
@@ -366,6 +409,15 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
 }
 
 class AnimatedBanner extends StatefulWidget {
+  final String ownerName;
+  final String ownerNumber;
+
+  const AnimatedBanner({
+    Key? key,
+    required this.ownerName,
+    required this.ownerNumber,
+  }) : super(key: key);
+
   @override
   _AnimatedBannerState createState() => _AnimatedBannerState();
 }
@@ -431,13 +483,33 @@ class _AnimatedBannerState extends State<AnimatedBanner>
             Icon(Icons.campaign, color: Colors.white, size: 30),
             SizedBox(width: 12),
             Expanded(
-              child: Text(
-                "Welcome Back! Have a productive day ahead 🚀",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.ownerName.isNotEmpty 
+                        ? "Welcome, ${widget.ownerName}! 🚀"
+                        : "Welcome Back! Have a productive day ahead 🚀",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (widget.ownerNumber.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        "Mobile: ${widget.ownerNumber}",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             )
           ],

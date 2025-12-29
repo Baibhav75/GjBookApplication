@@ -2,6 +2,7 @@ import 'package:bookworld/staffPage/staff_login_page.dart';
 import 'package:flutter/material.dart';
 import 'AgentStaff/agentLoginPage.dart';
 import 'Hr_Page/hrLogin_screen.dart';
+import 'Recovery/RecoveryHomepage.dart';
 import 'SchoolPage/school login.dart';
 import 'adminPage/adminLogin.dart';
 import 'counterPage/counterLogin.dart';
@@ -164,32 +165,6 @@ class _HomeScreenState extends State<HomeScreen>
                           childAspectRatio: 0.85,
                           children: [
                             _loginTile(
-                              title: "Admin",
-                              icon: Icons.admin_panel_settings,
-                              color: Colors.red,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                      const AdminLoginPage()),
-                                );
-                              },
-                            ),
-                            _loginTile(
-                              title: "AgentStaff",
-                              icon: Icons.real_estate_agent,
-                              color: Colors.green,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                      const StaffLoginPage()),
-                                );
-                              },
-                            ),
-                            _loginTile(
                               title: "School",
                               icon: Icons.school,
                               color: Colors.orange,
@@ -215,8 +190,10 @@ class _HomeScreenState extends State<HomeScreen>
                                 );
                               },
                             ),
+
+
                             _loginTile(
-                              title: "Staff",
+                              title: "Recovery",
                               icon: Icons.people,
                               color: Colors.blue,
                               onTap: () {
@@ -224,7 +201,20 @@ class _HomeScreenState extends State<HomeScreen>
                                   context,
                                   MaterialPageRoute(
                                       builder: (_) =>
-                                      const AgentStaffLoginPage()),
+                                      const RecoveryHomePage()),
+                                );
+                              },
+                            ),
+                            _loginTile(
+                              title: "Agent",
+                              icon: Icons.real_estate_agent,
+                              color: Colors.green,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const StaffLoginPage()),
                                 );
                               },
                             ),
@@ -241,6 +231,34 @@ class _HomeScreenState extends State<HomeScreen>
                                 );
                               },
                             ),
+
+                            _loginTile(
+                              title: "Staff",
+                              icon: Icons.people,
+                              color: Colors.blue,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const AgentStaffLoginPage()),
+                                );
+                              },
+                            ),
+                            _loginTile(
+                              title: "Admin",
+                              icon: Icons.admin_panel_settings,
+                              color: Colors.red,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const AdminLoginPage()),
+                                );
+                              },
+                            ),
+
                           ],
                         ),
                       ),

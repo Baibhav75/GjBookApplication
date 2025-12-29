@@ -1,3 +1,4 @@
+import 'package:bookworld/AgentStaff/allstaffHistory.dart';
 import 'package:flutter/material.dart';
 
 import '../Service/secure_storage_service.dart';
@@ -69,7 +70,7 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
           ),
         ),
         title: const Text(
-          "Dashboard",
+          "Dashboard All staff",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -162,7 +163,15 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
             leading: const Icon(Icons.done, color: Colors.blue),
             title: const Text("History"),
             onTap: () {
-              Navigator.pop(context); // close drawer first
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AllStaffHistoryPage(
+                    mobile: _staffMobileNo
+                  ),
+                ),
+              );
             },
           ),
 
@@ -300,8 +309,13 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
                 }),
 
                 // ✅ History
-                _menuItem("History", Icons.done, Colors.orange, () {
-                  setState(() => _currentIndex = 2);
+                _menuItem("History", Icons.history, Colors.orange, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AllStaffHistoryPage(mobile: _staffMobileNo),
+                    ),
+                  );
                 }),
 
                 // ✅ Change Password
@@ -311,8 +325,10 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
 
                 // ✅ Logout
                 _menuItem("LogOut", Icons.logout, Colors.red, () {
-                  setState(() => _currentIndex = 4);
+                  Navigator.pop(context); // close drawer / menu
+                  _logout();              // call logout function
                 }),
+
               ],
             ),
           ),

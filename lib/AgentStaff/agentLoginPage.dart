@@ -27,7 +27,6 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  String? _selectedPosition;
 
   /// ✅ ALL STAFF POSITIONS
   final List<String> _positions = [
@@ -46,7 +45,6 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
     "Receptionist",
     "Sales",
     "Sales Officer",
-    "Security Guard",
     "Services Incharge",
     "Stock",
     "Supervisor",
@@ -57,110 +55,70 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
   // ---------------------------------------------------------------------------
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate() || _selectedPosition == null) {
+    // Validate form
+    if (!_formKey.currentState!.validate()) {
       _showMessage("Please fill all fields");
       return;
     }
 
     setState(() => _isLoading = true);
-    debugPrint("Login attempted for position: $_selectedPosition");
 
     try {
       final storage = SecureStorageService();
       final mobile = _mobileController.text.trim();
       final password = _passwordController.text.trim();
 
-      if (mobile.isEmpty) {
-        throw Exception("Mobile number is empty");
+      if (mobile.isEmpty || password.isEmpty) {
+        _showMessage("Mobile number and password are required");
+        return;
       }
 
-      debugPrint("Login Request: Mobile=$mobile, Position=$_selectedPosition");
+      debugPrint("Staff Login Request: Mobile=$mobile");
 
-      // ================= SECURITY GUARD =================
-      if (_selectedPosition == "Security Guard") {
-        debugPrint("Attempting Security Guard Login...");
-        final SecurityGuardLoginModel result =
-            await SecurityGuardLoginService.login(
-          mobile: mobile,
-          password: password,
-          position: _selectedPosition!,
-        );
+      // ✅ STAFF LOGIN ONLY (NO POSITION)
+      final AgentGetManLoginModel response =
+      await AgentGetManLoginService.login(
+        mobile: mobile,
+        password: password,
+      );
 
-        debugPrint("Guard Login Result: ${result.status} - ${result.message}");
-
-        if (!result.isSuccess) {
-          _showMessage(result.message);
-          return;
-        }
-
-        debugPrint("Guard Login Successful. Saving credentials...");
-        await storage.saveAgentGetManCredentials(
-          mobileNo: mobile,
-          role: result.position.toUpperCase().replaceAll(" ", "_"),
-          name: result.name,
-          email: result.email,
-          employeeId: result.employeeId,
-        );
-        debugPrint("Credentials saved. Navigating to Home...");
-
-        if (!mounted) {
-          debugPrint("Context not mounted, aborting navigation result.");
-          return;
-        }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const getmanHomePage()),
-        );
+      if (!response.isSuccess) {
+        _showMessage(response.message);
+        return;
       }
 
-      // ================= ALL OTHER POSITIONS → TEST PAGE =================
-      else {
-        debugPrint("Attempting General Staff Login...");
-        final AgentGetManLoginModel response =
-            await AgentGetManLoginService.login(
-          mobile: mobile,
-          password: password,
-          position: _selectedPosition!,
-        );
+      // ✅ Save staff credentials (fixed role)
+      await storage.saveAgentGetManCredentials(
+        mobileNo: mobile,
+        role: "STAFF",
+        name: response.agentName,
+        email: response.agentAdminEmail,
+        employeeId: response.employeeId,
+      );
 
-        debugPrint("Staff Login Result: ${response.status} - ${response.message}");
+      if (!mounted) return;
 
-        if (!response.isSuccess) {
-          _showMessage(response.message);
-          return;
-        }
-
-        debugPrint("Staff Login Successful. Saving credentials...");
-        await storage.saveAgentGetManCredentials(
-          mobileNo: mobile,
-          role: _selectedPosition!.toUpperCase().replaceAll(" ", "_"),
-          name: response.agentName,
-          email: response.agentAdminEmail,
-          employeeId: response.employeeId,
-        );
-         debugPrint("Credentials saved. Navigating to Staff Home...");
-
-        if (!mounted) {
-           debugPrint("Context not mounted, aborting navigation result.");
-           return;
-        }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const agentStaffHomePage(), // ✅ ALL GO HERE
-          ),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const agentStaffHomePage(),
+        ),
+      );
     } catch (e, stackTrace) {
-      debugPrint("Login Error: $e");
+      debugPrint("Staff Login Error: $e");
       debugPrint("Stack Trace: $stackTrace");
-      if(mounted) {
-        _showMessage("Login failed: ${e.toString()}");
+
+      if (mounted) {
+        _showMessage("Login failed. Please try again.");
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
+
+
 
   // ---------------------------------------------------------------------------
   // 🧠 HELPER
@@ -214,26 +172,7 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
               const SizedBox(height: 30),
 
               // ---------------- POSITION ----------------
-              DropdownButtonFormField<String>(
-                value: _selectedPosition,
-                hint: const Text("Choose Position"),
-                items: _positions
-                    .map(
-                      (e) => DropdownMenuItem(
-                    value: e,
-                    child: Text(e),
-                  ),
-                )
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedPosition = v),
-                validator: (v) =>
-                v == null ? "Please select position" : null,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.work),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 20),
+
 
               // ---------------- MOBILE ----------------
               TextFormField(

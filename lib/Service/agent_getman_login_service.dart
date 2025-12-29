@@ -10,13 +10,13 @@ class AgentGetManLoginService {
   static Future<AgentGetManLoginModel> login({
     required String mobile,
     required String password,
-    required String position, // Agent / GetMan
+     // Agent / GetMan
   }) async {
     try {
       final uri = Uri.parse(_baseUrl).replace(queryParameters: {
         "MobileNo": mobile,
         "Password": password,
-        "Position": position,
+
       });
 
       print("Login Request: $uri");

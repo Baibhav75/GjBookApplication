@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
 
+import '../AgentStaff/getmanProfile.dart';
+import 'counterChangePassword.dart';
+import 'counterProfile.dart';
+
 class CounterMainPage extends StatefulWidget {
   const CounterMainPage({Key? key}) : super(key: key);
 
@@ -110,8 +114,8 @@ class _CounterMainPageState extends State<CounterMainPage> {
             leading: const Icon(Icons.dashboard, color: Colors.blue),
             title: const Text("Dashboard"),
             onTap: () {
-              setState(() => _currentIndex = 0);
               Navigator.pop(context);
+              setState(() => _currentIndex = 0);
             },
           ),
 
@@ -119,8 +123,13 @@ class _CounterMainPageState extends State<CounterMainPage> {
             leading: const Icon(Icons.person, color: Colors.blue),
             title: const Text("Profile"),
             onTap: () {
-              // navigate to profile page (if exists)
               Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const counterProfile(mobileNo: ''),
+                ),
+              );
             },
           ),
 
@@ -129,6 +138,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
             title: const Text("Settings"),
             onTap: () {
               Navigator.pop(context);
+              // Add settings page navigation here
             },
           ),
 
@@ -137,21 +147,31 @@ class _CounterMainPageState extends State<CounterMainPage> {
             title: const Text("Change Password"),
             onTap: () {
               Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CounterChangePasswordPage(mobileNo: ''),
+                ),
+              );
             },
           ),
 
+          const Spacer(),
 
           // Logout Button
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text("Logout"),
-            onTap: () {
-              Navigator.pop(context);
-              _logout();
-            },
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text("Logout"),
+              onTap: () {
+                Navigator.pop(context);
+                _logout();
+              },
+            ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -188,8 +208,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          AnimatedBanner(),   // <-- 🔥 Added here
+          const AnimatedBanner(),   // <-- 🔥 Added here
 
           const SizedBox(height: 25),
 
@@ -212,7 +231,6 @@ class _CounterMainPageState extends State<CounterMainPage> {
           ),
 
           const SizedBox(height: 15),
-
 
           Container(
             padding: const EdgeInsets.all(20),
@@ -258,7 +276,6 @@ class _CounterMainPageState extends State<CounterMainPage> {
                   // Order page logic
                 }),
               ],
-
             ),
           ),
         ],
@@ -318,13 +335,14 @@ class _CounterMainPageState extends State<CounterMainPage> {
 }
 
 class AnimatedBanner extends StatefulWidget {
+  const AnimatedBanner({Key? key}) : super(key: key);
+
   @override
   _AnimatedBannerState createState() => _AnimatedBannerState();
 }
 
 class _AnimatedBannerState extends State<AnimatedBanner>
     with SingleTickerProviderStateMixin {
-
   late AnimationController _controller;
   late Animation<Offset> _slide;
 
@@ -334,12 +352,12 @@ class _AnimatedBannerState extends State<AnimatedBanner>
 
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 2),
+      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
     _slide = Tween<Offset>(
-      begin: Offset(-0.05, 0),
-      end: Offset(0.05, 0),
+      begin: const Offset(-0.05, 0),
+      end: const Offset(0.05, 0),
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
@@ -358,7 +376,7 @@ class _AnimatedBannerState extends State<AnimatedBanner>
       position: _slide,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -368,7 +386,7 @@ class _AnimatedBannerState extends State<AnimatedBanner>
             ],
           ),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 8,
@@ -378,12 +396,12 @@ class _AnimatedBannerState extends State<AnimatedBanner>
         ),
         child: Row(
           children: [
-            Icon(Icons.campaign, color: Colors.white, size: 30),
-            SizedBox(width: 12),
+            const Icon(Icons.campaign, color: Colors.white, size: 30),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 "Welcome Back! Have a productive day ahead 🚀",
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
