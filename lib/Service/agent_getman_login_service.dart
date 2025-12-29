@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import '../Model/agent_getman_login_model.dart';
 
 class AgentGetManLoginService {
@@ -36,7 +37,8 @@ class AgentGetManLoginService {
           throw Exception("Invalid response format from server");
         }
       } else {
-        throw Exception("Server Error: ${response.statusCode} - ${response.body}");
+        debugPrint("Server Error: ${response.statusCode} - ${response.body}");
+        throw Exception("Server Error: ${response.statusCode}");
       }
     } catch (e) {
       if (e is Exception) {

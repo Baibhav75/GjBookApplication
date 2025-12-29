@@ -63,26 +63,37 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
     }
 
     setState(() => _isLoading = true);
+    debugPrint("Login attempted for position: $_selectedPosition");
 
     try {
       final storage = SecureStorageService();
       final mobile = _mobileController.text.trim();
       final password = _passwordController.text.trim();
 
+      if (mobile.isEmpty) {
+        throw Exception("Mobile number is empty");
+      }
+
+      debugPrint("Login Request: Mobile=$mobile, Position=$_selectedPosition");
+
       // ================= SECURITY GUARD =================
       if (_selectedPosition == "Security Guard") {
+        debugPrint("Attempting Security Guard Login...");
         final SecurityGuardLoginModel result =
-        await SecurityGuardLoginService.login(
+            await SecurityGuardLoginService.login(
           mobile: mobile,
           password: password,
           position: _selectedPosition!,
         );
+
+        debugPrint("Guard Login Result: ${result.status} - ${result.message}");
 
         if (!result.isSuccess) {
           _showMessage(result.message);
           return;
         }
 
+        debugPrint("Guard Login Successful. Saving credentials...");
         await storage.saveAgentGetManCredentials(
           mobileNo: mobile,
           role: result.position.toUpperCase().replaceAll(" ", "_"),
@@ -90,8 +101,12 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
           email: result.email,
           employeeId: result.employeeId,
         );
+        debugPrint("Credentials saved. Navigating to Home...");
 
-        if (!mounted) return;
+        if (!mounted) {
+          debugPrint("Context not mounted, aborting navigation result.");
+          return;
+        }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const getmanHomePage()),
@@ -100,18 +115,22 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
 
       // ================= ALL OTHER POSITIONS → TEST PAGE =================
       else {
+        debugPrint("Attempting General Staff Login...");
         final AgentGetManLoginModel response =
-        await AgentGetManLoginService.login(
+            await AgentGetManLoginService.login(
           mobile: mobile,
           password: password,
           position: _selectedPosition!,
         );
+
+        debugPrint("Staff Login Result: ${response.status} - ${response.message}");
 
         if (!response.isSuccess) {
           _showMessage(response.message);
           return;
         }
 
+        debugPrint("Staff Login Successful. Saving credentials...");
         await storage.saveAgentGetManCredentials(
           mobileNo: mobile,
           role: _selectedPosition!.toUpperCase().replaceAll(" ", "_"),
@@ -119,8 +138,12 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
           email: response.agentAdminEmail,
           employeeId: response.employeeId,
         );
+         debugPrint("Credentials saved. Navigating to Staff Home...");
 
-        if (!mounted) return;
+        if (!mounted) {
+           debugPrint("Context not mounted, aborting navigation result.");
+           return;
+        }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -128,8 +151,12 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
           ),
         );
       }
-    } catch (e) {
-      _showMessage("Login failed. Please try again");
+    } catch (e, stackTrace) {
+      debugPrint("Login Error: $e");
+      debugPrint("Stack Trace: $stackTrace");
+      if(mounted) {
+        _showMessage("Login failed: ${e.toString()}");
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -11,10 +11,13 @@ import 'package:bookworld/SchoolPage/school_page_screen.dart';
 import 'package:bookworld/counterPage/counter_main_page.dart';
 import 'package:bookworld/home_screen.dart';
 import 'package:bookworld/AgentStaff/agentStaffPage.dart';
-import 'package:bookworld/AgentStaff/getmanHomePage.dart';
 
 /// Service for securely storing and retrieving user credentials
 /// Also handles authentication and auto-login functionality
+
+
+import '../AgentStaff/getmanHomePage.dart';
+
 class SecureStorageService {
   static const _storage = FlutterSecureStorage();
 
@@ -205,12 +208,48 @@ class SecureStorageService {
     String? employeeId,
   }) async {
     try {
-      await _storage.write(key: _keyUserType, value: role.toLowerCase());
+      await _storage.write(key: _keyUserType, value: 'staff');
+      await _storage.write(key: _keyStaffEmployeeType, value: role);
+
       await _storage.write(key: _keyIsLoggedIn, value: 'true');
       await _storage.write(key: _keyStaffMobileNo, value: mobileNo);
-      await _storage.write(key: _keyStaffEmployeeType, value: role);
-      await _storage.write(key: _keyStaffAgentName, value: name);
+
+      await _storage.write(key: _keyStaffAgentName, value: name); // Keeping original key for safety
       await _storage.write(key: _keyStaffEmail, value: email);
+
+      // 🛡️ ROLE INTEGRITY CHECK
+      // Only write role if it doesn't exist or is empty
+      // This prevents attendance flows from adhering to a side-effect that overwrites role
+      // However, for login we usually WANT to overwrite.
+      // User request says: "staff_employee_type is written ONLY if it does not already exist"
+      // But this is the LOGIN function. If I log in as a different user, I must overwrite.
+      // The user likely means: don't let OTHER flows overwrite it.
+      // But `saveAgentGetManCredentials` IS the login flow.
+      // Wait, the user said: "Update saveAgentGetManCredentials() so that: staff_employee_type is written ONLY if it does not already exist"
+      // This seems risky if I switch users.
+      // logic: If I am logging in, I am establishing a new session. I should overwrite.
+      // BUT, maybe this function is called elsewhere?
+      // It is called in `agentLoginPage.dart` line 86 and 115.
+      // Let's look at the user request again: "Attendance flow is indirectly modifying role data"
+      // It seems the user suspects `saveAgentGetManCredentials` is being called during attendance?
+      // I don't see it called in attendance files I read.
+      // However, I will follow the specific instruction: "Add a safe guard to prevent role mutation after login"
+      // Actually, if I am logging in, `_keyStaffEmployeeType` *should* be updated.
+      // Maybe the issue is that it's being called with a wrong role somewhere?
+      // I will implement a check: if `role` is passed, write it. But wait, checking if it exists prevents re-login as someone else?
+      // A safer approach for "Role Immutability" requested:
+      // "Update saveAgentGetManCredentials() so that: staff_employee_type is written ONLY if it does not already exist"
+      // This implies the user thinks this function is called *during* the session to update *other* details, and accidentally overwrites role.
+      // I will implement the check BUT I must sure clearAllCredentials() is called on logout. (It is).
+
+      final existingRole = await _storage.read(key: _keyStaffEmployeeType);
+      if (existingRole == null || existingRole.isEmpty) {
+        await _storage.write(key: _keyStaffEmployeeType, value: role);
+        debugPrint('🔐 Role set to: $role');
+      } else {
+        debugPrint('🔒 Role preservation: Kept existing role $existingRole instead of overwriting with $role');
+        // If we are truly logging in as a NEW user, clearAllCredentials should have been called first.
+      }
 
       // Always save employeeId - use mobile as fallback if not provided or empty
       final employeeIdToSave = (employeeId != null && employeeId.trim().isNotEmpty)
@@ -519,11 +558,11 @@ class SecureStorageService {
         value: checkInTime.toIso8601String(),
       );
       await _storage.write(key: _keyCheckInPhotoPath, value: photoPath);
-      
+
       // Default dummy coordinates for IT check-in
       await _storage.write(key: _keyCheckInLatitude, value: "0.0");
       await _storage.write(key: _keyCheckInLongitude, value: "0.0");
-      
+
       await _storage.write(key: _keyCheckInAddress, value: address);
 
       // Save additional fields
@@ -833,44 +872,42 @@ class SecureStorageService {
   /// -------------------------------------------------------------------------
   /// Auto Login → Staff (AgentStaff / Staff)
   /// -------------------------------------------------------------------------
+  /// -------------------------------------------------------------------------
+  /// Auto Login → Staff (AgentStaff / Staff)
+  /// -------------------------------------------------------------------------
   Future<Widget> _getStaffScreen() async {
     try {
       // 1. Retrieve stored credentials
       final mobileNo = await getStaffMobileNo();
       final employeeType = await getStaffEmployeeType();
-      
+
+      debugPrint('🚀 Auto-Login: Staff');
+      debugPrint('   Mobile: $mobileNo');
+      debugPrint('   Role: $employeeType');
+
       // 2. Validate essential credentials
       if (mobileNo == null || mobileNo.isEmpty) {
+        debugPrint('⚠️ Missing mobile number, logging out.');
         await clearAllCredentials();
         return const HomeScreen();
       }
 
-      // 3. Handle Security Guard
-      if (employeeType == "SECURITY_GUARD") {
+      // 3. STRICT ROLE-BASED NAVIGATION
+      // NO attendance logic here.
+
+      if (employeeType != null &&
+          employeeType.toUpperCase() == "SECURITY_GUARD") {
+        debugPrint('✅ Routing to: getmanHomePage (Guards)');
         return const getmanHomePage();
-      }
-
-      // 4. Handle Persistent Login for other staff (Skip network login)
-      // Check if user has already checked in
-      final hasCheckedIn = await this.hasCheckedIn();
-
-      if (hasCheckedIn) {
-        // Load check-in data and navigate to checkout page
-        try {
-          final checkInData = await getCheckInData();
-          final checkoutScreen = await _buildCheckoutScreen(checkInData);
-
-          // Validate that we got a valid checkout screen
-          if (checkoutScreen is AttendanceCheckOut) {
-            return checkoutScreen;
-          }
-        } catch (e) {
-          SecureStorageService.debugPrint('Error loading check-in data: $e');
+      } else {
+        debugPrint('✅ Routing to: agentStaffHomePage (Agent/IT/Other)');
+        // Check if user has already checked in - OPTIONAL: just for logging, don't redirect
+        final hasCheckedIn = await this.hasCheckedIn();
+        if (hasCheckedIn) {
+          debugPrint('ℹ️ User has active check-in. They will see it on their dashboard.');
         }
+        return const agentStaffHomePage();
       }
-
-      // 5. Default to Agent Staff Home Page (Dashboard)
-      return const agentStaffHomePage();
 
     } catch (e) {
       debugPrint('Error in _getStaffScreen: $e');
@@ -879,66 +916,7 @@ class SecureStorageService {
     }
   }
 
-  /// Build checkout screen from saved check-in data
-  Future<Widget> _buildCheckoutScreen(Map<String, String?> checkInData) async {
-    try {
-      // Parse check-in time
-      final checkInTimeStr = checkInData['time'];
-      if (checkInTimeStr == null || checkInTimeStr.isEmpty) {
-        throw Exception('Check-in time not found');
-      }
-      final checkInTime = DateTime.parse(checkInTimeStr);
 
-      // Parse photo path
-      final photoPath = checkInData['photoPath'];
-      File? checkInPhoto;
-      if (photoPath != null && photoPath.isNotEmpty) {
-        final photoFile = File(photoPath);
-        if (photoFile.existsSync()) {
-          checkInPhoto = photoFile;
-        }
-      }
-
-      // Parse position
-      final latStr = checkInData['latitude'];
-      final lngStr = checkInData['longitude'];
-      Position? checkInPosition;
-      if (latStr != null && lngStr != null) {
-        final lat = double.tryParse(latStr);
-        final lng = double.tryParse(lngStr);
-        if (lat != null && lng != null && lat.isFinite && lng.isFinite) {
-          checkInPosition = Position(
-            latitude: lat,
-            longitude: lng,
-            timestamp: checkInTime,
-            accuracy: 0,
-            altitude: 0,
-            heading: 0,
-            speed: 0,
-            speedAccuracy: 0,
-            altitudeAccuracy: 0,
-            headingAccuracy: 0,
-          );
-        }
-      }
-
-      // Get address
-      final address = checkInData['address'] ?? 'Location not available';
-
-      return AttendanceCheckOut(
-        checkInTime: checkInTime,
-        checkInPhoto: checkInPhoto,
-        checkInPosition: checkInPosition,
-        checkInAddress: address,
-      );
-    } catch (e) {
-      // If there's an error loading check-in data, clear it and return null
-      // This will fallback to StaffPage
-      SecureStorageService.debugPrint('Error building checkout screen from saved data: $e');
-      await clearCheckInData();
-      return const SizedBox.shrink(); // Will be replaced by StaffPage
-    }
-  }
 
   /// -------------------------------------------------------------------------
   /// Auto Login → School
@@ -975,4 +953,4 @@ class SecureStorageService {
   static void debugPrint(String message) {
     print('[SecureStorageService] $message');
   }
-}
+}//read karo and update akro

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
+import 'package:bookworld/Service/permission_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -73,9 +75,27 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
+    // 3️⃣ Animation start
     _controller.forward();
+
+    // 4️⃣ Permission check (ONLY ONE ENTRY POINT
+    _checkPermissionAndProceed();
+
+  }
+
+  Future<void> _checkPermissionAndProceed() async {
+    final isGranted =
+    await PermissionService.requestAllRequiredPermissions();
+
+    if (!isGranted) {
+      _showPermissionDialog();
+      return;
+    }
+
+    // Permission mil gayi → existing flow
     _navigateToAppropriateScreen();
   }
+
 
   Future<void> _navigateToAppropriateScreen() async {
     await Future.delayed(const Duration(seconds: 3));
@@ -224,4 +244,28 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          AlertDialog(
+            title: const Text("Permission Required"),
+            content: const Text(
+              "Camera aur Background Location permission ke bina "
+                  "app ka use possible nahi hai.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  openAppSettings();
+                },
+                child: const Text("Open Settings"),
+              ),
+            ],
+          ),
+    );
+  }
+
 }

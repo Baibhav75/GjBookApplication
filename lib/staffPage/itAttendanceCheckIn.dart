@@ -125,9 +125,12 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
     try {
       final storage = SecureStorageService();
       final pendingData = await storage.getCheckInData();
-      if (pendingData != null) {
-        final status = pendingData['status'] as String?;
-        if (status == 'pending_sync') {
+      if (pendingData.isNotEmpty) {
+        final syncStatus = pendingData['syncStatus'] as String?;
+        final hasPending = pendingData['hasPending'] as String?;
+        // Check if there's a pending sync that needs to be handled
+        if ((syncStatus == 'pending_sync' || hasPending == 'true') && 
+            pendingData['status'] == 'true') {
           _showPendingSyncDialog();
         }
       }
@@ -172,8 +175,14 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
     try {
       final storage = SecureStorageService();
       await storage.syncPendingCheckIn();
+      if (mounted) {
+        _showSuccess('Pending check-in synced successfully');
+      }
     } catch (e) {
       debugPrint('Error syncing pending check-in: $e');
+      if (mounted) {
+        _showError('Failed to sync pending check-in: ${e.toString()}');
+      }
     }
   }
 
@@ -332,17 +341,19 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
 
   /// Get location data
   Future<void> _getLocationData() async {
+    if (!mounted) return;
+    
     try {
       final Position pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 8),
+        timeLimit: const Duration(seconds: 10),
       );
 
-      if (mounted) {
-        setState(() {
-          _position = pos;
-        });
-      }
+      if (!mounted) return;
+      
+      setState(() {
+        _position = pos;
+      });
 
       await _fetchAddress(pos);
     } catch (e) {
@@ -524,10 +535,61 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
   /// MAIN OPTIMIZED CHECK-IN METHOD
   Future<void> _performCheckIn() async {
     // 0️⃣ HARD GUARD: Prevent duplicate check-in
-    if (await SecureStorageService().hasCheckedIn()) {
-      _showError("You have already checked in. Please check out first.");
-      // Optional: Redirect to checkout if needed, but error message is safer info
-      return;
+    try {
+      final storage = SecureStorageService();
+      if (await storage.hasCheckedIn()) {
+        final checkInData = await storage.getCheckInData();
+        final syncStatus = checkInData['syncStatus'];
+        
+        // If already checked in and synced, redirect to checkout
+        if (syncStatus == 'synced' && mounted) {
+          final checkInTime = checkInData['time'];
+          final checkInPhotoPath = checkInData['photoPath'];
+          final checkInAddress = checkInData['address'];
+          
+          if (checkInTime != null) {
+            Position? savedPos;
+            try {
+              if (checkInData['latitude'] != null && checkInData['longitude'] != null) {
+                savedPos = Position(
+                  longitude: double.parse(checkInData['longitude']!),
+                  latitude: double.parse(checkInData['latitude']!),
+                  timestamp: DateTime.now(),
+                  accuracy: 0,
+                  altitude: 0,
+                  heading: 0,
+                  speed: 0,
+                  speedAccuracy: 0,
+                  altitudeAccuracy: 0,
+                  headingAccuracy: 0,
+                );
+              }
+            } catch (e) {
+              debugPrint('Error parsing saved position: $e');
+            }
+            
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ItAttendanceCheckOut(
+                  checkInTime: DateTime.parse(checkInTime),
+                  checkInPhoto: checkInPhotoPath != null ? File(checkInPhotoPath) : null,
+                  checkInPosition: savedPos,
+                  checkInAddress: checkInAddress,
+                  employeeId: _employeeId,
+                ),
+              ),
+            );
+            return;
+          }
+        }
+        
+        _showError("You have already checked in. Please check out first.");
+        return;
+      }
+    } catch (e) {
+      debugPrint('Error checking duplicate check-in: $e');
+      // Continue with check-in if error occurs
     }
 
     // 1️⃣ Quick validation
@@ -546,13 +608,6 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
     final String employeeId = validation!['employeeId'] as String;
     final String mobile = validation['mobile'] as String;
     final String address = validation['address'] as String;
-
-// ✅ ADD THIS BLOCK EXACTLY HERE
-    if (employeeId.isEmpty) {
-      _showError("Employee ID not found. Please contact admin.");
-      return;
-    }
-
 
     setState(() => _isCheckingIn = true);
 
@@ -597,80 +652,57 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
           address: address,
           employeeId: employeeId,
           mobile: mobile,
+          state: 'NA',
         );
         debugPrint('✅ IT Check-in data saved locally');
       } catch (e) {
         debugPrint('⚠️ Local save failed: $e');
+        // Continue even if local save fails
       }
 
-      // 6️⃣ Call API (IMPORTANT FIX HERE)
-      bool apiCompleted = false;
+      // 6️⃣ Call API with proper loading state
       AttendanceCheckInModel? apiResult;
+      
+      try {
+        apiResult = await AttendanceService.markAttendance(
+          employeeId: employeeId,
+          mobile: mobile,
+          checkInTime: checkInTimeString,
+          location: address,
+          image: photoFile,
+          state: 'NA',
+        );
 
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setState) {
-            if (!apiCompleted) {
-              Future.delayed(const Duration(milliseconds: 100), () async {
-                try {
-                  apiResult = await AttendanceService.markAttendance(
-                    employeeId: employeeId,
-                    mobile: mobile,
-                    checkInTime: checkInTimeString,
-                    location: address,
-                    image: photoFile,
-                    state: 'NA', // ✅ HARD FIX (never null)
-                  );
-
-                  apiCompleted = true;
-                  Navigator.of(context).pop();
-
-                  if (apiResult?.status == true) {
-                    _handleSuccess(checkInTime, photoFile, apiResult!);
-                  } else {
-                    _handleApiError(apiResult!, checkInTime, photoFile);
-                  }
-                } catch (e) {
-                  apiCompleted = true;
-                  Navigator.of(context).pop();
-                  _handleApiError(
-                    AttendanceCheckInModel(
-                      status: false,
-                      message: "API call failed: $e",
-                      type: "exception",
-                    ),
-                    checkInTime,
-                    photoFile,
-                  );
-                }
-              });
-            }
-
-            return const AlertDialog(
-              title: Row(
-                children: [
-                  CircularProgressIndicator(strokeWidth: 2),
-                  SizedBox(width: 16),
-                  Text('Processing Check-In'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Please wait...'),
-                  SizedBox(height: 16),
-                  LinearProgressIndicator(),
-                ],
-              ),
-            );
-          },
-        ),
-      );
+        if (!mounted) return;
+        
+        if (apiResult?.status == true) {
+          _handleSuccess(checkInTime, photoFile, apiResult!);
+        } else {
+          _handleApiError(apiResult ?? AttendanceCheckInModel(
+            status: false,
+            message: "Unknown error occurred",
+            type: "unknown",
+          ), checkInTime, photoFile);
+        }
+      } catch (e) {
+        debugPrint('API call exception: $e');
+        if (!mounted) return;
+        _handleApiError(
+          AttendanceCheckInModel(
+            status: false,
+            message: "API call failed: ${e.toString()}",
+            type: "exception",
+          ),
+          checkInTime,
+          photoFile,
+        );
+      }
     } catch (e) {
-      setState(() => _isCheckingIn = false);
-      _showError("Error: ${e.toString()}");
+      debugPrint('Check-in error: $e');
+      if (mounted) {
+        setState(() => _isCheckingIn = false);
+        _showError("Check-in failed: ${e.toString()}");
+      }
     }
   }
 
@@ -684,6 +716,9 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
       ) {
     if (!mounted) return;
 
+    // Reset checking state
+    setState(() => _isCheckingIn = false);
+
     // Mark as synced in local storage
     try {
       SecureStorageService().markCheckInAsSynced();
@@ -695,18 +730,21 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
     _showSuccess(apiResult.message ?? 'Checked in successfully!');
 
     // Navigate to check-out page
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ItAttendanceCheckOut(
-          checkInTime: checkInTime,
-          checkInPhoto: photoFile,
-          checkInPosition: _position!,
-          checkInAddress: _address!,
-          employeeId: _employeeId?.trim() ?? '',
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ItAttendanceCheckOut(
+            checkInTime: checkInTime,
+            checkInPhoto: photoFile,
+            checkInPosition: _position,
+            checkInAddress: _address,
+            employeeId: _employeeId?.trim(),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   /// Handle API error
@@ -716,6 +754,8 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
       File photoFile,
       ) {
     if (!mounted) return;
+
+    setState(() => _isCheckingIn = false);
 
     final String errorMessage = apiResult.message ?? 'Check-in failed';
     final bool isDuplicate = errorMessage.toLowerCase().contains('already') ||
@@ -731,18 +771,21 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
 
       _showWarning(errorMessage);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ItAttendanceCheckOut(
-            checkInTime: checkInTime,
-            checkInPhoto: photoFile,
-            checkInPosition: _position!,
-            checkInAddress: _address!,
-            employeeId: _employeeId?.trim() ?? '',
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ItAttendanceCheckOut(
+              checkInTime: checkInTime,
+              checkInPhoto: photoFile,
+              checkInPosition: _position,
+              checkInAddress: _address,
+              employeeId: _employeeId?.trim(),
+            ),
           ),
-        ),
-      );
+        );
+      });
     } else {
       // Ask user what to do
       showDialog(
@@ -770,7 +813,6 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                setState(() => _isCheckingIn = false);
               },
               child: const Text('Stay Here'),
             ),
@@ -783,9 +825,9 @@ class _ItAttendanceCheckInState extends State<ItAttendanceCheckIn> {
                     builder: (_) => ItAttendanceCheckOut(
                       checkInTime: checkInTime,
                       checkInPhoto: photoFile,
-                      checkInPosition: _position!,
-                      checkInAddress: _address!,
-                      employeeId: _employeeId?.trim() ?? '',
+                      checkInPosition: _position,
+                      checkInAddress: _address,
+                      employeeId: _employeeId?.trim(),
                     ),
                   ),
                 );

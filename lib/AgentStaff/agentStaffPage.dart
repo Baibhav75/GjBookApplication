@@ -4,6 +4,7 @@ import '../Service/secure_storage_service.dart';
 import '../home_screen.dart';
 import '../staffPage/itAttendanceCheckIn.dart';
 import '../staffPage/staffhistory.dart';
+import 'agentgetmanProfile.dart';
 
 class agentStaffHomePage extends StatefulWidget {
   const agentStaffHomePage({Key? key}) : super(key: key);
@@ -16,6 +17,7 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
   int _currentIndex = 0;
   String? _staffName;
   String? _staffPosition;
+  String _staffMobileNo = '';
 
   @override
   void initState() {
@@ -33,13 +35,16 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
       setState(() {
         _staffName = creds['name'] ?? creds['agentName']; // Fallback for safety
         _staffPosition = creds['role'] ?? creds['employeeType'];
+
+        // ✅ FIX: mobile number assign karo
+        _staffMobileNo = creds['mobile'] ?? '';
         // You can add other fields to state here if needed for specific widgets
         // e.g. _email = creds['email'];
         //      _mobile = creds['mobile'];
       });
 
       debugPrint(
-        'AgentStaffHome: Loaded user info for $_staffName ($_staffPosition)',
+        'AgentStaffHome: Loaded user info for $_staffName ($_staffPosition) | Mobile: $_staffMobileNo',
       );
     } catch (e) {
       debugPrint('Failed to load staff info: $e');
@@ -162,13 +167,22 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
           ),
 
           ListTile(
-            leading: const Icon(Icons.person, color: Colors.blue),
+            leading: const Icon(Icons.person, color: Colors.green),
             title: const Text("Profile"),
             onTap: () {
-              // navigate to profile page (if exists)
               Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Agentgetmanprofile(
+                    mobileNo: _staffMobileNo, // ✅ REQUIRED
+                  ),
+                ),
+              );
             },
           ),
+
 
           ListTile(
             leading: const Icon(Icons.settings, color: Colors.blue),

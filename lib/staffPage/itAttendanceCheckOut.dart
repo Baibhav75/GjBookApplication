@@ -83,7 +83,7 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
               
           // Use passed employee ID from widget if available, otherwise try credentials
           if (_employeeId == null || _employeeId!.isEmpty) {
-             _employeeId = credentials['employeeId'] ?? _userMobile;
+             _employeeId = credentials['employeeId'];
           }
         });
         
@@ -100,36 +100,35 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
       debugPrint('Error loading user data in checkout: $e');
     }
   }
-  /// Fetch employee ID from staff profile API
+  /// Fetch employee ID from staff profile API (no mobile fallback)
   Future<void> _fetchEmployeeId() async {
     if (_userMobile == null || _userMobile!.isEmpty) return;
+    
+    // If employee ID already exists, don't fetch again
+    if (_employeeId != null && _employeeId!.isNotEmpty) {
+      debugPrint('Employee ID already available: $_employeeId');
+      return;
+    }
     
     try {
       final staffProfileService = StaffProfileService();
       final profile = await staffProfileService.fetchProfile(_userMobile!);
       
-      if (profile != null && profile.employeeId.isNotEmpty && mounted) {
+      if (profile != null && 
+          profile.employeeId.isNotEmpty && 
+          profile.employeeId.trim() != _userMobile &&
+          mounted) {
         setState(() {
-          _employeeId = profile.employeeId;
+          _employeeId = profile.employeeId.trim();
         });
-        debugPrint('Employee ID fetched in checkout: $_employeeId');
+        debugPrint('✅ Employee ID fetched in checkout: $_employeeId');
       } else {
-        // Fallback to mobile number if profile fetch fails
-        if (mounted) {
-          setState(() {
-            _employeeId = _userMobile;
-          });
-        }
-        debugPrint('Using mobile number as Employee ID in checkout: $_employeeId');
+        debugPrint('⚠️ Employee ID not found in profile API');
+        // Don't fallback to mobile - keep it null if not found
       }
     } catch (e) {
-      debugPrint('Error fetching employee ID in checkout: $e');
-      // Fallback to mobile number
-      if (mounted) {
-        setState(() {
-          _employeeId = _userMobile;
-        });
-      }
+      debugPrint('❌ Error fetching employee ID in checkout: $e');
+      // Don't fallback to mobile - keep current state
     }
   }
 
@@ -160,6 +159,10 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
     if (!mounted) return;
 
     try {
+      setState(() {
+        _isLoadingLocation = true;
+      });
+
       // Check GPS service status
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -192,8 +195,8 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
         _currentPosition = pos;
       });
 
-      // Fetch address in parallel (non-blocking)
-      _fetchAddress(pos);
+      // Fetch address (will set loading to false when done)
+      await _fetchAddress(pos);
     } catch (e) {
       if (mounted) {
         _handleLocationFailure('Unable to fetch current location');
@@ -207,6 +210,7 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
     setState(() {
       _isLoadingLocation = false;
       _currentAddress = message;
+      _currentPosition = null;
     });
   }
 
@@ -547,9 +551,10 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
       return;
     }
 
-    // Validate employee ID
-    if (_employeeId == null || _employeeId!.trim().isEmpty) {
-      _showError("Employee ID is missing. Please wait.");
+    // Validate employee ID (strict - no mobile fallback)
+    final employeeId = _employeeId?.trim();
+    if (employeeId == null || employeeId.isEmpty) {
+      _showError("Employee ID is missing. Please contact admin or try again.");
       return;
     }
 
@@ -571,10 +576,10 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
       return;
     }
 
-    final service = AttendanceOutService ();
+    final service = AttendanceOutService();
 
     final response = await service.submitAttendance(
-      employeeId: _employeeId!.trim(),
+      employeeId: employeeId,
       mobile: _userMobile!.trim(),
       type: "CheckOut",
       address: (_currentAddress != null && _currentAddress!.trim().isNotEmpty)

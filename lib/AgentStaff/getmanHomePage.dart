@@ -8,7 +8,6 @@ import '../staffPage/attendanceCheckIn.dart';
 import '../staffPage/itAttendanceCheckIn.dart';
 import '../staffPage/staffProfile.dart';
 import 'GetManHistoryPage.dart';
-import 'GuardAttendanceOut.dart';
 import 'getmanProfile.dart';
 
 class getmanHomePage extends StatefulWidget {
@@ -35,19 +34,25 @@ class _getmanHomePageState extends State<getmanHomePage> {
   Future<void> _loadStaffDetails() async {
     try {
       final storage = SecureStorageService();
+
       final mobile = await storage.getStaffMobileNo();
-      final credentials = await storage.getStaffCredentials();
+      final name = await storage.getStaffName();
+      final employeeId = await storage.getStaffEmployeeId(); // ✅ ONLY SOURCE
 
       setState(() {
         _staffMobileNo = mobile ?? '';
-        _staffName = credentials['agentName'] ?? 'Security Guard';
-        // Try to get employeeId from storage, fallback to mobile if not available
-        _employeeId = credentials['employeeId'] ?? mobile ?? '';
+        _staffName = name ?? 'Security Guard';
+
+        // ✅ NO mobile fallback
+        _employeeId = (employeeId != null && employeeId.isNotEmpty)
+            ? employeeId
+            : '';
       });
     } catch (e) {
       debugPrint("Error loading staff details: $e");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +134,7 @@ class _getmanHomePageState extends State<getmanHomePage> {
                   style: const TextStyle(color: Colors.white70),
                 ),
                 Text(
-                  'ID: $_employeeId',
+                  _staffName,
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
@@ -163,7 +168,7 @@ class _getmanHomePageState extends State<getmanHomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>  GuardAttendanceIn(mobile: _staffMobileNo, guardName:_staffName,),
+                  builder: (_) =>  GetManProfilePage(mobileNo: _staffMobileNo,),
                 ),
               );
             },
@@ -417,11 +422,8 @@ class _AnimatedBannerState extends State<AnimatedBanner>
                   widget.mobileNo,
                   style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
-                if (widget.employeeId.isNotEmpty)
-                  Text(
-                    "ID: ${widget.employeeId}",
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
+
+
               ],
             ),
           ],
