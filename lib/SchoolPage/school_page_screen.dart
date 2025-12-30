@@ -1,7 +1,10 @@
+import 'package:bookworld/SchoolPage/schoolChangePassword.dart';
 import 'package:bookworld/SchoolPage/schoolProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
+import '../Service/school_profile_service.dart';
+import '../Model/school_profile_model.dart';
 
 class SchoolPageScreen extends StatefulWidget {
   const SchoolPageScreen  ({Key? key}) : super(key: key);
@@ -14,6 +17,8 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
   int _currentIndex = 0;
   String _ownerName = '';
   String _ownerNumber = '';
+  String _schoolName = '';
+
   final SecureStorageService _storageService = SecureStorageService();
 
   @override
@@ -25,14 +30,25 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
   Future<void> _loadSchoolCredentials() async {
     try {
       final credentials = await _storageService.getSchoolCredentials();
+
+      final mobileNo = credentials['schoolId'] ?? '';
+
+      if (mobileNo.isEmpty) return;
+
+      // 🔹 Fetch school profile
+      final SchoolProfileModel profile =
+      await SchoolProfileService.fetchProfile(mobileNo: mobileNo);
+
       setState(() {
-        _ownerName = credentials['username'] ?? '';
-        _ownerNumber = credentials['schoolId'] ?? '';
+        _ownerNumber = mobileNo;
+        _schoolName = profile.schoolName;   // ✅ MAIN CHANGE
+        _ownerName = profile.ownerName;     // optional
       });
     } catch (e) {
-      print("Error loading school credentials: $e");
+      debugPrint("Error loading school data: $e");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -62,15 +78,15 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
             ),
             if (_ownerName.isNotEmpty || _ownerNumber.isNotEmpty)
               Text(
-                _ownerName.isNotEmpty ? _ownerName : _ownerNumber,
+                _schoolName.isNotEmpty ? _schoolName : "School Dashboard",
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 12,
-                  fontWeight: FontWeight.normal,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+
           ],
         ),
         actions: [
@@ -136,12 +152,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  _ownerNumber.isNotEmpty ? _ownerNumber : "School01",
-                  style: const TextStyle(
-                    color: Colors.white70,
-                  ),
-                ),
+
               ],
             ),
           ),
@@ -181,7 +192,12 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
             leading: const Icon(Icons.key, color: Colors.orange),
             title: const Text("Change Password"),
             onTap: () {
-              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SchoolChangePasswordPage(mobileNo: _ownerNumber,), // Replace with your actual profile page
+                ),
+              );
             },
           ),
 
@@ -233,7 +249,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AnimatedBanner(ownerName: _ownerName, ownerNumber: _ownerNumber),
+          AnimatedBanner(  schoolName: _schoolName, ownerNumber: '',),
           const SizedBox(height: 20), // Reduced from 25
 
           Row(
@@ -409,14 +425,15 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
 }
 
 class AnimatedBanner extends StatefulWidget {
-  final String ownerName;
+  final String schoolName;
   final String ownerNumber;
 
   const AnimatedBanner({
     Key? key,
-    required this.ownerName,
+    required this.schoolName,
     required this.ownerNumber,
   }) : super(key: key);
+
 
   @override
   _AnimatedBannerState createState() => _AnimatedBannerState();
@@ -488,15 +505,16 @@ class _AnimatedBannerState extends State<AnimatedBanner>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    widget.ownerName.isNotEmpty 
-                        ? "Welcome, ${widget.ownerName}! 🚀"
-                        : "Welcome Back! Have a productive day ahead 🚀",
-                    style: TextStyle(
+                    widget.schoolName.isNotEmpty
+                        ? "Welcome to  ${widget.schoolName} 🎓"
+                        : "Welcome Back! Have a productive day 🚀",
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   if (widget.ownerNumber.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),

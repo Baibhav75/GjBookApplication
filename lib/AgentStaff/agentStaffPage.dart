@@ -5,6 +5,7 @@ import '../Service/secure_storage_service.dart';
 import '../home_screen.dart';
 import '../staffPage/itAttendanceCheckIn.dart';
 import '../staffPage/staffhistory.dart';
+import 'AgentStaffChangePassword.dart';
 import 'agentgetmanProfile.dart';
 
 class agentStaffHomePage extends StatefulWidget {
@@ -205,7 +206,14 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
             leading: const Icon(Icons.key, color: Colors.orange),
             title: const Text("Change Password"),
             onTap: () {
-              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Agentstaffchangepassword (
+                    mobileNo: _staffMobileNo, // ✅ REQUIRED
+                  ),
+                ),
+              );
             },
           ),
 

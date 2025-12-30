@@ -264,12 +264,14 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
 
   /// Perform checkout with camera and show session summary popup
   Future<void> _performCheckOut() async {
-    if (_isCheckingOut || !mounted) return;
+    if (_isCheckingOut || !mounted || _currentPosition == null) {
+      _showError("Location not ready. Please wait for GPS.");
+      return;
+    }
 
     setState(() => _isCheckingOut = true);
 
     try {
-      // Open camera to capture checkout photo
       final XFile? picked = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 75,
@@ -277,302 +279,53 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
         maxHeight: 1024,
       );
 
-      if (picked == null) {
-        if (mounted) {
-          setState(() => _isCheckingOut = false);
-        }
+      if (!mounted || picked == null) {
+        setState(() => _isCheckingOut = false);
         return;
       }
 
-      final checkoutPhoto = File(picked.path);
-      final checkoutTime = DateTime.now();
-
-      if (!mounted) return;
-
-      // Update state with checkout data
       setState(() {
-        _checkOutPhoto = checkoutPhoto;
-        _checkOutTime = checkoutTime;
-        _lastUpdateTime = checkoutTime; // Stop timer updates
+        _checkOutPhoto = File(picked.path);
+        _checkOutTime = DateTime.now();
+        _lastUpdateTime = _checkOutTime;
       });
 
-      // Show session summary popup
-      await _showSessionSummaryPopup(checkoutTime, checkoutPhoto);
+      // 🔥 DIRECT API CALL
+      await _saveAndNavigate();
 
     } catch (e) {
-      if (mounted) {
-        _showError('Check-out failed: ${e.toString()}');
-      }
+      _showError("Checkout failed. Please try again.");
     } finally {
-      if (mounted) {
-        setState(() => _isCheckingOut = false);
-      }
+      if (mounted) setState(() => _isCheckingOut = false);
     }
   }
 
-  /// Show session summary popup with all relevant information
-  Future<void> _showSessionSummaryPopup(DateTime checkoutTime, File checkoutPhoto) async {
-    if (!mounted) return;
-
-    final fullFormatter = DateFormat('MMM d, yyyy – hh:mm a');
-    final finalDuration = checkoutTime.difference(widget.checkInTime);
-    
-    // Check if checkout location is valid (calculate before widget tree)
-    final isValidCheckoutLocation = (_currentAddress ?? '').isNotEmpty &&
-        _currentAddress != 'Address will appear here once available' &&
-        _currentAddress != 'Location service disabled' &&
-        _currentAddress != 'Location permission denied' &&
-        _currentAddress != 'Address unavailable' &&
-        _currentAddress != 'Unable to fetch current location';
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6B46FF).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF6B46FF),
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Check-out Complete',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF6B46FF),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Checkout Photo Preview
-                if (checkoutPhoto.existsSync())
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      checkoutPhoto,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          color: Colors.grey.shade200,
-                          child: const Center(
-                            child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                if (checkoutPhoto.existsSync()) const SizedBox(height: 20),
-
-                // Session Information
-                _buildPopupInfoRow(
-                  Icons.access_time,
-                  'Check-in Time',
-                  fullFormatter.format(widget.checkInTime),
-                ),
-                const SizedBox(height: 12),
-                _buildPopupInfoRow(
-                  Icons.logout,
-                  'Check-out Time',
-                  fullFormatter.format(checkoutTime),
-                ),
-                const SizedBox(height: 12),
-                _buildPopupInfoRow(
-                  Icons.timer,
-                  'Work Duration',
-                  _formatDuration(finalDuration),
-                ),
-                const SizedBox(height: 12),
-
-                // Location Information
-                if ((widget.checkInAddress ?? '').isNotEmpty) ...[
-                  const Divider(height: 24),
-                  const Text(
-                    'Check-in Location',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildPopupInfoRow(
-                    Icons.location_on,
-                    'Address',
-                    widget.checkInAddress!,
-                    isAddress: true,
-                  ),
-                  if (widget.checkInPosition != null) ...[
-                    const SizedBox(height: 8),
-                    _buildPopupInfoRow(
-                      Icons.my_location,
-                      'Coordinates',
-                      '${widget.checkInPosition!.latitude.toStringAsFixed(6)}, ${widget.checkInPosition!.longitude.toStringAsFixed(6)}',
-                    ),
-                  ],
-                ],
-
-                // Check-out Location (only if available and valid)
-                if (isValidCheckoutLocation) ...[
-                  const SizedBox(height: 16),
-                  const Divider(height: 24),
-                  const Text(
-                    'Check-out Location',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildPopupInfoRow(
-                    Icons.location_on,
-                    'Address',
-                    _currentAddress!,
-                    isAddress: true,
-                  ),
-                  if (_currentPosition != null) ...[
-                    const SizedBox(height: 8),
-                    _buildPopupInfoRow(
-                      Icons.my_location,
-                      'Coordinates',
-                      '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                    ),
-                  ],
-                ],
-
-                const SizedBox(height: 24),
-
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _saveAndNavigate();
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B46FF),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Build info row for popup
-  Widget _buildPopupInfoRow(IconData icon, String label, String value, {bool isAddress = false}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: const Color(0xFF6B46FF)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.black54,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: isAddress ? 13 : 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-                maxLines: isAddress ? null : 2,
-                softWrap: true,
-                overflow: isAddress ? TextOverflow.visible : TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
   /// Save checkout data and navigate to StaffPage
-  void _saveAndNavigate() async {
+  Future<void> _saveAndNavigate() async {
     if (_checkOutTime == null || _checkOutPhoto == null) {
       _showError("Checkout photo missing");
       return;
     }
 
-    // Validate employee ID (strict - no mobile fallback)
     final employeeId = _employeeId?.trim();
     if (employeeId == null || employeeId.isEmpty) {
-      _showError("Employee ID is missing. Please contact admin or try again.");
+      _showError("Employee ID missing. Contact admin.");
       return;
     }
 
-    // Validate mobile
     if (_userMobile == null || _userMobile!.trim().isEmpty) {
-      _showError("Mobile number is missing.");
+      _showError("Mobile number missing.");
       return;
     }
 
-    // Validate address
     if (_currentAddress == null || _currentAddress!.trim().isEmpty) {
-      _showError("Location is missing. Please wait for GPS location.");
+      _showError("Location not available.");
       return;
     }
 
-    // Validate image file exists
     if (!_checkOutPhoto!.existsSync()) {
-      _showError("Checkout photo file not found. Please try again.");
+      _showError("Checkout photo not found.");
       return;
     }
 
@@ -582,57 +335,28 @@ class _ItAttendanceCheckOutState extends State<ItAttendanceCheckOut> {
       employeeId: employeeId,
       mobile: _userMobile!.trim(),
       type: "CheckOut",
-      address: (_currentAddress != null && _currentAddress!.trim().isNotEmpty)
-          ? _currentAddress!.trim()
-          : "Location unavailable",
+      address: _currentAddress!.trim(),
       timestamp: _checkOutTime!,
       imageFile: _checkOutPhoto,
-      lat: _currentPosition?.latitude ?? 0.0,
-      lng: _currentPosition?.longitude ?? 0.0,
+      lat: _currentPosition!.latitude,
+      lng: _currentPosition!.longitude,
     );
 
+    // ✅ ONLY clear storage if API SUCCESS
+    if (response != null && response.status == true) {
+      _showSuccess("Check-out completed");
 
-    // Handle response - always navigate regardless of API response
-    if (response == null || response.status == false) {
-      final errorMsg = response?.message?.isNotEmpty == true 
-          ? response!.message! 
-          : "Checkout API failed";
-      
-      // Log error but don't block navigation
-      debugPrint('Checkout API warning: $errorMsg');
-      
-      // Show a subtle warning but still proceed
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Checkout saved. ${errorMsg.isNotEmpty ? errorMsg : ''}"),
-            backgroundColor: Colors.orange.shade700,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } else {
-      // Show success message only if API succeeded
-      _showSuccess("Check-out Completed Successfully");
-    }
-
-    // Clear check-in data from storage (checkout completed)
-    try {
       final storageService = SecureStorageService();
       await storageService.clearCheckInData();
-      debugPrint('Check-in data cleared after checkout');
-    } catch (e) {
-      debugPrint('Error clearing check-in data: $e');
-      // Continue even if clear fails
+    } else {
+      _showError(response?.message ?? "Checkout failed");
+      return;
     }
 
-    // Navigate to StaffPage immediately (don't wait for success message)
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-      _navigateToAgentStaffHomePage();
-
-    });
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (mounted) _navigateToAgentStaffHomePage();
   }
+
 
   /// Navigate to StaffPage with credentials
   Future<void> _navigateToAgentStaffHomePage() async {

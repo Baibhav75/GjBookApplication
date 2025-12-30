@@ -25,7 +25,7 @@ class _SchoolProfilePageState extends State<SchoolProfilePage> {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
-        leading: Icon(icon, color: Colors.blue),
+        leading: Icon(icon, color: Colors.deepOrangeAccent),
         title:
         Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(value.isEmpty ? "N/A" : value),
@@ -53,7 +53,7 @@ class _SchoolProfilePageState extends State<SchoolProfilePage> {
       appBar: AppBar(
         title: const Text("School Profile",
             style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.deepOrangeAccent,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<SchoolProfileModel>(
@@ -77,7 +77,7 @@ class _SchoolProfilePageState extends State<SchoolProfilePage> {
                   radius: 45,
                   backgroundColor: Colors.blue.shade100,
                   child:
-                  const Icon(Icons.school, size: 50, color: Colors.blue),
+                  const Icon(Icons.school, size: 50, color: Colors.deepOrangeAccent),
                 ),
                 const SizedBox(height: 8),
                 Text(p.schoolName,
