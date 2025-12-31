@@ -8,6 +8,7 @@ class AllStaffHistory {
   final String? checkOutLocation;
   final String? checkInImage;
   final String? checkOutImage;
+  final String? workDuration; // ⬅ NEW FIELD
 
   AllStaffHistory({
     required this.employeeId,
@@ -19,6 +20,7 @@ class AllStaffHistory {
     this.checkOutLocation,
     this.checkInImage,
     this.checkOutImage,
+    this.workDuration,
   });
 
   factory AllStaffHistory.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class AllStaffHistory {
       checkOutLocation: json['CheckOutLocation'],
       checkInImage: json['CheckInImage'],
       checkOutImage: json['CheckOutImage'],
+      workDuration: json['WorkDuration'], // ⬅ ADDED
     );
   }
 }

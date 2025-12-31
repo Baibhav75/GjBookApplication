@@ -75,6 +75,12 @@ class SecureStorageService {
   static const String _keyHasPendingCheckIn = 'has_pending_checkin';
   static const String _keyCheckInSyncStatus = 'checkin_sync_status';
 
+  // Counter keys
+  static const String _keyCounterId = 'counter_id';
+  static const String _keyCounterPassword = 'counter_password';
+  static const String _keyCounterName = 'counter_name';
+
+
   // ===========================================================================
   // ✅ SAVE METHODS
   // ===========================================================================
@@ -289,16 +295,26 @@ class SecureStorageService {
 
   /// Save counter credentials
   Future<void> saveCounterCredentials({
-    required String password,
     required String counterId,
+    required String password,
+    required String counterName,
   }) async {
     try {
       await _storage.write(key: _keyUserType, value: 'counter');
       await _storage.write(key: _keyIsLoggedIn, value: 'true');
+
+      await _storage.write(key: _keyCounterId, value: counterId);
+      await _storage.write(key: _keyCounterPassword, value: password);
+      await _storage.write(key: _keyCounterName, value: counterName);
+
+      debugPrint('✅ Counter credentials saved');
+      debugPrint('   Counter ID: $counterId');
+      debugPrint('   Counter Name: $counterName');
     } catch (e) {
       throw Exception('Failed to save counter credentials: $e');
     }
   }
+
 
   // ===========================================================================
   // ✅ GET METHODS
@@ -482,6 +498,19 @@ class SecureStorageService {
       return null;
     }
   }
+
+  Future<String?> getCounterId() async {
+    return await _storage.read(key: _keyCounterId);
+  }
+
+  Future<String?> getCounterName() async {
+    return await _storage.read(key: _keyCounterName);
+  }
+
+  Future<String?> getCounterPassword() async {
+    return await _storage.read(key: _keyCounterPassword);
+  }
+
 
   // ===========================================================================
   // ✅ CHECK-IN METHODS (UPDATED)
@@ -779,6 +808,12 @@ class SecureStorageService {
       await _storage.delete(key: _keyAgentId);
       await _storage.delete(key: _keyAgentEmail);
       await _storage.delete(key: _keyAgentPosition);
+
+      // Clear counter credentials
+      await _storage.delete(key: _keyCounterId);
+      await _storage.delete(key: _keyCounterPassword);
+      await _storage.delete(key: _keyCounterName);
+
 
       // Clear check-in data
       await clearCheckInData();

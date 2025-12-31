@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../Service/counter_login_service.dart';
+import '../Service/secure_storage_service.dart';
+import '../Model/counter_login_model.dart';
 import 'counter_main_page.dart';
-import 'package:bookworld/Service/secure_storage_service.dart';
 
 class CounterLoginPage extends StatefulWidget {
   const CounterLoginPage({Key? key}) : super(key: key);
@@ -12,10 +14,10 @@ class CounterLoginPage extends StatefulWidget {
 class _CounterLoginPageState extends State<CounterLoginPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _counterIdCtrl =
-  TextEditingController(text: "counter01");
+  final TextEditingController _mobileCtrl =
+  TextEditingController(text: "9897382328");
   final TextEditingController _passwordCtrl =
-  TextEditingController(text: "12345");
+  TextEditingController(text: "123456");
 
   bool _isLoading = false;
   bool _obscureText = true;
@@ -24,32 +26,50 @@ class _CounterLoginPageState extends State<CounterLoginPage> {
 
   @override
   void dispose() {
-    _counterIdCtrl.dispose();
+    _mobileCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    try {
+      CounterLoginModel response = await CounterLoginService.login(
+        mobileNo: _mobileCtrl.text.trim(),
+        password: _passwordCtrl.text.trim(),
+      );
 
-    const demoUser = "counter01";
-    const demoPass = "12345";
+      if (!mounted) return;
 
-    await _storageService.saveCounterCredentials(
-      counterId: demoUser,
-      password: demoPass,
+      if (response.isSuccess) {
+        // Save counter details securely
+        await _storageService.saveCounterCredentials(
+          counterId: response.counterBoyNo,
+          password: response.counterBoyPassword,
+          counterName: response.counterBoyName,
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CounterMainPage()),
+        );
+      } else {
+        _showError(response.message);
+      }
+    } catch (e) {
+      _showError("Login failed. Please try again.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
     );
-
-    if (!mounted) return;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const CounterMainPage()),
-    );
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -67,19 +87,15 @@ class _CounterLoginPageState extends State<CounterLoginPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 25),
+            const SizedBox(height: 30),
 
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/MOLL Services Logo.png',
-                width: 125,
-                height: 125,
-                fit: BoxFit.contain,
-              ),
+            Image.asset(
+              'assets/MOLL Services Logo.png',
+              width: 120,
+              height: 120,
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
 
             Text(
               "Counter Portal",
@@ -96,32 +112,23 @@ class _CounterLoginPageState extends State<CounterLoginPage> {
               key: _formKey,
               child: Column(
                 children: [
-                  // READ-ONLY AUTO-FILLED COUNTER ID
                   TextFormField(
-                    controller: _counterIdCtrl,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: "Counter ID",
-                      prefixIcon: const Icon(Icons.person_outline),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                    controller: _mobileCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: _inputDecoration("Mobile Number", Icons.phone),
+                    validator: (v) =>
+                    v!.isEmpty ? "Mobile number required" : null,
                   ),
 
                   const SizedBox(height: 18),
 
-                  // READ-ONLY AUTO-FILLED PASSWORD
                   TextFormField(
                     controller: _passwordCtrl,
-                    readOnly: true,
                     obscureText: _obscureText,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
+                    decoration: _inputDecoration(
+                      "Password",
+                      Icons.lock,
+                      suffix: IconButton(
                         icon: Icon(
                           _obscureText
                               ? Icons.visibility
@@ -130,12 +137,9 @@ class _CounterLoginPageState extends State<CounterLoginPage> {
                         onPressed: () =>
                             setState(() => _obscureText = !_obscureText),
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
+                    validator: (v) =>
+                    v!.isEmpty ? "Password required" : null,
                   ),
 
                   const SizedBox(height: 32),
@@ -167,10 +171,25 @@ class _CounterLoginPageState extends State<CounterLoginPage> {
                 ],
               ),
             ),
-
-
           ],
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(
+      String label,
+      IconData icon, {
+        Widget? suffix,
+      }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
     );
   }

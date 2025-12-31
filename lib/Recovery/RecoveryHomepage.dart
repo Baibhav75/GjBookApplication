@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
-import '../Service/secure_storage_service.dart';
-import '../home_screen.dart';
 
 class RecoveryHomePage extends StatefulWidget {
-  const RecoveryHomePage({Key? key}) : super(key: key);
+  final String position;
+  final String agentName;
+  final String mobileNo;
+
+  const RecoveryHomePage({
+    Key? key,
+    required this.position,
+    required this.agentName,
+    required this.mobileNo,
+
+  }) : super(key: key);
 
   @override
   State<RecoveryHomePage> createState() => _RecoveryHomePageState();
@@ -34,12 +42,18 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
         currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFFEF6C00),
         unselectedItemColor: Colors.grey,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: "Schools"),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.school), label: "Schools"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.history), label: "History"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
     );
@@ -131,7 +145,9 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
   Widget _menuItem(String title, IconData icon, Color color) {
     return InkWell(
       onTap: () {
-        // TODO: navigation add later
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("$title clicked (UI only)")),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -160,8 +176,8 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
             Text(
               title,
               textAlign: TextAlign.center,
-              style:
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -180,23 +196,37 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
             color: const Color(0xFFEF6C00),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                CircleAvatar(
+              children: [
+                const CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white,
-                  child:
-                  Icon(Icons.person, size: 36, color: Colors.deepOrange),
+                  child: Icon(Icons.person,
+                      size: 36, color: Colors.deepOrange),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
-                  "Recovery Agent",
-                  style: TextStyle(
+                  widget.position,
+                  style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold),
                 ),
-                Text("Agent ID: RC-01",
-                    style: TextStyle(color: Colors.white70)),
+                Text(
+                  widget.agentName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.mobileNo,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+
+
+
               ],
             ),
           ),
@@ -212,18 +242,14 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
             onTap: () => Navigator.pop(context),
           ),
           const Divider(),
+
+          // UI-ONLY LOGOUT
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout"),
-            onTap: () async {
+            onTap: () {
               Navigator.pop(context);
-              await SecureStorageService().clearAllCredentials();
-              if (!mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    (_) => false,
-              );
+              Navigator.pop(context); // back to login
             },
           ),
         ],

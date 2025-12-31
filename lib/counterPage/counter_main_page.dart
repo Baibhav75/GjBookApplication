@@ -16,12 +16,36 @@ class CounterMainPage extends StatefulWidget {
 class _CounterMainPageState extends State<CounterMainPage> {
   int _currentIndex = 0;
 
+  String _counterName = '';
+  String _counterId = '';
+  String _counterMobile= '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCounterDetails();
+  }
+
+  Future<void> _loadCounterDetails() async {
+    final storage = SecureStorageService();
+
+    final name = await storage.getCounterName();
+    final id = await storage.getCounterId();
+
+    if (!mounted) return;
+
+    setState(() {
+      _counterName = name ?? 'Counter User';
+      _counterId = id ?? '';
+      _counterMobile;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
 
-      // ---------------------- DRAWER ADDED HERE ----------------------
       drawer: _buildDrawer(),
 
       appBar: AppBar(
@@ -33,9 +57,14 @@ class _CounterMainPageState extends State<CounterMainPage> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: const Text(
-          "Dashboard",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          _counterName.isNotEmpty
+              ? "Welcome, $_counterName"
+              : "Dashboard",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
@@ -48,7 +77,9 @@ class _CounterMainPageState extends State<CounterMainPage> {
           ),
         ],
       ),
+
       body: _getPage(),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFF1A73E8),
@@ -68,14 +99,13 @@ class _CounterMainPageState extends State<CounterMainPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 🎨 DRAWER DESIGN (Dashboard • Profile • Settings • Change Password • Logout)
+  // DRAWER
   // ---------------------------------------------------------------------------
 
   Widget _buildDrawer() {
     return Drawer(
       child: Column(
         children: [
-          // Drawer Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(25),
@@ -84,32 +114,32 @@ class _CounterMainPageState extends State<CounterMainPage> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                CircleAvatar(
+              children: [
+                const CircleAvatar(
                   radius: 32,
                   backgroundColor: Colors.white,
                   child: Icon(Icons.person, color: Colors.blue, size: 40),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
-                  "Counter User",
-                  style: TextStyle(
+                  _counterName.isNotEmpty
+                      ? _counterName
+                      : "Counter User",
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  "counter01",
-                  style: TextStyle(
-                    color: Colors.white70,
+                if (_counterId.isNotEmpty)
+                  Text(
+                    _counterId,
+                    style: const TextStyle(color: Colors.white70),
                   ),
-                ),
               ],
             ),
           ),
 
-          // Drawer Items
           ListTile(
             leading: const Icon(Icons.dashboard, color: Colors.blue),
             title: const Text("Dashboard"),
@@ -123,22 +153,13 @@ class _CounterMainPageState extends State<CounterMainPage> {
             leading: const Icon(Icons.person, color: Colors.blue),
             title: const Text("Profile"),
             onTap: () {
-              Navigator.pop(context);
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const counterProfile(mobileNo: ''),
+                  builder: (_) => CounterProfile(mobileNo: _counterId,),
                 ),
               );
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.settings, color: Colors.blue),
-            title: const Text("Settings"),
-            onTap: () {
-              Navigator.pop(context);
-              // Add settings page navigation here
             },
           ),
 
@@ -150,25 +171,20 @@ class _CounterMainPageState extends State<CounterMainPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const CounterChangePasswordPage(mobileNo: ''),
+                  builder: (_) =>
+                      CounterChangePasswordPage(mobileNo: _counterId),
                 ),
               );
             },
           ),
 
-          const Spacer(),
-
-          // Logout Button
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("Logout"),
-              onTap: () {
-                Navigator.pop(context);
-                _logout();
-              },
-            ),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text("Logout"),
+            onTap: () {
+              Navigator.pop(context);
+              _logout();
+            },
           ),
 
           const SizedBox(height: 20),
@@ -208,7 +224,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AnimatedBanner(),   // <-- 🔥 Added here
+          AnimatedBanner(userName: _counterName ,),   // <-- 🔥 Added here
 
           const SizedBox(height: 25),
 
@@ -230,7 +246,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
             ],
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(height: 12),
 
           Container(
             padding: const EdgeInsets.all(20),
@@ -249,33 +265,75 @@ class _CounterMainPageState extends State<CounterMainPage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 3,
-              mainAxisSpacing: 25,
+              mainAxisSpacing: 15,
               crossAxisSpacing: 25,
+
+              childAspectRatio: 0.85,
               children: [
-                _menuItem("Total Sell", Icons.currency_rupee, Colors.green, () {
-                  setState(() => _currentIndex = 1);
-                }),
+                _menuItem(
+                  "Counter List",
+                  Icons.store, // 🏪 counters / shops
+                  Colors.green,
+                      () {
+                    setState(() => _currentIndex = 1);
+                  },
+                ),
 
-                _menuItem("Hold Amount", Icons.pause_circle_filled, Colors.orange, () {
-                  setState(() => _currentIndex = 2);
-                }),
+                _menuItem(
+                  "Total Collection",
+                  Icons.account_balance_wallet, // 💰 total money collected
+                  Colors.orange,
+                      () {
+                    setState(() => _currentIndex = 2);
+                  },
+                ),
 
-                _menuItem("Release Amount", Icons.play_circle_fill, Colors.purple, () {
-                  setState(() => _currentIndex = 3);
-                }),
+                _menuItem(
+                  "Deposit Amount",
+                  Icons.arrow_downward, // ⬇️ money deposited
+                  Colors.purple,
+                      () {
+                    setState(() => _currentIndex = 3);
+                  },
+                ),
 
-                _menuItem("Available Stock", Icons.inventory_2, Colors.blue, () {
-                  setState(() => _currentIndex = 4);
-                }),
+                _menuItem(
+                  "Hold Amount",
+                  Icons.pause_circle_filled, // ⏸ money on hold
+                  Colors.blue,
+                      () {
+                    setState(() => _currentIndex = 4);
+                  },
+                ),
 
-                _menuItem("Sell Now", Icons.shopping_cart_checkout, Colors.teal, () {
-                  // Sell page logic
-                }),
+                _menuItem(
+                  "Hold Limit",
+                  Icons.lock, // 🔒 limit / restriction
+                  Colors.teal,
+                      () {
+                    // Hold limit logic
+                  },
+                ),
 
-                _menuItem("Order Now", Icons.add_shopping_cart, Colors.red, () {
-                  // Order page logic
-                }),
+                _menuItem(
+                  "Today Collection",
+                  Icons.today, // 📅 today’s collection
+                  Colors.red,
+                      () {
+                    // Today collection logic
+                  },
+                ),
+
+                _menuItem(
+                  "Monthly\nCollection",
+                  Icons.calendar_month, // 📆 monthly summary
+                  Colors.deepPurple,
+                      () {
+                    // Monthly collection logic
+                  },
+                ),
               ],
+
             ),
           ),
         ],
@@ -335,7 +393,12 @@ class _CounterMainPageState extends State<CounterMainPage> {
 }
 
 class AnimatedBanner extends StatefulWidget {
-  const AnimatedBanner({Key? key}) : super(key: key);
+  final String userName;
+
+  const AnimatedBanner({
+    Key? key,
+    required this.userName,
+  }) : super(key: key);
 
   @override
   _AnimatedBannerState createState() => _AnimatedBannerState();
@@ -400,15 +463,18 @@ class _AnimatedBannerState extends State<AnimatedBanner>
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                "Welcome Back! Have a productive day ahead 🚀",
+                widget.userName.isNotEmpty
+                    ? "Welcome back, ${widget.userName}! Have a productive day 🚀"
+                    : "Welcome back! Have a productive day 🚀",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            )
+            ),
           ],
+
         ),
       ),
     );

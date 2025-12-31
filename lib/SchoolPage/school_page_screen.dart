@@ -293,21 +293,52 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
               crossAxisSpacing: 12, // Reduced spacing
               childAspectRatio: 0.85, // Optimal ratio
               children: [
-                _menuItem("Student", Icons.present_to_all, Colors.green, () {
-                  setState(() => _currentIndex = 1);
-                }),
-                _menuItem("Teacher", Icons.today, Colors.teal, () {
-                  setState(() => _currentIndex = 2);
-                }),
-                _menuItem("Class", Icons.calendar_month, Colors.purple, () {
-                  setState(() => _currentIndex = 3);
-                }),
-                _menuItem("ActiveToday", Icons.inventory_2, Colors.blue, () {
-                  setState(() => _currentIndex = 4);
-                }),
-                _menuItem("Sell Now", Icons.shopping_cart_checkout, Colors.blue, () {}),
-                _menuItem("Order Now", Icons.add_shopping_cart, Colors.red, () {}),
+                _menuItem(
+                  "Credit Amount",
+                  Icons.account_balance_wallet, // 💰 credit
+                  Colors.green,
+                      () {
+                    setState(() => _currentIndex = 1);
+                  },
+                ),
+
+                _menuItem(
+                  "Debit Amount",
+                  Icons.money_off_csred, // 💸 debit
+                  Colors.teal,
+                      () {
+                    setState(() => _currentIndex = 2);
+                  },
+                ),
+
+                _menuItem(
+                  "Total Sell",
+                  Icons.trending_up, // 📈 sales
+                  Colors.purple,
+                      () {
+                    setState(() => _currentIndex = 3);
+                  },
+                ),
+
+                _menuItem(
+                  "Available Stock",
+                  Icons.inventory_2, // 📦 stock
+                  Colors.blue,
+                      () {
+                    setState(() => _currentIndex = 4);
+                  },
+                ),
+
+                _menuItem(
+                  "Settings",
+                  Icons.settings, // ⚙️ settings (FIXED)
+                  Colors.blueGrey,
+                      () {
+                    // navigate to settings page
+                  },
+                ),
               ],
+
             ),
           ),
 

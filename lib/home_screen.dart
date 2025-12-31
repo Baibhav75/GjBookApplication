@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'AgentStaff/agentLoginPage.dart';
 import 'Hr_Page/hrLogin_screen.dart';
 import 'Recovery/RecoveryHomepage.dart';
+import 'Recovery/recoveryAgentLogin.dart';
 import 'SchoolPage/school login.dart';
 import 'adminPage/adminLogin.dart';
 import 'counterPage/counterLogin.dart';
@@ -201,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   context,
                                   MaterialPageRoute(
                                       builder: (_) =>
-                                      const RecoveryHomePage()),
+                                      const  RecoveryAgentLogin()),
                                 );
                               },
                             ),

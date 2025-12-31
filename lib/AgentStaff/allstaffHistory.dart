@@ -28,6 +28,9 @@ class _AllStaffHistoryPageState extends State<AllStaffHistoryPage> {
   Color _statusColor(AllStaffHistory e) =>
       e.checkOutTime == null ? Colors.orange : Colors.green;
 
+  String _workDuration(AllStaffHistory e) =>
+      e.workDuration ?? "In Progress";
+
   // ================= IMAGE =================
   Widget _image(String? img) {
     if (img == null || img.isEmpty) {
@@ -71,7 +74,7 @@ class _AllStaffHistoryPageState extends State<AllStaffHistoryPage> {
             children: [
               Center(
                 child: Container(
-                  height: 20,
+                  height: 6,
                   width: 50,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade400,
@@ -81,15 +84,18 @@ class _AllStaffHistoryPageState extends State<AllStaffHistoryPage> {
               ),
               const SizedBox(height: 16),
 
-              Text(e.employeeName,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                e.employeeName,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               Text("Mobile: ${e.mobile}"),
 
               const Divider(height: 30),
 
               _info("Check-In Time", _format(e.checkInTime)),
               _info("Check-Out Time", _format(e.checkOutTime)),
+              _info("Work Duration", e.workDuration),
               _info("Check-In Location", e.checkInLocation),
               _info("Check-Out Location", e.checkOutLocation),
 
@@ -124,7 +130,7 @@ class _AllStaffHistoryPageState extends State<AllStaffHistoryPage> {
           Text(title,
               style:
               const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
           Text(value ?? "-", style: const TextStyle(color: Colors.black54)),
         ],
       ),
@@ -137,7 +143,6 @@ class _AllStaffHistoryPageState extends State<AllStaffHistoryPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
 
-      // 🔵 SAME APPBAR AS YOU WANT
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: const Text(
@@ -170,8 +175,7 @@ class _AllStaffHistoryPageState extends State<AllStaffHistoryPage> {
             itemBuilder: (_, i) {
               final e = list[i];
 
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+              return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -200,16 +204,27 @@ class _AllStaffHistoryPageState extends State<AllStaffHistoryPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(e.employeeName,
-                                  style: const TextStyle(
-                                      fontWeight:
-                                      FontWeight.bold)),
+                              Text(
+                                e.employeeName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
                               Text(
                                 "Check-In: ${_format(e.checkInTime)}",
                                 style: const TextStyle(fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Work: ${_workDuration(e)}",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: e.workDuration == null
+                                      ? Colors.orange
+                                      : Colors.green,
+                                ),
                               ),
                             ],
                           ),

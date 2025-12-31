@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import '../Service/counter_change_password_service.dart';
+import '../Model/counter_change_password_model.dart';
 
 class CounterChangePasswordPage extends StatefulWidget {
-  const CounterChangePasswordPage({Key? key, required String mobileNo}) : super(key: key);
+  final String mobileNo;
+
+  const CounterChangePasswordPage({
+    Key? key,
+    required this.mobileNo,
+  }) : super(key: key);
 
   @override
   State<CounterChangePasswordPage> createState() =>
       _CounterChangePasswordPageState();
 }
 
-class _CounterChangePasswordPageState extends State<CounterChangePasswordPage> {
+class _CounterChangePasswordPageState
+    extends State<CounterChangePasswordPage> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _oldPasswordController =
@@ -21,22 +29,50 @@ class _CounterChangePasswordPageState extends State<CounterChangePasswordPage> {
   bool _obscureOld = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _isLoading = false;
 
   // ================= SUBMIT =================
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Counter password updated successfully"),
-          backgroundColor: Colors.green,
-        ),
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      CounterChangePasswordModel response =
+      await CounterChangePasswordService.changePassword(
+        mobileNo: widget.mobileNo,
+        oldPassword: _oldPasswordController.text.trim(),
+        newPassword: _newPasswordController.text.trim(),
+        confirmPassword: _confirmPasswordController.text.trim(),
       );
 
-      // 🔗 Later: Call Counter Change Password API here
+      if (!mounted) return;
+
+      if (response.status) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pop(context); // go back after success
+      } else {
+        _showError(response.message);
+      }
+    } catch (e) {
+      _showError("Failed to change password. Please try again.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ================= PASSWORD FIELD =================
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
+
   Widget _passwordField(
       String label,
       TextEditingController controller,
@@ -50,8 +86,7 @@ class _CounterChangePasswordPageState extends State<CounterChangePasswordPage> {
         labelText: label,
         prefixIcon: const Icon(Icons.lock),
         suffixIcon: IconButton(
-          icon:
-          Icon(obscure ? Icons.visibility_off : Icons.visibility),
+          icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
           onPressed: toggle,
         ),
         border: OutlineInputBorder(
@@ -70,7 +105,7 @@ class _CounterChangePasswordPageState extends State<CounterChangePasswordPage> {
     );
   }
 
-  // ================= MAIN =================
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,8 +137,8 @@ class _CounterChangePasswordPageState extends State<CounterChangePasswordPage> {
                     const SizedBox(height: 12),
                     const Text(
                       "Counter Password Update",
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 24),
 
@@ -158,14 +193,17 @@ class _CounterChangePasswordPageState extends State<CounterChangePasswordPage> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: _submit,
+                        onPressed: _isLoading ? null : _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text(
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2)
+                            : const Text(
                           "UPDATE PASSWORD",
                           style: TextStyle(
                               fontWeight: FontWeight.bold,

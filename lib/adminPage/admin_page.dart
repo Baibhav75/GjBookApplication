@@ -82,6 +82,7 @@ class _AdminPageState extends State<AdminPage> {
     {'title': 'Total Stall',  'icon': Icons.store, 'color': Colors.red},
     {'title': 'School List',  'icon': Icons.school, 'color': Colors.teal},
     {'title': 'Employee List', 'icon': Icons.people, 'color': Colors.indigo},
+
     {'title': 'Today Office Visit',  'icon': Icons.person, 'color': Colors.cyan},
     {'title': 'Add Day Book',  'icon': Icons.business, 'color': Colors.deepOrange},
     {'title': 'Day Book History',  'icon': Icons.history, 'color': Colors.brown},
@@ -1246,10 +1247,6 @@ class _AdminPageState extends State<AdminPage> {
       },
     );
   }
-
-
-
-
 
 
   Widget _buildFooter() {

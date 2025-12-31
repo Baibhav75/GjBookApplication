@@ -327,7 +327,8 @@ class _agentStaffHomePageState extends State<agentStaffHomePage> {
                 }),
 
                 // ✅ Change Password
-                _menuItem("Change Password", Icons.password, Colors.teal, () {
+                _menuItem("Change\nPassword"
+                    , Icons.password, Colors.teal, () {
                   // Change password logic
                 }),
 

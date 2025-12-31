@@ -27,29 +27,6 @@ class _AgentStaffLoginPageState extends State<AgentStaffLoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-
-  /// ✅ ALL STAFF POSITIONS
-  final List<String> _positions = [
-    "Accounts",
-    "Billing",
-    "Bouncer Man",
-    "Collection Recovery",
-    "Computer Operator",
-    "Driver",
-    "Field Recovery",
-    "Godown Incharge",
-    "Housekeeper",
-    "IT",
-    "Labours",
-    "Manager",
-    "Receptionist",
-    "Sales",
-    "Sales Officer",
-    "Services Incharge",
-    "Stock",
-    "Supervisor",
-  ];
-
   // ---------------------------------------------------------------------------
   // 🔐 LOGIN HANDLER
   // ---------------------------------------------------------------------------

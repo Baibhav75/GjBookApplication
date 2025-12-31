@@ -1,37 +1,26 @@
 import 'package:flutter/material.dart';
+import '../Model/counter_profile_model.dart';
+import '../Service/counter_profile_service.dart';
 
-class counterProfile extends StatelessWidget {
+class CounterProfile extends StatefulWidget {
   final String mobileNo;
 
-  const counterProfile({Key? key, required this.mobileNo}) : super(key: key);
+  const CounterProfile({Key? key, required this.mobileNo}) : super(key: key);
 
-  // ================= STATIC DATA =================
-  final Map<String, String> profile = const {
-    "employeeId": "SG-1024",
-    "employeeName": "Ramesh Kumar",
-    "designation": "Security Guard",
-    "email": "ramesh.guard@example.com",
-    "mobile": "9876543210",
-    "alternate": "9123456789",
-    "department": "Security",
-    "employeeType": "Full Time",
+  @override
+  State<CounterProfile> createState() => _CounterProfileState();
+}
 
-    "fatherName": "Suresh Kumar",
-    "motherName": "Sunita Devi",
-    "dob": "12 Aug 1992",
-    "gender": "Male",
-    "maritalStatus": "Married",
+class _CounterProfileState extends State<CounterProfile> {
+  late Future<CounterProfileModel> _profileFuture;
 
-    "permanentAddress":
-    "Village Rampur, Post Rampur, District Gorakhpur, Uttar Pradesh",
-    "currentAddress":
-    "Sector 22, Noida, Gautam Buddh Nagar, Uttar Pradesh",
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture =
+        CounterProfileService.fetchProfile(mobileNo: widget.mobileNo);
+  }
 
-    "joiningDate": "01 Jan 2022",
-    "salary": "15000",
-  };
-
-  // ================= UI HELPERS =================
   Widget _item(String title, String value, IconData icon) {
     return Card(
       elevation: 2,
@@ -51,73 +40,81 @@ class counterProfile extends StatelessWidget {
       child: Text(
         title,
         style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue),
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
       ),
     );
   }
 
-  // ================= MAIN =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         title: const Text(
-          'Security Guard Profile',
+          'Counter Profile',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+      body: FutureBuilder<CounterProfileModel>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // PROFILE HEADER
-            CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.blue.shade100,
-              child: const Icon(Icons.person, size: 50, color: Colors.blue),
+          if (snapshot.hasError || snapshot.data?.data == null) {
+            return const Center(child: Text("Failed to load profile"));
+          }
+
+          final data = snapshot.data!.data!;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 45,
+                  backgroundColor: Colors.blue.shade100,
+                  child:
+                  const Icon(Icons.person, size: 50, color: Colors.blue),
+                ),
+                const SizedBox(height: 8),
+
+                Text(
+                  data.counterBoyName,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  data.counterName,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+
+                _section("Basic Information"),
+                _item("Counter ID", data.counterId, Icons.badge),
+                _item("Mobile", data.mobile, Icons.phone),
+                _item("School Name", data.schoolName, Icons.school),
+                _item("Cash Limit", "₹ ${data.cashLimit}",
+                    Icons.currency_rupee),
+
+                _section("Personal Details"),
+                _item("Father Name", data.fatherName, Icons.man),
+                _item("Mother Name", data.motherName, Icons.woman),
+
+                _section("Documents"),
+                _item("Agreement", "Uploaded", Icons.file_present),
+                _item("Cancel Check", "Uploaded", Icons.file_present),
+                _item("Marksheet", "Uploaded", Icons.file_present),
+                _item("Aadhar Card", "Uploaded", Icons.file_present),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(profile["employeeName"]!,
-                style: const TextStyle(
-                    fontSize: 22, fontWeight: FontWeight.bold)),
-            Text(profile["designation"]!,
-                style: const TextStyle(color: Colors.grey)),
-
-            _section("Basic Information"),
-            _item("Employee ID", profile["employeeId"]!, Icons.badge),
-            _item("Email", profile["email"]!, Icons.email),
-            _item("Mobile", profile["mobile"]!, Icons.phone),
-            _item("Alternate", profile["alternate"]!, Icons.phone_android),
-            _item("Department", profile["department"]!, Icons.apartment),
-            _item("Employee Type", profile["employeeType"]!, Icons.people),
-
-            _section("Personal Details"),
-            _item("Father Name", profile["fatherName"]!, Icons.man),
-            _item("Mother Name", profile["motherName"]!, Icons.woman),
-            _item("DOB", profile["dob"]!, Icons.cake),
-            _item("Gender", profile["gender"]!, Icons.male),
-            _item("Marital Status", profile["maritalStatus"]!,
-                Icons.family_restroom),
-
-            _section("Address"),
-            _item("Permanent Address", profile["permanentAddress"]!,
-                Icons.home),
-            _item("Current Address", profile["currentAddress"]!,
-                Icons.location_on),
-
-            _section("Job Details"),
-            _item("Joining Date", profile["joiningDate"]!,
-                Icons.date_range),
-            _item("Salary", "₹ ${profile["salary"]}",
-                Icons.currency_rupee),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
