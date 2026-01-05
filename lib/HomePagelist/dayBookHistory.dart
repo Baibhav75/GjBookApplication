@@ -23,6 +23,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
 
   List<Transaction> _allTransactions = [];
   List<Transaction> _filteredTransactions = [];
+  TransactionResponse? _transactionResponse; // Store full response to access DayBookData
   String? _selectedFilter; // null means "All" - no filtering
   DateTimeRange? _currentDateRange; // null means show all records
 
@@ -70,6 +71,7 @@ class _DayBookHistoryState extends State<DayBookHistory> {
 
       if (mounted) {
         setState(() {
+          _transactionResponse = response; // Store full response for balance access
           _allTransactions = filteredByDate;
           _filteredTransactions = filteredByDate;
         });
@@ -227,6 +229,100 @@ class _DayBookHistoryState extends State<DayBookHistory> {
     }
 
     return (debit: totalDebit, credit: totalCredit);
+  }
+
+  /// Gets opening balance and next day final balance from DayBookData
+  /// For "Today" filter: returns today's balances
+  /// For other filters: returns the most recent day's balances
+  /// Returns null if no data available
+  ({double todayOpeningBalance, double nextDayFinalBalance})? _getTodayBalances() {
+    if (_transactionResponse == null || _transactionResponse!.data.isEmpty) {
+      return null;
+    }
+
+    final now = DateTime.now();
+    DayBookData? targetDayData;
+
+    // For "Today" filter, find today's DayBookData
+    if (_selectedFilter == 'Today') {
+      final todayDateStr = DateFormat('yyyy-MM-dd').format(now);
+      
+      for (final dayData in _transactionResponse!.data) {
+        if (_isSameDay(dayData.date, now)) {
+          targetDayData = dayData;
+          break;
+        }
+      }
+    } else {
+      // For other filters or "All", get the most recent day's data
+      // Find the day that matches the current date range or get the latest
+      if (_currentDateRange != null) {
+        // Find the day within the date range
+        for (final dayData in _transactionResponse!.data) {
+          if (_isDateInRange(dayData.date, _currentDateRange!)) {
+            targetDayData = dayData;
+            break;
+          }
+        }
+      }
+      
+      // If no match found or "All" filter, use the first (most recent) day
+      if (targetDayData == null && _transactionResponse!.data.isNotEmpty) {
+        targetDayData = _transactionResponse!.data.first;
+      }
+    }
+
+    if (targetDayData != null) {
+      return (
+        todayOpeningBalance: targetDayData.todayOpeningBalance,
+        nextDayFinalBalance: targetDayData.nextDayFinalBalance,
+      );
+    }
+
+    return null;
+  }
+
+  /// Helper to check if a date string matches a specific date
+  bool _isSameDay(String dateString, DateTime date) {
+    try {
+      // Try parsing the date string
+      DateTime parsedDate;
+      if (dateString.contains('T')) {
+        parsedDate = DateTime.parse(dateString);
+      } else {
+        // Try different date formats
+        parsedDate = DateFormat('yyyy-MM-dd').parse(dateString);
+      }
+      
+      return parsedDate.year == date.year &&
+          parsedDate.month == date.month &&
+          parsedDate.day == date.day;
+    } catch (e) {
+      // Try string matching as fallback
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      return dateString.contains(dateStr);
+    }
+  }
+
+  /// Helper to check if a date string falls within a date range
+  bool _isDateInRange(String dateString, DateTimeRange range) {
+    try {
+      DateTime parsedDate;
+      if (dateString.contains('T')) {
+        parsedDate = DateTime.parse(dateString);
+      } else {
+        parsedDate = DateFormat('yyyy-MM-dd').parse(dateString);
+      }
+      
+      // Compare only the date part (ignore time)
+      final dateOnly = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+      final rangeStart = DateTime(range.start.year, range.start.month, range.start.day);
+      final rangeEnd = DateTime(range.end.year, range.end.month, range.end.day);
+      
+      return !dateOnly.isBefore(rangeStart) && !dateOnly.isAfter(rangeEnd);
+    } catch (e) {
+      return false;
+    }
   }
 
   String _formatCurrency(double amount) {
@@ -483,57 +579,82 @@ class _DayBookHistoryState extends State<DayBookHistory> {
         if (isLoading || _allTransactions.isEmpty) return const SizedBox();
 
         final totals = _calculateTotals(_allTransactions);
+        final balances = _getTodayBalances();
 
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           color: Colors.white,
-          child: Row(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            alignment: WrapAlignment.start,
             children: [
-              // Results count
-
-
-              // Balance summary
-              // Balance summary (RESPONSIVE – NO OVERFLOW)
-              Wrap(
-
-                spacing: 8,
-                runSpacing: 6,
-                alignment: WrapAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Debit: ${_formatCurrency(totals.debit)}',
-                      style: TextStyle(
-                        color: Colors.red[700],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+              // Debit and Credit totals
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Debit: ${_formatCurrency(totals.debit)}',
+                  style: TextStyle(
+                    color: Colors.red[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Credit: ${_formatCurrency(totals.credit)}',
-                      style: TextStyle(
-                        color: Colors.green[700],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Credit: ${_formatCurrency(totals.credit)}',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              // Today Opening Balance
+              if (balances != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Opening: ${_formatCurrency(balances.todayOpeningBalance)}',
+                    style: TextStyle(
+                      color: Colors.blue[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              // Next Day Final Balance
+              if (balances != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Closing: ${_formatCurrency(balances.nextDayFinalBalance)}',
+                    style: TextStyle(
+                      color: Colors.orange[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
             ],
           ),
         );

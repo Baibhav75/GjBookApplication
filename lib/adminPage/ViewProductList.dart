@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:bookworld/Model/ViewProductList_model.dart';
@@ -22,19 +23,23 @@ class _ViewProductListState extends State<ViewProductList> {
   String? _errorMessage;
   bool _isDisposed = false;
 
-  VoidCallback? get _refreshData => null;
+  // Performance optimizations
+  Timer? _searchDebounce;
+  final Map<String, String> _dateCache = {}; // Cache formatted dates
+  final DateFormat _dateFormatter = DateFormat('dd-MM-yyyy HH:mm');
 
   @override
   void initState() {
     super.initState();
     _fetchProductList();
-    _searchController.addListener(_filterProducts);
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
     _isDisposed = true;
-    _searchController.removeListener(_filterProducts);
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
@@ -55,6 +60,9 @@ class _ViewProductListState extends State<ViewProductList> {
       if (!mounted || _isDisposed) return;
 
       if (response.isSuccess && response.productList != null) {
+        // Clear cache when new data arrives
+        _dateCache.clear();
+
         setState(() {
           _allProducts = response.productList!;
           _filteredProducts = _allProducts;
@@ -76,66 +84,60 @@ class _ViewProductListState extends State<ViewProductList> {
     }
   }
 
-  void _filterProducts() {
-    final query = _searchController.text.toLowerCase().trim();
-
-    setState(() {
-      if (query.isEmpty) {
-        _filteredProducts = _allProducts;
-      } else {
-        _filteredProducts = _allProducts.where((product) {
-          return (product.itemTitle?.toLowerCase().contains(query) ?? false) ||
-              (product.itemCode?.toLowerCase().contains(query) ?? false) ||
-              (product.publication?.toLowerCase().contains(query) ?? false) ||
-              (product.series?.toLowerCase().contains(query) ?? false) ||
-              (product.subject?.toLowerCase().contains(query) ?? false);
-        }).toList();
-      }
+  // Debounced search to reduce rebuilds
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _filterProducts();
     });
   }
 
+  // Optimized filtering with better performance
+  void _filterProducts() {
+    final query = _searchController.text.toLowerCase().trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        _filteredProducts = _allProducts;
+      });
+      return;
+    }
+
+    final filtered = _allProducts.where((product) {
+      final title = product.itemTitle?.toLowerCase() ?? '';
+      final code = product.itemCode?.toLowerCase() ?? '';
+      final publication = product.publication?.toLowerCase() ?? '';
+      final series = product.series?.toLowerCase() ?? '';
+      final subject = product.subject?.toLowerCase() ?? '';
+
+      return title.contains(query) ||
+          code.contains(query) ||
+          publication.contains(query) ||
+          series.contains(query) ||
+          subject.contains(query);
+    }).toList();
+
+    setState(() {
+      _filteredProducts = filtered;
+    });
+  }
+
+  // Cached date formatting for better performance
   String _formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return 'N/A';
 
+    if (_dateCache.containsKey(dateString)) {
+      return _dateCache[dateString]!;
+    }
+
     try {
       final date = DateTime.parse(dateString);
-      return DateFormat('dd-MM-yyyy HH:mm').format(date);
+      final formatted = _dateFormatter.format(date);
+      _dateCache[dateString] = formatted;
+      return formatted;
     } catch (e) {
       return dateString;
     }
-  }
-
-  void _navigateToHome() {
-    // TODO: Implement navigation to Home screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Home'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-
-  void _navigateToDayBook() {
-    // TODO: Implement navigation to Day Book screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Day Book'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-
-  void _navigateToAttendanceHistory() {
-    // TODO: Implement navigation to Attendance History screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Attendance History'),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 1),
-      ),
-    );
   }
 
   @override
@@ -150,16 +152,15 @@ class _ViewProductListState extends State<ViewProductList> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications),
-            onPressed: ArgumentError.notNull,
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(
               Icons.refresh,
-              color: Colors.white, //
+              color: Colors.white,
             ),
-            onPressed: _refreshData,
+            onPressed: _fetchProductList,
           ),
-
           PopupMenuButton<String>(
             onSelected: (value) {
               _handlePopupMenuSelection(value);
@@ -173,7 +174,6 @@ class _ViewProductListState extends State<ViewProductList> {
               }).toList();
             },
           ),
-
         ],
       ),
       body: Column(
@@ -186,8 +186,10 @@ class _ViewProductListState extends State<ViewProductList> {
 
           const SizedBox(height: 10),
 
-
-
+          // Product List/Table
+          Expanded(
+            child: _buildContent(),
+          ),
         ],
       ),
     );
@@ -239,9 +241,6 @@ class _ViewProductListState extends State<ViewProductList> {
       ),
     );
   }
-
-
-
 
   Widget _buildContent() {
     if (_isLoading) {
@@ -340,209 +339,668 @@ class _ViewProductListState extends State<ViewProductList> {
   }
 
   Widget _buildProductTable() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallScreen = constraints.maxWidth < 1200;
+
+        return Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Scrollbar(
-        controller: _verticalScrollController,
-        thumbVisibility: true,
-        child: Scrollbar(
-          controller: _horizontalScrollController,
-          thumbVisibility: true,
-          notificationPredicate: (notif) => notif.depth == 1,
-          child: SingleChildScrollView(
-            controller: _horizontalScrollController,
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              controller: _verticalScrollController,
-              child: DataTable(
-                headingRowColor: MaterialStateColor.resolveWith(
-                      (states) => Colors.blue[50]!,
-                ),
-                columnSpacing: 20,
-                horizontalMargin: 16,
-                dataRowMinHeight: 50,
-                dataRowMaxHeight: 70,
-                columns: const [
-                  DataColumn(
-                    label: Text("Sr No", style: TextStyle(fontWeight: FontWeight.bold)),
-                    numeric: true,
-                  ),
-                  DataColumn(
-                    label: Text("Publication", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Series", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Item Code", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Item Title", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Subject", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Rate", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Discount", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  DataColumn(
-                    label: Text("Action", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ],
-                rows: List.generate(
-                  _filteredProducts.length,
-                      (index) => _buildDataRow(index, _filteredProducts[index]),
+          child: Scrollbar(
+            controller: isSmallScreen ? null : _horizontalScrollController,
+            thumbVisibility: true,
+            child: isSmallScreen
+                ? _buildMobileTable()
+                : _buildDesktopTable(constraints.maxWidth),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopTable(double maxWidth) {
+    final double tableWidth = maxWidth * 0.95;
+
+    return SingleChildScrollView(
+      controller: _horizontalScrollController,
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: tableWidth,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTableHeader(),
+            Expanded(
+              child: Scrollbar(
+                controller: _verticalScrollController,
+                thumbVisibility: true,
+                child: ListView.builder(
+                  controller: _verticalScrollController,
+                  itemCount: _filteredProducts.length,
+                  itemBuilder: (context, index) {
+                    return _buildTableRow(index, _filteredProducts[index]);
+                  },
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  DataRow _buildDataRow(int index, ProductModel product) {
-    return DataRow(
-      color: MaterialStateProperty.resolveWith<Color?>(
-            (Set<MaterialState> states) {
-          if (index.isEven) {
-            return Colors.grey[50];
-          }
-          return null;
-        },
+  Widget _buildMobileTable() {
+    return ListView.builder(
+      controller: _verticalScrollController,
+      itemCount: _filteredProducts.length,
+      itemBuilder: (context, index) {
+        return _buildMobileProductCard(_filteredProducts[index], index);
+      },
+    );
+  }
+
+  Widget _buildMobileProductCard(ProductModel product, int index) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    product.itemTitle ?? 'N/A',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    product.itemCode ?? 'N/A',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[900],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildMobileDetailRow('Publication', product.publication ?? 'N/A'),
+            _buildMobileDetailRow('Series', product.series ?? 'N/A'),
+            _buildMobileDetailRow('Subject', product.subject ?? 'N/A'),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildMobileDetailRow(
+                    'Rate',
+                    product.getFormattedRate() ?? 'N/A',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildMobileDetailRow(
+                    'Discount',
+                    product.discount != null
+                        ? '₹${product.discount!.toStringAsFixed(2)}'
+                        : 'N/A',
+                  ),
+                ),
+              ],
+            ),
+            _buildMobileDetailRow('Date', _formatDate(product.createDate)),
+            const SizedBox(height: 12),
+            _buildMobileActionButtons(product),
+          ],
+        ),
       ),
-      cells: [
-        DataCell(Center(child: Text('${index + 1}'))),
-        DataCell(
+    );
+  }
+
+  Widget _buildMobileDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           SizedBox(
-            width: 120,
-            child: Tooltip(
-              message: product.publication ?? 'N/A',
-              child: Text(
-                product.publication ?? 'N/A',
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          SizedBox(
-            width: 100,
-            child: Tooltip(
-              message: product.series ?? 'N/A',
-              child: Text(
-                product.series ?? 'N/A',
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          Tooltip(
-            message: product.itemCode ?? 'N/A',
-            child: Text(product.itemCode ?? 'N/A'),
-          ),
-        ),
-        DataCell(
-          SizedBox(
-            width: 150,
-            child: Tooltip(
-              message: product.itemTitle ?? 'N/A',
-              child: Text(
-                product.itemTitle ?? 'N/A',
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          Tooltip(
-            message: product.subject ?? 'N/A',
-            child: Text(product.subject ?? 'N/A'),
-          ),
-        ),
-        DataCell(
-          Center(
+            width: 80,
             child: Text(
-              product.getFormattedRate() ?? 'N/A',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
-        DataCell(
-          Center(
-            child: Text(
-              product.discount != null
-                  ? '₹${product.discount!.toStringAsFixed(2)}'
-                  : 'N/A',
+              '$label:',
               style: TextStyle(
-                color: product.discount != null ? Colors.green : Colors.grey,
-                fontWeight: FontWeight.w500,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
               ),
             ),
           ),
-        ),
-        DataCell(
-          SizedBox(
-            width: 120,
+          Expanded(
             child: Text(
-              _formatDate(product.createDate),
-              style: const TextStyle(fontSize: 11),
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black87,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileActionButtons(ProductModel product) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildMobileActionButton(
+          icon: Icons.visibility,
+          label: 'View',
+          color: Colors.blue[700]!,
+          onPressed: () => _handleViewDetails(product),
         ),
-        DataCell(
-          _buildActionButtons(product),
+        _buildMobileActionButton(
+          icon: Icons.edit,
+          label: 'Edit',
+          color: Colors.amber[700]!,
+          onPressed: () => _handleEdit(product),
+        ),
+        _buildMobileActionButton(
+          icon: Icons.delete,
+          label: 'Delete',
+          color: Colors.redAccent[700]!,
+          onPressed: () => _handleDelete(product),
         ),
       ],
+    );
+  }
+
+  Widget _buildMobileActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 16),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: const Size(0, 36),
+      ),
+    );
+  }
+
+  Widget _buildTableHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        border: const Border(bottom: BorderSide(color: Colors.grey, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          _buildHeaderCell("Sr No", 60),
+          _buildHeaderCell("Publication", 120),
+          _buildHeaderCell("Series", 100),
+          _buildHeaderCell("Item Code", 100),
+          _buildHeaderCell("Item Title", 150),
+          _buildHeaderCell("Subject", 100),
+          _buildHeaderCell("Rate", 100),
+          _buildHeaderCell("Discount", 100),
+          _buildHeaderCell("Date", 120),
+          _buildHeaderCell("Action", 180),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderCell(String text, double width) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildTableRow(int index, ProductModel product) {
+    return Container(
+      color: index.isEven ? Colors.grey[50] : Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTableCell('${index + 1}', 60, TextAlign.center),
+          _buildTableCell(product.publication ?? 'N/A', 120, TextAlign.left),
+          _buildTableCell(product.series ?? 'N/A', 100, TextAlign.left),
+          _buildTableCell(product.itemCode ?? 'N/A', 100, TextAlign.left),
+          _buildTableCell(product.itemTitle ?? 'N/A', 150, TextAlign.left),
+          _buildTableCell(product.subject ?? 'N/A', 100, TextAlign.left),
+          _buildTableCell(
+            product.getFormattedRate() ?? 'N/A',
+            100,
+            TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          _buildTableCell(
+            product.discount != null
+                ? '₹${product.discount!.toStringAsFixed(2)}'
+                : 'N/A',
+            100,
+            TextAlign.center,
+            style: TextStyle(
+              color: product.discount != null ? Colors.green : Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          _buildTableCell(
+            _formatDate(product.createDate),
+            120,
+            TextAlign.left,
+            style: const TextStyle(fontSize: 11),
+          ),
+          SizedBox(
+            width: 180,
+            child: _buildActionButtons(product),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text, double width, TextAlign align, {TextStyle? style}) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        text,
+        textAlign: align,
+        style: style,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 2,
+      ),
     );
   }
 
   Widget _buildActionButtons(ProductModel product) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
       children: [
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue[700],
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: const Size(55, 32),
+          ),
+          onPressed: () => _handleViewDetails(product),
+          child: const Text("View", style: TextStyle(fontSize: 11)),
+        ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber[700],
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            minimumSize: const Size(60, 32),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: const Size(55, 32),
           ),
           onPressed: () => _handleEdit(product),
-          child: const Text("Edit", style: TextStyle(fontSize: 12)),
+          child: const Text("Edit", style: TextStyle(fontSize: 11)),
         ),
-        const SizedBox(width: 8),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.redAccent[700],
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            minimumSize: const Size(60, 32),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: const Size(55, 32),
           ),
           onPressed: () => _handleDelete(product),
-          child: const Text("Delete", style: TextStyle(fontSize: 12)),
+          child: const Text("Delete", style: TextStyle(fontSize: 11)),
         ),
       ],
+    );
+  }
+
+  void _handleViewDetails(ProductModel product) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Product Details',
+                            style: TextStyle(
+                              fontSize: MediaQuery.of(context).size.width < 600 ? 18 : 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(16),
+                      child: _buildDetailCard(product),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailCard(ProductModel product) {
+    final rates = product.getAllRates();
+    final availableRates = rates.entries
+        .where((entry) => entry.value != null)
+        .toList();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (product.hasImage) ...[
+              _buildProductImage(product),
+              const SizedBox(height: 16),
+            ],
+
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.itemTitle ?? 'N/A',
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 16 : 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Item Code: ${product.itemCode ?? 'N/A'}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _buildSectionTitle('Basic Information'),
+            const SizedBox(height: 8),
+            _buildDetailRow('Series', product.series ?? 'N/A'),
+            _buildDetailRow('Subject', product.subject ?? 'N/A'),
+            _buildDetailRow('Publication', product.publication ?? 'N/A'),
+            _buildDetailRow('Class', product.classField ?? 'N/A'),
+            _buildDetailRow('Discount',
+                product.discount != null
+                    ? '₹${product.discount!.toStringAsFixed(2)}'
+                    : 'N/A'
+            ),
+            _buildDetailRow('Created Date', _formatDate(product.createDate)),
+
+            const SizedBox(height: 16),
+
+            _buildSectionTitle('Pricing Details'),
+            const SizedBox(height: 8),
+            if (availableRates.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  'No rates available',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+              )
+            else
+              ...availableRates.map((rate) => _buildDetailRow(
+                rate.key,
+                '₹${rate.value!.toStringAsFixed(2)}',
+              )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Colors.blue[900],
+      ),
+    );
+  }
+
+  Widget _buildProductImage(ProductModel product) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: GestureDetector(
+        onTap: () => _showImageFullScreen(product.imageUrl!),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              product.imageUrl!,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Colors.grey[200],
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[200],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.broken_image, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Failed to load image',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showImageFullScreen(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.zero,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 4.0,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: Colors.white,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.broken_image,
+                                color: Colors.white,
+                                size: 64,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 40,
+                      right: 20,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -590,7 +1048,29 @@ class _ViewProductListState extends State<ViewProductList> {
       },
     );
   }
-}
 
-void _handlePopupMenuSelection(String value) {
+  void _handlePopupMenuSelection(String value) {
+    switch (value) {
+      case 'Profile':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile selected')),
+        );
+        break;
+      case 'Settings':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Settings selected')),
+        );
+        break;
+      case 'Help':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Help selected')),
+        );
+        break;
+      case 'Logout':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logout selected')),
+        );
+        break;
+    }
+  }
 }

@@ -82,116 +82,13 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
 
   // 🔽🔽🔽 FOOTER BUTTON METHODS - ADD THESE 🔽🔽🔽
 
-  void _navigateToHome() {
-    // TODO: Implement navigation to Home screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Home'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
 
-  void _navigateToDayBook() {
-    // TODO: Implement navigation to Day Book screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Day Book'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
 
-  void _navigateToAttendanceHistory() {
-    // TODO: Implement navigation to Attendance History screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Attendance History'),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
 
-  Widget _buildFooter() {
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildFooterTextButton(
-            text: 'Home',
-            onPressed: _navigateToHome,
-            icon: Icons.home,
-            textColor: Colors.blue[700],
-          ),
-          _buildFooterTextButton(
-            text: 'Day Book',
-            onPressed: _navigateToDayBook,
-            icon: Icons.book,
-            textColor: Colors.green[700],
-          ),
-          _buildFooterTextButton(
-            text: 'Attendance',
-            onPressed: _navigateToAttendanceHistory,
-            icon: Icons.history,
-            textColor: Colors.orange[700],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildFooterTextButton({
-    required String text,
-    required VoidCallback onPressed,
-    required IconData icon,
-    Color? textColor,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.transparent,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: textColor ?? Colors.blue[700],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: textColor ?? Colors.blue[700],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
+
+
 
   // 🔼🔼🔼 FOOTER BUTTON METHODS - END 🔼🔼🔼
 
@@ -386,8 +283,7 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
             ),
           ),
 
-          // 🔽🔽🔽 ADD FOOTER HERE 🔽🔽🔽
-          _buildFooter(),
+
         ],
       ),
     );

@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'package:bookworld/staffPage/add_school_survey_page.dart';
+import 'package:bookworld/staffPage/staffhistory.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,6 +17,7 @@ import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
 
 import '../HomePagelist/dayBookHistory.dart';
+import '../staffPage/AddSurvey.dart';
 import 'BilingPurchase/PurchaseInvoice.dart';
 import 'BilingPurchase/PurchaseSampleRevenew.dart';
 import 'PurchaseReturn/PurchaseReturnInvoide.dart';
@@ -25,6 +28,7 @@ import 'Sale/SampleSaleInvoice.dart';
 import 'SellReturn/SaleReturnInvoice.dart';
 import 'SellReturn/SamplesaleReturnInvoice.dart';
 import 'ViewProductList.dart';
+import 'in_out_management_page.dart';
 import 'interviewList.dart';
 
 class AdminPage extends StatefulWidget {
@@ -58,8 +62,6 @@ class _AdminPageState extends State<AdminPage> {
     });
   }
 
-
-
   // Get user data from widget or use defaults
   String get adminName => widget.userData?.adminName ?? "Super Admin";
   String get adminEmail => widget.userData?.adminEmail ?? "admin@bookworld.com";
@@ -70,30 +72,83 @@ class _AdminPageState extends State<AdminPage> {
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _oldPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final GlobalKey<FormState> _changePasswordFormKey = GlobalKey<FormState>();
 
   // Sample data for dashboard
   final List<Map<String, dynamic>> _dashboardStats = [
-    {'title': 'Receiving',  'icon': Icons.download, 'color': Colors.green},
-    {'title': 'Latest Order',  'icon': Icons.shopping_cart, 'color': Colors.blue},
-    {'title': 'Total Sell',  'icon': Icons.trending_up, 'color': Colors.purple},
-    {'title': 'Total Purchase',  'icon': Icons.shopping_bag, 'color': Colors.orange},
-    {'title': 'Total Stall',  'icon': Icons.store, 'color': Colors.red},
-    {'title': 'School List',  'icon': Icons.school, 'color': Colors.teal},
-    {'title': 'Employee List', 'icon': Icons.people, 'color': Colors.indigo},
+    {'title': 'Receiving', 'icon': Icons.download, 'color': Colors.green},
+    {
+      'title': 'Latest\nOrder',
+      'icon': Icons.shopping_cart,
+      'color': Colors.blue,
+    },
+    {'title': 'Total\nSell', 'icon': Icons.trending_up, 'color': Colors.purple},
+    {
+      'title': 'Total\nPurchase',
+      'icon': Icons.shopping_bag,
+      'color': Colors.orange,
+    },
+    {'title': 'Total\nStall', 'icon': Icons.store, 'color': Colors.red},
+    {'title': 'School\nList', 'icon': Icons.school, 'color': Colors.teal},
+    {'title': 'Employee\nList', 'icon': Icons.people, 'color': Colors.indigo},
 
-    {'title': 'Today Office Visit',  'icon': Icons.person, 'color': Colors.cyan},
-    {'title': 'Add Day Book',  'icon': Icons.business, 'color': Colors.deepOrange},
-    {'title': 'Day Book History',  'icon': Icons.history, 'color': Colors.brown},
-    {'title': 'Purchase Invoice', 'icon': Icons.receipt, 'color': Colors.amber},
-    {'title': 'Sale Invoice',  'icon': Icons.point_of_sale, 'color': Colors.lightGreen},
-    {'title': 'Purchase Return',  'icon': Icons.assignment_return, 'color': Colors.pink},
-    {'title': 'Sale Return',  'icon': Icons.keyboard_return, 'color': Colors.deepPurple},
-    {'title': 'Company List',  'icon': Icons.business_center, 'color': Colors.lightBlue},
-    {'title': 'Product List',  'icon': Icons.inventory_2, 'color': Colors.blueGrey},
-    {'title': 'Interview List',  'icon': Icons.work, 'color': Colors.orangeAccent},
-    {'title': 'Publication Agreement',  'icon': Icons.description, 'color': Colors.greenAccent},
+    {
+      'title': 'Today Office\nVisit',
+      'icon': Icons.person,
+      'color': Colors.cyan,
+    },
+    {
+      'title': 'Add Day\nBook',
+      'icon': Icons.business,
+      'color': Colors.deepOrange,
+    },
+    {
+      'title': 'Day Book\nHistory',
+      'icon': Icons.history,
+      'color': Colors.brown,
+    },
+    {
+      'title': 'Purchase\nInvoice',
+      'icon': Icons.receipt,
+      'color': Colors.amber,
+    },
+    {
+      'title': 'Sale\nInvoice',
+      'icon': Icons.point_of_sale,
+      'color': Colors.lightGreen,
+    },
+    {
+      'title': 'Purchase Return',
+      'icon': Icons.assignment_return,
+      'color': Colors.pink,
+    },
+    {
+      'title': 'Sale Return',
+      'icon': Icons.keyboard_return,
+      'color': Colors.deepPurple,
+    },
+    {
+      'title': 'Company List',
+      'icon': Icons.business_center,
+      'color': Colors.lightBlue,
+    },
+    {
+      'title': 'Product List',
+      'icon': Icons.inventory_2,
+      'color': Colors.blueGrey,
+    },
+    {
+      'title': 'Interview List',
+      'icon': Icons.work,
+      'color': Colors.orangeAccent,
+    },
+    {
+      'title': 'Publication/nAgreement',
+      'icon': Icons.description,
+      'color': Colors.greenAccent,
+    },
   ];
 
   @override
@@ -110,8 +165,16 @@ class _AdminPageState extends State<AdminPage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text('Admin Dashboard', style: GoogleFonts.poppins(fontSize: 20.sp, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF6B46C1), // Purple color matching banner
+        title: Text(
+          'Admin Dashboard',
+          style: GoogleFonts.poppins(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: const Color(
+          0xFF6B46C1,
+        ), // Purple color matching banner
         foregroundColor: Colors.white,
         elevation: 2,
         actions: [
@@ -119,16 +182,15 @@ class _AdminPageState extends State<AdminPage> {
             icon: const Icon(Icons.notifications),
             onPressed: _showNotifications,
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshData,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshData),
           PopupMenuButton<String>(
             onSelected: (value) {
               _handlePopupMenuSelection(value);
             },
             itemBuilder: (BuildContext context) {
-              return {'Profile', 'Settings', 'Help', 'Logout'}.map((String choice) {
+              return {'Profile', 'Settings', 'Help', 'Logout'}.map((
+                String choice,
+              ) {
                 return PopupMenuItem<String>(
                   value: choice,
                   child: Text(choice),
@@ -141,9 +203,7 @@ class _AdminPageState extends State<AdminPage> {
       drawer: _buildDrawer(),
       body: Column(
         children: [
-          Expanded(
-            child: _getCurrentPage(),
-          ),
+          Expanded(child: _getCurrentPage()),
           // Footer Buttons
           _buildFooter(),
         ],
@@ -197,186 +257,157 @@ class _AdminPageState extends State<AdminPage> {
           _buildDrawerItem(Icons.dashboard, 'Dashboard', 0),
 
           // Product Management (Expandable)
-          _buildExpandableDrawerItem(
-            Icons.inventory_2,
-            'Product Management',
-            [
-              _buildDrawerSubItem(
-                'View Product',
-                onTap: () {
-                  Navigator.pop(context); // Close drawer first
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ViewProductList(),
-                    ),
-                  );
-                },
-              ),
+          _buildExpandableDrawerItem(Icons.inventory_2, 'Product Management', [
+            _buildDrawerSubItem(
+              'View Product',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ViewProductList()),
+                );
+              },
+            ),
 
-              _buildDrawerSubItem(
-                'View Company',
-                onTap: () {
-                  Navigator.pop(context); // Close drawer first
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ViewCompanyPage(),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+            _buildDrawerSubItem(
+              'View Company',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ViewCompanyPage()),
+                );
+              },
+            ),
+          ]),
 
           // Account (Expandable)
-          _buildExpandableDrawerItem(
-            Icons.account_balance_wallet,
-            'Account',
-            [
-              _buildDrawerSubItem('Purchase Invoice'),
-              _buildDrawerSubItem('Purchase Return'),
-              _buildDrawerSubItem('Sale Invoice'),
-              _buildDrawerSubItem('General Cashbook'),
-              _buildDrawerSubItem('Account Cashbook'),
-            ],
-          ),
+          _buildExpandableDrawerItem(Icons.account_balance_wallet, 'Account', [
+            _buildDrawerSubItem('Purchase Invoice'),
+            _buildDrawerSubItem('Purchase Return'),
+            _buildDrawerSubItem('Sale Invoice'),
+            _buildDrawerSubItem('General Cashbook'),
+            _buildDrawerSubItem('Account Cashbook'),
+          ]),
 
           // Billing (Expandable) - Fixed version
-          _buildExpandableDrawerItem(
-            Icons.receipt,
-            'Billing',
-            [
-              _buildExpandableSubItem('Purchase', [
-                _buildDrawerSubItem(
-                  'Purchase Not For Sale',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>  PurchaseForSale(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerSubItem(
-                  'Purchase Sample Revenew',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => Purchasesamplerevenew(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerSubItem(
-                  'Purchase Invoice',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PurchaseInvoice(),
-                      ),
-                    );
-                  },
-                ),
-              ]),
-              _buildExpandableSubItem('Purchase Return', [
-                _buildDrawerSubItem(
-                  'Purchase Return Not For Sale',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PuchaseReturnNotForSale(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerSubItem(
-                  'Purchase Return sample Revenue',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PucchaseReturnSampleRevenue(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerSubItem(
-                  'Puchase Return Invoice',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PuchaseReturnInvoice(),
-                      ),
-                    );
-                  },
-                ),
-              ]),
-              _buildExpandableSubItem('Sale', [
-                _buildDrawerSubItem(
-                  'Sale Invoice',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => saleInvoice(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerSubItem(
-                  'Sample Sale Invoice',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => samplesaleInvoice(),
-                      ),
-                    );
-                  },
-                ),
-              ]),
-              _buildExpandableSubItem('Sell Return', [
-                _buildDrawerSubItem(
-                  'sale Return Invoice',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => saleReturnInvoice(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerSubItem(
-                  'Sample Sale Return Invoice',
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SampleSaleReturnInvoice(),
-                      ),
-                    );
-                  },
-                ),
-              ]),
-            ],
-          ),
+          _buildExpandableDrawerItem(Icons.receipt, 'Billing', [
+            _buildExpandableSubItem('Purchase', [
+              _buildDrawerSubItem(
+                'Purchase Not For Sale',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => PurchaseForSale()),
+                  );
+                },
+              ),
+              _buildDrawerSubItem(
+                'Purchase Sample Revenew',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Purchasesamplerevenew(),
+                    ),
+                  );
+                },
+              ),
+              _buildDrawerSubItem(
+                'Purchase Invoice',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => PurchaseInvoice()),
+                  );
+                },
+              ),
+            ]),
+            _buildExpandableSubItem('Purchase Return', [
+              _buildDrawerSubItem(
+                'Purchase Return Not For Sale',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PuchaseReturnNotForSale(),
+                    ),
+                  );
+                },
+              ),
+              _buildDrawerSubItem(
+                'Purchase Return sample Revenue',
+                onTap: () {
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PucchaseReturnSampleRevenue(),
+                    ),
+                  );
+                },
+              ),
+              _buildDrawerSubItem(
+                'Puchase Return Invoice',
+                onTap: () {
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PuchaseReturnInvoice(),
+                    ),
+                  );
+                },
+              ),
+            ]),
+            _buildExpandableSubItem('Sale', [
+              _buildDrawerSubItem(
+                'Sale Invoice',
+                onTap: () {
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => saleInvoice()),
+                  );
+                },
+              ),
+              _buildDrawerSubItem(
+                'Sample Sale Invoice',
+                onTap: () {
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => samplesaleInvoice(),
+                    ),
+                  );
+                },
+              ),
+            ]),
+            _buildExpandableSubItem('Sell Return', [
+              _buildDrawerSubItem(
+                'sale Return Invoice',
+                onTap: () {
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => saleReturnInvoice(),
+                    ),
+                  );
+                },
+              ),
+              _buildDrawerSubItem(
+                'Sample Sale Return Invoice',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SampleSaleReturnInvoice(),
+                    ),
+                  );
+                },
+              ),
+            ]),
+          ]),
 
           // Account Opening Form (Expandable)
           _buildExpandableDrawerItem(
@@ -390,7 +421,6 @@ class _AdminPageState extends State<AdminPage> {
               _buildDrawerSubItem(
                 'Publication Agreement',
                 onTap: () {
-                  Navigator.pop(context); // Close drawer first
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -403,46 +433,64 @@ class _AdminPageState extends State<AdminPage> {
           ),
 
           // HRM (Expandable)
-          _buildExpandableDrawerItem(
-            Icons.people,
-            'HRM',
-            [
-              _buildDrawerSubItem(
-                'View Employee',
-                onTap: () {
-                  Navigator.pop(context); // Close drawer first
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HRMViewEmployee(),
-                    ),
-                  );
-                },
-              ),
-              _buildDrawerSubItem('Employee Tree'),
-              _buildDrawerSubItem(
-                'Interview List',
-                onTap: () {
-                  Navigator.pop(context); // Close drawer first
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => InterviewList (),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+          _buildExpandableDrawerItem(Icons.people, 'HRM', [
+            _buildDrawerSubItem(
+              'View Employee',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HRMViewEmployee()),
+                );
+              },
+            ),
+            _buildDrawerSubItem(
+              'InOut list',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InOutManagementPage(),
+                  ),
+                );
+              },
+            ),
+            _buildDrawerSubItem(
+              'Employee Tree',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Add Employee Tree page navigation
+              },
+            ),
+
+            _buildDrawerSubItem(
+              'Attendance History',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HistoryPage(mobileNo: mobileNo),
+                  ),
+                );
+                
+              },
+            ),
+
+            _buildDrawerSubItem(
+              'Interview List',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => InterviewList()),
+                );
+              },
+            ),
+          ]),
 
           // Setting (Expandable)
-          _buildExpandableDrawerItem(
-            Icons.settings,
-            'Setting',
-            [
-              _buildDrawerSubItem('Change Password'),
-            ],
-          ),
+          _buildExpandableDrawerItem(Icons.settings, 'Setting', [
+            _buildDrawerSubItem('Change Password'),
+          ]),
 
           const Divider(),
 
@@ -458,12 +506,22 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   // Helper method for expandable drawer items
-  Widget _buildExpandableDrawerItem(IconData icon, String title, List<Widget> children) {
+  Widget _buildExpandableDrawerItem(
+    IconData icon,
+    String title,
+    List<Widget> children,
+  ) {
     return ExpansionTile(
-      leading: Icon(icon, color: const Color(0xFF6B46C1)), // Matching purple theme
+      leading: Icon(
+        icon,
+        color: const Color(0xFF6B46C1),
+      ), // Matching purple theme
       title: Text(
         title,
-        style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 16.sp),
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w500,
+          fontSize: 16.sp,
+        ),
       ),
       children: children,
     );
@@ -472,10 +530,7 @@ class _AdminPageState extends State<AdminPage> {
   // Helper method for nested expandable sub-menu items
   Widget _buildExpandableSubItem(String title, List<Widget> children) {
     return ExpansionTile(
-      title: Text(
-        title,
-        style: GoogleFonts.poppins(fontSize: 14.sp),
-      ),
+      title: Text(title, style: GoogleFonts.poppins(fontSize: 14.sp)),
       children: children,
     );
   }
@@ -485,14 +540,13 @@ class _AdminPageState extends State<AdminPage> {
     return Padding(
       padding: EdgeInsets.only(left: 32.0.w),
       child: ListTile(
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(fontSize: 14.sp),
-        ),
-        onTap: onTap ?? () {
-          Navigator.pop(context); // Close drawer
-          _handleSubMenuItemTap(title);
-        },
+        title: Text(title, style: GoogleFonts.poppins(fontSize: 14.sp)),
+        onTap:
+            onTap ??
+            () {
+              Navigator.pop(context); // Close drawer
+              _handleSubMenuItemTap(title);
+            },
       ),
     );
   }
@@ -500,10 +554,16 @@ class _AdminPageState extends State<AdminPage> {
   // Original drawer item method
   Widget _buildDrawerItem(IconData icon, String title, int? index) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF6B46C1)), // Matching purple theme
+      leading: Icon(
+        icon,
+        color: const Color(0xFF6B46C1),
+      ), // Matching purple theme
       title: Text(
         title,
-        style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 16.sp),
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w500,
+          fontSize: 16.sp,
+        ),
       ),
       onTap: () {
         if (index != null) {
@@ -531,72 +591,19 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-
   Widget _buildDashboard() {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(20.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Card - Matching appBar color
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF6B46C1), // Same purple as appBar
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(20.w),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30.r,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Icon(
-                      Icons.admin_panel_settings,
-                      size: 30.sp,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(width: 15.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome, $adminName!',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 5.h),
-                        Text(
-                          'Here\'s your dashboard overview for today',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14.sp,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        Text(
-                          'Last updated: ${DateTime.now().toString().split(' ')[1].substring(0, 5)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12.sp,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    onPressed: _refreshData,
-                  ),
-                ],
-              ),
-            ),
+          // Animated Banner - Similar to school page
+          AnimatedBanner(
+            adminName: adminName,
+            adminEmail: adminEmail,
+            mobileNo: mobileNo,
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 16.h),
 
           ..._buildDashboardOverviewSections(),
         ],
@@ -606,10 +613,10 @@ class _AdminPageState extends State<AdminPage> {
 
   List<Widget> _buildDashboardOverviewSections() {
     // First container: 8 items, Second container: 4 items
-    final firstChunk = _dashboardStats.length >= 8 
-        ? _dashboardStats.sublist(0, 8) 
+    final firstChunk = _dashboardStats.length >= 8
+        ? _dashboardStats.sublist(0, 8)
         : _dashboardStats;
-    final secondChunk = _dashboardStats.length > 8 
+    final secondChunk = _dashboardStats.length > 8
         ? _dashboardStats.sublist(8, math.min(12, _dashboardStats.length))
         : <Map<String, dynamic>>[];
 
@@ -617,29 +624,37 @@ class _AdminPageState extends State<AdminPage> {
 
     // First Container with 8 items
     if (firstChunk.isNotEmpty) {
-      sections.add(_buildDashboardContainer('Dashboard Overview', firstChunk, true));
+      sections.add(
+        _buildDashboardContainer('Dashboard Overview', firstChunk, true),
+      );
     }
 
     // Second Container with 4 items
     if (secondChunk.isNotEmpty) {
-      sections.add(_buildDashboardContainer('Quick Insights', secondChunk, false));
+      sections.add(
+        _buildDashboardContainer('Quick Insights', secondChunk, false),
+      );
     }
 
     return sections;
   }
 
-  Widget _buildDashboardContainer(String title, List<Map<String, dynamic>> items, bool showViewAll) {
+  Widget _buildDashboardContainer(
+    String title,
+    List<Map<String, dynamic>> items,
+    bool showViewAll,
+  ) {
     return Container(
-      margin: EdgeInsets.only(bottom: 20.h),
+      margin: EdgeInsets.only(bottom: 16.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8.r,
-            offset: Offset(0, 4.h),
+            color: Colors.grey.shade300,
+            blurRadius: 6.r,
+            offset: Offset(0, 2.h),
           ),
         ],
       ),
@@ -658,121 +673,118 @@ class _AdminPageState extends State<AdminPage> {
                 ),
               ),
               if (showViewAll)
-                TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    'View All',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14.sp,
-                      color: const Color(0xFF6B46C1),
-                    ),
+                Text(
+                  'View All',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.sp,
+                    color: const Color(0xFF6B46C1),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
             ],
           ),
-          SizedBox(height: 14.h), // Changed const SizedBox to SizedBox
-            GridView.builder(
+          SizedBox(height: 10.h),
+          GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
-              crossAxisSpacing: 12.w,
-              mainAxisSpacing: 12.h,
-              childAspectRatio: 0.65, // Increased height to prevent overflow
-            ),itemBuilder: (context, gridIndex) =>
+              crossAxisSpacing: 4.w,
+              mainAxisSpacing: 4.h,
+              childAspectRatio: 0.50,
+            ),
+            itemBuilder: (context, gridIndex) =>
                 _buildDashboardGridItem(items[gridIndex]),
           ),
-
         ],
       ),
     );
   }
 
   Widget _buildDashboardGridItem(Map<String, dynamic> stat) {
-    return GestureDetector(
+    return InkWell(
       onTap: () {
+        switch (stat['title']) {
+          case 'Add Day\nBook':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddDayBook()),
+            );
+            break;
 
-        // Yahan specific title check karke navigation karo
+          case 'Day Book\nHistory':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => DayBookHistory()),
+            );
+            break;
+          case 'School\nList':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>  AddSurvey(),
+              ),
+            );
 
-        if (stat['title'] == 'Add Day Book') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddDayBook()), // ← Apna DayBookPage yahan daalo
-          );
-        }
+            break;
+          case 'Employee\nList':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HRMViewEmployee()),
+            );
+            break;
 
-        if (stat['title'] == 'Day Book History') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => DayBookHistory()), // ← Apna DayBookPage yahan daalo
-          );
-        }
-        // Baaki titles ke liye future mein aur navigation add kar sakte ho
-        else if (stat['title'] == 'Purchase Invoice') {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => PurchaseInvoice()));
-        }
-        // ... aur bhi add kar sakte ho
-        else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${stat['title']} - Coming Soon!')),
-          );
+          case 'Purchase\nInvoice':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PurchaseInvoice()),
+            );
+            break;
+
+          default:
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${stat['title']} - Coming Soon!'),
+                backgroundColor: Colors.blue,
+              ),
+            );
         }
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Container(
-              width: 56.w,
-              height: 56.w,
-              decoration: BoxDecoration(
-                color: stat['color'],
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Icon(
-                stat['icon'],
-                size: 26.sp,
-                color: Colors.white,
-              ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(15.w),
+            decoration: BoxDecoration(
+              color: (stat['color'] as Color).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16.r),
             ),
-            SizedBox(height: 8.h),
-            Text(
-              stat['title'],
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                fontSize: 11.5.sp,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-                color: Colors.black87,
-              ),
+            child: Icon(stat['icon'], size: 32.sp, color: stat['color']),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            stat['title'],
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
-          ],
-        ),
-
+          ),
+        ],
       ),
     );
   }
-
-
 
   Widget _buildComingSoon(String title) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.construction,
-            size: 80.sp,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.construction, size: 80.sp, color: Colors.grey[400]),
           SizedBox(height: 20.h),
           Text(
             title,
@@ -853,8 +865,14 @@ class _AdminPageState extends State<AdminPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-          content: Text('Are you sure you want to logout?', style: GoogleFonts.poppins(fontSize: 14.sp)),
+          title: Text(
+            'Logout',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: GoogleFonts.poppins(fontSize: 14.sp),
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -890,10 +908,11 @@ class _AdminPageState extends State<AdminPage> {
                   );
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(
+                'Logout',
+                style: GoogleFonts.poppins(color: Colors.white),
               ),
-              child: Text('Logout', style: GoogleFonts.poppins(color: Colors.white)),
             ),
           ],
         );
@@ -939,10 +958,9 @@ class _AdminPageState extends State<AdminPage> {
       case 'Change Password':
         _changePassword();
         break;
-    // Add more cases for other menu items
+      // Add more cases for other menu items
     }
   }
-
 
   void _showProfile() {
     showDialog(
@@ -970,7 +988,10 @@ class _AdminPageState extends State<AdminPage> {
               _buildProfileInfo('Email', adminEmail),
               if (mobileNo.isNotEmpty) _buildProfileInfo('Mobile', mobileNo),
               _buildProfileInfo('Role', 'System Administrator'),
-              _buildProfileInfo('Last Login', 'Today, ${DateTime.now().toString().split(' ')[1].substring(0, 5)}'),
+              _buildProfileInfo(
+                'Last Login',
+                'Today, ${DateTime.now().toString().split(' ')[1].substring(0, 5)}',
+              ),
             ],
           ),
           actions: [
@@ -1003,10 +1024,7 @@ class _AdminPageState extends State<AdminPage> {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(fontSize: 14.sp),
-            ),
+            child: Text(value, style: GoogleFonts.poppins(fontSize: 14.sp)),
           ),
         ],
       ),
@@ -1019,7 +1037,9 @@ class _AdminPageState extends State<AdminPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Help & Support'),
-          content: const Text('For support, please contact:\n\nEmail: support@bookpiv.com\nPhone: +1-234-567-8900\n\nOur team is available 24/7 to assist you.'),
+          content: const Text(
+            'For support, please contact:\n\nEmail: support@bookpiv.com\nPhone: +1-234-567-8900\n\nOur team is available 24/7 to assist you.',
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -1051,7 +1071,10 @@ class _AdminPageState extends State<AdminPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Change Password', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              title: Text(
+                'Change Password',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              ),
               content: SingleChildScrollView(
                 child: Form(
                   key: _changePasswordFormKey,
@@ -1062,7 +1085,8 @@ class _AdminPageState extends State<AdminPage> {
                         controller: _mobileController,
                         keyboardType: TextInputType.phone,
                         maxLength: 10,
-                        readOnly: mobileNo.isNotEmpty, // Disable if already filled from user data
+                        readOnly: mobileNo
+                            .isNotEmpty, // Disable if already filled from user data
                         decoration: InputDecoration(
                           labelText: 'Mobile Number',
                           labelStyle: GoogleFonts.poppins(),
@@ -1081,7 +1105,9 @@ class _AdminPageState extends State<AdminPage> {
                           if (value.length != 10) {
                             return 'Mobile number must be 10 digits';
                           }
-                          if (!_changePasswordService.isValidMobileNumber(value)) {
+                          if (!_changePasswordService.isValidMobileNumber(
+                            value,
+                          )) {
                             return 'Please enter valid mobile number';
                           }
                           return null;
@@ -1156,89 +1182,102 @@ class _AdminPageState extends State<AdminPage> {
                   onPressed: isChangingPassword
                       ? null
                       : () {
-                    Navigator.of(dialogContext).pop();
-                  },
+                          Navigator.of(dialogContext).pop();
+                        },
                   child: Text('Cancel', style: GoogleFonts.poppins()),
                 ),
                 ElevatedButton(
                   onPressed: isChangingPassword
                       ? null
                       : () async {
-                    if (_changePasswordFormKey.currentState!.validate()) {
-                      setDialogState(() {
-                        isChangingPassword = true;
-                      });
+                          if (_changePasswordFormKey.currentState!.validate()) {
+                            setDialogState(() {
+                              isChangingPassword = true;
+                            });
 
-                      try {
-                        final response =
-                        await _changePasswordService.changePassword(
-                          mobileNo: _mobileController.text.trim(),
-                          oldPassword: _oldPasswordController.text.trim(),
-                          newPassword: _newPasswordController.text.trim(),
-                          confirmPassword:
-                          _confirmPasswordController.text.trim(),
-                        );
+                            try {
+                              final response = await _changePasswordService
+                                  .changePassword(
+                                    mobileNo: _mobileController.text.trim(),
+                                    oldPassword: _oldPasswordController.text
+                                        .trim(),
+                                    newPassword: _newPasswordController.text
+                                        .trim(),
+                                    confirmPassword: _confirmPasswordController
+                                        .text
+                                        .trim(),
+                                  );
 
-                        if (mounted) {
-                          Navigator.of(dialogContext).pop();
-                          if (response.isSuccess) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    response.message ?? 'Password changed successfully!'),
-                                backgroundColor: Colors.green,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                            // Clear controllers after success
-                            _mobileController.clear();
-                            _oldPasswordController.clear();
-                            _newPasswordController.clear();
-                            _confirmPasswordController.clear();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    response.message ?? 'Failed to change password. Please try again.'),
-                                backgroundColor: Colors.red,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
+                              if (mounted) {
+                                Navigator.of(dialogContext).pop();
+                                if (response.isSuccess) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        response.message ??
+                                            'Password changed successfully!',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                  // Clear controllers after success
+                                  _mobileController.clear();
+                                  _oldPasswordController.clear();
+                                  _newPasswordController.clear();
+                                  _confirmPasswordController.clear();
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        response.message ??
+                                            'Failed to change password. Please try again.',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                setDialogState(() {
+                                  isChangingPassword = false;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      e.toString().replaceAll(
+                                        'Exception: ',
+                                        '',
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                              }
+                            }
                           }
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          setDialogState(() {
-                            isChangingPassword = false;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(e
-                                  .toString()
-                                  .replaceAll('Exception: ', '')),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
-                            ),
-                          );
-                        }
-                      }
-                    }
-                  },
+                        },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6B46C1), // Matching purple theme
+                    backgroundColor: const Color(
+                      0xFF6B46C1,
+                    ), // Matching purple theme
                     foregroundColor: Colors.white,
                   ),
                   child: isChangingPassword
                       ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor:
-                      AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                       : Text('Change Password', style: GoogleFonts.poppins()),
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Text('Change Password', style: GoogleFonts.poppins()),
                 ),
               ],
             );
@@ -1247,7 +1286,6 @@ class _AdminPageState extends State<AdminPage> {
       },
     );
   }
-
 
   Widget _buildFooter() {
     return Container(
@@ -1266,17 +1304,13 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-
-
   Widget _footerItem(
-      int index,
-      IconData icon,
-      String label,
-      VoidCallback onTap,
-      )
-  {
+    int index,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     final bool isSelected = _currentIndex == index;
-
 
     return InkWell(
       onTap: onTap,
@@ -1294,18 +1328,131 @@ class _AdminPageState extends State<AdminPage> {
             AnimatedSize(
               duration: Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              child: isSelected
-                  ? Text(label)
-                  : SizedBox(),
-            )
-
+              child: isSelected ? Text(label) : SizedBox(),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
+// Animated Banner Widget - Similar to school page but with purple theme
+class AnimatedBanner extends StatefulWidget {
+  final String adminName;
+  final String adminEmail;
+  final String mobileNo;
 
+  const AnimatedBanner({
+    Key? key,
+    required this.adminName,
+    required this.adminEmail,
+    required this.mobileNo,
+  }) : super(key: key);
 
+  @override
+  _AnimatedBannerState createState() => _AnimatedBannerState();
+}
 
+class _AnimatedBannerState extends State<AnimatedBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _slide = Tween<Offset>(
+      begin: const Offset(-0.05, 0),
+      end: const Offset(0.05, 0),
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slide,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 20.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF6B46C1), // Purple
+              Color(0xFF7C3AED), // Lighter purple
+              Color(0xFF8B5CF6), // Even lighter purple
+              Color(0xFF9F7AEA), // Light purple
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8.r,
+              offset: Offset(0, 4.h),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.admin_panel_settings, color: Colors.white, size: 30.sp),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.adminName.isNotEmpty
+                        ? "Welcome, ${widget.adminName}! 🎯"
+                        : "Welcome Back! Have a productive day 🚀",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (widget.adminEmail.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: 4.h),
+                      child: Text(
+                        widget.adminEmail,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  if (widget.mobileNo.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: 2.h),
+                      child: Text(
+                        "Mobile: ${widget.mobileNo}",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

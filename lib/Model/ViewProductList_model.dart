@@ -54,6 +54,7 @@ class ProductModel {
   double? rate11;
   double? rate12;
   String? createDate;
+  String? image;
 
   ProductModel({
     this.series,
@@ -77,6 +78,7 @@ class ProductModel {
     this.rate11,
     this.rate12,
     this.createDate,
+    this.image,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -102,6 +104,7 @@ class ProductModel {
       rate11: json['Rate_11'] != null ? (json['Rate_11'] as num).toDouble() : null,
       rate12: json['Rate_12'] != null ? (json['Rate_12'] as num).toDouble() : null,
       createDate: json['CreateDate']?.toString(),
+      image: json['Image']?.toString() ?? json['image']?.toString(),
     );
   }
 
@@ -128,7 +131,22 @@ class ProductModel {
       'Rate_11': rate11,
       'Rate_12': rate12,
       'CreateDate': createDate,
+      'Image': image,
     };
+  }
+
+  // Helper method to get image URL
+  bool get hasImage => image != null && image!.isNotEmpty && image != '/image/' && image != 'null';
+
+  String? get imageUrl {
+    if (!hasImage) return null;
+    if (image!.startsWith('http://') || image!.startsWith('https://')) {
+      return image;
+    }
+    if (image!.startsWith('/')) {
+      return 'https://g17bookworld.com$image';
+    }
+    return 'https://g17bookworld.com/$image';
   }
 
   // Helper method to get a formatted rate display string

@@ -19,6 +19,7 @@ import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
 
 import 'AddSurvey.dart';
+import 'agent_school_sale_page.dart';
 
 // --------------------------------------------------
 // STAFF PAGE MAIN CLASS
@@ -356,11 +357,6 @@ class _StaffPageState extends State<StaffPage> {
                 ),
               ),
 
-
-
-
-
-
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -433,6 +429,35 @@ class _StaffPageState extends State<StaffPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
+                      builder: (_) => AgentSchoolSalePage(
+                        agentId: employeeId, // ✅ dynamic AgentId
+                      ),
+                    ),
+                  );
+                },
+                child: _dashboardItem(
+                  Icons.sd_card_alert,
+                  "sale",
+                  Colors.orange,
+                ),
+              ),
+
+              GestureDetector(
+                onTap: () async {
+                  final storage = SecureStorageService();
+
+                  final employeeId = await storage.getStaffEmployeeId();
+
+                  if (employeeId == null || employeeId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Employee ID not found")),
+                    );
+                    return;
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
                       builder: (_) => AddSchoolSurveyPage(
                         agentId: employeeId, // ✅ dynamic AgentId
                       ),
@@ -445,6 +470,8 @@ class _StaffPageState extends State<StaffPage> {
                   Colors.cyan,
                 ),
               ),
+
+
 
             ],
 
