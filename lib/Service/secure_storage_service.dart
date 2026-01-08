@@ -59,6 +59,7 @@ class SecureStorageService {
   static const String _keyAgentId = 'agent_id';
   static const String _keyAgentEmail = 'agent_email';
   static const String _keyAgentPosition = 'agent_position';
+  static const String _keyAgentTotalBills = 'agent_total_bills';
 
   // Attendance check-in keys
   static const String _keyCheckInStatus = 'checkin_status';
@@ -511,6 +512,43 @@ class SecureStorageService {
     return await _storage.read(key: _keyCounterPassword);
   }
 
+  /// Save agent school sale data (agentId and totalBills)
+  Future<void> saveAgentSchoolSaleData({
+    required String agentId,
+    required int totalBills,
+  }) async {
+    try {
+      await _storage.write(key: _keyAgentId, value: agentId);
+      await _storage.write(key: _keyAgentTotalBills, value: totalBills.toString());
+      debugPrint('✅ Agent school sale data saved');
+      debugPrint('   Agent ID: $agentId');
+      debugPrint('   Total Bills: $totalBills');
+    } catch (e) {
+      throw Exception('Failed to save agent school sale data: $e');
+    }
+  }
+
+  /// Get agent ID
+  Future<String?> getAgentId() async {
+    try {
+      return await _storage.read(key: _keyAgentId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get agent total bills
+  Future<int?> getAgentTotalBills() async {
+    try {
+      final totalBillsStr = await _storage.read(key: _keyAgentTotalBills);
+      if (totalBillsStr != null && totalBillsStr.isNotEmpty) {
+        return int.tryParse(totalBillsStr);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 
   // ===========================================================================
   // ✅ CHECK-IN METHODS (UPDATED)
@@ -808,6 +846,7 @@ class SecureStorageService {
       await _storage.delete(key: _keyAgentId);
       await _storage.delete(key: _keyAgentEmail);
       await _storage.delete(key: _keyAgentPosition);
+      await _storage.delete(key: _keyAgentTotalBills);
 
       // Clear counter credentials
       await _storage.delete(key: _keyCounterId);
@@ -913,12 +952,17 @@ class SecureStorageService {
   Future<Widget> _getStaffScreen() async {
     try {
       // 1. Retrieve stored credentials
-      final mobileNo = await getStaffMobileNo();
-      final employeeType = await getStaffEmployeeType();
+      final credentials = await getStaffCredentials();
+      final mobileNo = credentials['mobileNo'];
+      final employeeType = credentials['employeeType'];
+      final agentName = credentials['agentName'];
+      final password = credentials['password'];
+      final email = credentials['email'];
 
       debugPrint('🚀 Auto-Login: Staff');
       debugPrint('   Mobile: $mobileNo');
       debugPrint('   Role: $employeeType');
+      debugPrint('   Name: $agentName');
 
       // 2. Validate essential credentials
       if (mobileNo == null || mobileNo.isEmpty) {
@@ -927,21 +971,34 @@ class SecureStorageService {
         return const HomeScreen();
       }
 
-      // 3. STRICT ROLE-BASED NAVIGATION
-      // NO attendance logic here.
+      if (password == null || password.isEmpty) {
+        debugPrint('⚠️ Missing password, logging out.');
+        await clearAllCredentials();
+        return const HomeScreen();
+      }
 
+      // 3. STRICT ROLE-BASED NAVIGATION
       if (employeeType != null &&
           employeeType.toUpperCase() == "SECURITY_GUARD") {
         debugPrint('✅ Routing to: getmanHomePage (Guards)');
         return const getmanHomePage();
       } else {
-        debugPrint('✅ Routing to: agentStaffHomePage (Agent/IT/Other)');
-        // Check if user has already checked in - OPTIONAL: just for logging, don't redirect
+        // Route to StaffPage for AGENT and other staff types
+        debugPrint('✅ Routing to: StaffPage (Agent/IT/Other)');
+        
+        // Check if user has already checked in - OPTIONAL: just for logging
         final hasCheckedIn = await this.hasCheckedIn();
         if (hasCheckedIn) {
           debugPrint('ℹ️ User has active check-in. They will see it on their dashboard.');
         }
-        return const agentStaffHomePage();
+        
+        return StaffPage(
+          agentName: agentName ?? "Staff",
+          employeeType: employeeType ?? "AGENT",
+          email: email ?? "",
+          password: password,
+          mobile: mobileNo,
+        );
       }
 
     } catch (e) {

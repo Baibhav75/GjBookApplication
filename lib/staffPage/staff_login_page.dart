@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../AgentStaff/getmanHomePage.dart';
 import '../Service/agent_login_service.dart';
 import '../Service/secure_storage_service.dart';
+import '../Service/staff_profile_service.dart';
 import '../Model/agent_login_model.dart';
 
 class StaffLoginPage extends StatefulWidget {
@@ -55,13 +56,35 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
         return;
       }
 
-      /// SAVE LOGIN DATA
+      /// FETCH EMPLOYEE ID FROM PROFILE
+      String? employeeId;
+      String email = result.agentAdminEmail.isNotEmpty 
+          ? result.agentAdminEmail 
+          : "";
+      
+      try {
+        final profileService = StaffProfileService();
+        final profile = await profileService.fetchProfile(mobile);
+        if (profile != null && profile.employeeId.isNotEmpty) {
+          employeeId = profile.employeeId;
+          // Use email from profile if available
+          if (profile.email.isNotEmpty) {
+            email = profile.email;
+          }
+        }
+      } catch (e) {
+        debugPrint("Failed to fetch employee ID: $e");
+      }
+
+      /// SAVE LOGIN DATA WITH EMPLOYEE ID AND EMAIL
       await _storageService.saveStaffCredentials(
         username: mobile,
         password: password,
         employeeType: dropdownPosition,
         agentName: result.agentName,
         mobileNo: mobile,
+        employeeId: employeeId,
+        email: email,
       );
 
       if (!mounted) return;
@@ -74,7 +97,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
             builder: (_) => StaffPage(
               agentName: result.agentName,
               employeeType: dropdownPosition,
-              email: "", // ✅ FIXED
+              email: email,
               password: password,
               mobile: mobile,
             ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Model/agent_school_sale_model.dart';
 import '../Service/agent_school_sale_service.dart';
+import '../Service/secure_storage_service.dart';
+import 'agent_invoice_detail_page.dart';
 
 class AgentSchoolSalePage extends StatefulWidget {
   final String agentId;
@@ -15,12 +17,37 @@ class AgentSchoolSalePage extends StatefulWidget {
 
 class _AgentSchoolSalePageState extends State<AgentSchoolSalePage> {
   late Future<AgentSchoolSaleResponse> _futureSale;
+  final SecureStorageService _storageService = SecureStorageService();
+  
+  // Final variables to store agentId and totalBills
+  String? _finalAgentId;
+  int? _finalTotalBills;
 
   @override
   void initState() {
     super.initState();
-    _futureSale =
-        AgentSchoolSaleService.getAgentSchoolSale(agentId: widget.agentId);
+    _futureSale = _loadAgentSchoolSale();
+  }
+
+  Future<AgentSchoolSaleResponse> _loadAgentSchoolSale() async {
+    final response = await AgentSchoolSaleService.getAgentSchoolSale(
+      agentId: widget.agentId,
+    );
+    
+    // Store agentId and totalBills when data is successfully fetched
+    if (response.isSuccess) {
+      // Store in final variables
+      _finalAgentId = response.agentId;
+      _finalTotalBills = response.totalBills;
+      
+      // Store in secure storage
+      await _storageService.saveAgentSchoolSaleData(
+        agentId: response.agentId,
+        totalBills: response.totalBills,
+      );
+    }
+    
+    return response;
   }
 
   @override
@@ -139,13 +166,61 @@ class _AgentSchoolSalePageState extends State<AgentSchoolSalePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              sale.schoolName,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // SCHOOL NAME
+                Expanded(
+                  child: Text(
+                    sale.schoolName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // 🔥 ACTIVE / BOLD ICON
+                GestureDetector(
+                  onTap: () {
+                    // Use billNo from the model to show invoice details
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AgentInvoiceDetailPage(
+                          agentId: widget.agentId,
+                          billNo: sale.billNo,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: (sale.type == "Sale"
+                          ? Colors.green
+                          : Colors.red)
+                          .withOpacity(0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      sale.type == "Sale"
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
+                      size: 20,
+                      color: sale.type == "Sale" ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ),
+
+              ],
             ),
+
+
             const SizedBox(height: 6),
             Text("Bill No: ${sale.billNo}"),
             Text("Date: $date"),

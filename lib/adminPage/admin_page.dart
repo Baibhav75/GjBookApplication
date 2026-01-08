@@ -28,6 +28,7 @@ import 'Sale/SampleSaleInvoice.dart';
 import 'SellReturn/SaleReturnInvoice.dart';
 import 'SellReturn/SamplesaleReturnInvoice.dart';
 import 'ViewProductList.dart';
+import 'agent_list_page.dart';
 import 'in_out_management_page.dart';
 import 'interviewList.dart';
 
@@ -86,18 +87,14 @@ class _AdminPageState extends State<AdminPage> {
     },
     {'title': 'Total\nSell', 'icon': Icons.trending_up, 'color': Colors.purple},
     {
-      'title': 'Total\nPurchase',
-      'icon': Icons.shopping_bag,
-      'color': Colors.orange,
+      'title': 'Total\nPurchase','icon': Icons.shopping_bag, 'color': Colors.orange,
     },
     {'title': 'Total\nStall', 'icon': Icons.store, 'color': Colors.red},
     {'title': 'School\nList', 'icon': Icons.school, 'color': Colors.teal},
     {'title': 'Employee\nList', 'icon': Icons.people, 'color': Colors.indigo},
 
     {
-      'title': 'Today Office\nVisit',
-      'icon': Icons.person,
-      'color': Colors.cyan,
+      'title': 'Agent\nList', 'icon': Icons.person, 'color': Colors.cyan,
     },
     {
       'title': 'Add Day\nBook',
@@ -739,6 +736,13 @@ class _AdminPageState extends State<AdminPage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => PurchaseInvoice()),
+            );
+            break;
+
+          case 'Agent\nList':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AgentListPage()),
             );
             break;
 

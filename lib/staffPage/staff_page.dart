@@ -20,6 +20,7 @@ import 'package:bookworld/home_screen.dart';
 
 import 'AddSurvey.dart';
 import 'agent_school_sale_page.dart';
+import 'agent_school_sale_return_page.dart';
 
 // --------------------------------------------------
 // STAFF PAGE MAIN CLASS
@@ -108,7 +109,7 @@ class _StaffPageState extends State<StaffPage> {
         backgroundColor: Colors.blue[800],
         elevation: 0,
         title: const Text(
-          "Dashboard",
+          "Dashboard Agent",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -441,6 +442,34 @@ class _StaffPageState extends State<StaffPage> {
                   Colors.orange,
                 ),
               ),
+              GestureDetector(
+                onTap: () async {
+                  final storage = SecureStorageService();
+
+                  final employeeId = await storage.getStaffEmployeeId();
+
+                  if (employeeId == null || employeeId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Employee ID not found")),
+                    );
+                    return;
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AgentSchoolSaleReturnPage(
+                        agentId: employeeId, // ✅ dynamic AgentId
+                      ),
+                    ),
+                  );
+                },
+                child: _dashboardItem(
+                  Icons.assignment_return,
+                  "sale Return",
+                  Colors.redAccent,
+                ),
+              ),
 
               GestureDetector(
                 onTap: () async {
@@ -708,11 +737,6 @@ class AnimatedFooter extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
 // -------------------------------------------------------------
 // ANIMATED BANNER WIDGET (BEAUTIFUL SLIDE + GRADIENT)
 // -------------------------------------------------------------
