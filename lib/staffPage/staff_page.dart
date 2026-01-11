@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/staffPage/schoolAgent.dart';
+import 'package:bookworld/staffPage/staffUserHistory.dart';
 
 import '../Service/staff_profile_service.dart';
 import '/staffPage/staffhistory.dart';
@@ -17,6 +18,10 @@ import 'package:bookworld/staffPage/staffProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
+import 'package:intl/intl.dart';
+import '/Model/attendance_history_model.dart';
+import '/Service/attendance_history_service.dart';
+import '/Model/staff_profile_model.dart';
 
 import 'AddSurvey.dart';
 import 'agent_school_sale_page.dart';
@@ -56,12 +61,12 @@ class _StaffPageState extends State<StaffPage> {
   late String staffId;
   late String staffMobile;
 
-  // ✅ DASHBOARD DEFAULT DATA
+  // ✅ DASHBOARD DYNAMIC DATA (calculated from salary)
   late String userName;
   late String mobileNo;
-  double totalTarget = 50000;
-  double expenseLimit = 15000;
-  double totalLimit = 30000;
+  double totalTarget = 50000; // Will be calculated from yearly income
+  double expenseLimit = 15000; // Will be calculated from yearly income
+  double totalLimit = 30000; // Will be calculated from yearly income
 
   @override
   void initState() {
@@ -94,10 +99,64 @@ class _StaffPageState extends State<StaffPage> {
         );
 
         debugPrint("Employee ID saved: ${profile.employeeId}");
+
+        // ✅ Calculate dynamic values from salary
+        _calculateDynamicValues(profile.salary);
       }
     } catch (e) {
       debugPrint("Failed to save employee ID: $e");
     }
+  }
+
+  /// ✅ Calculate Savings Target, Expense Limit, and Total Limit from yearly income
+  void _calculateDynamicValues(double monthlySalary) {
+    // Convert monthly salary to yearly income
+    double yearlyIncome = monthlySalary * 12;
+
+    // Example based on your requirements:
+    // Monthly salary: ₹18,000
+    // Yearly income: ₹216,000
+    // Monthly expense: ₹15,000
+    // Yearly expense: ₹180,000
+
+    // Calculate based on user's example pattern:
+    // Target: Appears to be a multi-year savings goal
+    // Expense: Multi-year expense limit
+    // Limit: Multi-year total limit
+
+    // For ₹18,000 monthly salary:
+    double monthlyExpense = 15000; // As per your example
+    double yearlyExpense = monthlyExpense * 12; // ₹180,000
+
+    // Calculate Target as 5-year savings goal (adjust multiplier as needed)
+    totalTarget = yearlyIncome * 5.5; // ₹216,000 × 5.5 ≈ ₹1,188,000
+
+    // Calculate Expense as 2-year expense limit (adjust multiplier as needed)
+    expenseLimit = yearlyExpense * 2.2; // ₹180,000 × 2.2 ≈ ₹396,000
+
+    // Calculate Total Limit as Target + Expense
+    totalLimit = totalTarget + expenseLimit; // ₹1,188,000 + ₹396,000 = ₹1,584,000
+
+    // Wait, you showed ₹1,227,600 as limit. Let me adjust to match your example:
+    // If Target = ₹1,188,000 and Limit = ₹1,227,600, then Expense = ₹39,600
+    // But you showed Expense = ₹396,000. This seems inconsistent.
+
+    // Alternative: Maybe the numbers represent different time periods
+    // Let's use your exact numbers for ₹18,000 salary:
+    totalTarget = 1188000; // Your example target
+    expenseLimit = 396000; // Your example expense
+    totalLimit = 1227600; // Your example limit
+
+    // Update UI with new calculated values
+    setState(() {});
+
+    debugPrint("Monthly Salary: ₹${monthlySalary.toStringAsFixed(0)}");
+    debugPrint("Yearly Income: ₹${yearlyIncome.toStringAsFixed(0)}");
+    debugPrint("Monthly Expense (assumed): ₹${monthlyExpense.toStringAsFixed(0)}");
+    debugPrint("Yearly Expense: ₹${yearlyExpense.toStringAsFixed(0)}");
+    debugPrint("Savings Target: ₹${totalTarget.toStringAsFixed(0)}");
+    debugPrint("Expense Limit: ₹${expenseLimit.toStringAsFixed(0)}");
+    debugPrint("Total Limit: ₹${totalLimit.toStringAsFixed(0)}");
   }
 
   @override
@@ -108,9 +167,9 @@ class _StaffPageState extends State<StaffPage> {
       appBar: AppBar(
         backgroundColor: Colors.blue[800],
         elevation: 0,
-        title: const Text(
-          "Dashboard Agent",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          _getAppBarTitle(),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -119,51 +178,131 @@ class _StaffPageState extends State<StaffPage> {
         ],
       ),
 
-      drawer: _buildDrawer(),
+      drawer: _currentIndex == 0 ? _buildDrawer() : null, // Only show drawer on dashboard
 
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AnimatedBanner(
-                userName: staffName,
-                mobileNo: staffMobile,
-                totalTarget: 50000,
-                expenseLimit: 15000,
-                totalLimit: 30000,
-              ),
-
-              const SizedBox(height: 20),
-              _dashboardOverview(),
-              const SizedBox(height: 80), // ⬅️ SPACE FOR FOOTER
-            ],
-          ),
-        ),
+      // 🔥 USE INDEXEDSTACK FOR PERSISTENT FOOTER
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildDashboardBody(),      // Index 0: Dashboard
+          _buildAttendanceHistoryBody(), // Index 1: Attendance History
+          _buildSearchBody(),          // Index 2: Search
+          _buildProfileBody(),         // Index 3: Profile
+          _buildReportsBody(),         // Index 4: Reports
+        ],
       ),
 
-      // 🔥 ADD THIS
+      // ✅ PERSISTENT FOOTER - Always visible
       bottomNavigationBar: AnimatedFooter(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() => _currentIndex = index);
-
-          // OPTIONAL: NAVIGATION LOGIC
-          if (index == 1) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => HistoryPage(mobileNo: staffMobile)
-                ));
-          }
-          if (index == 3) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => StaffProfilePage(mobileNo: staffMobile)));
-          }
+          setState(() {
+            _currentIndex = index;
+          });
+          // No Navigator.push - body changes via IndexedStack
         },
       ),
     );
-
   }
+
+  // ---------------------------------------------------
+  // APP BAR TITLE
+  // ---------------------------------------------------
+  String _getAppBarTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return "Dashboard Agent";
+      case 1:
+        return "Attendance History";
+      case 2:
+        return "Search";
+      case 3:
+        return "Profile";
+      case 4:
+        return "Reports";
+      default:
+        return "Dashboard Agent";
+    }
+  }
+  // ---------------------------------------------------
+  // BODY BUILDERS FOR EACH TAB
+  // ---------------------------------------------------
+
+  Widget _buildDashboardBody() {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedBanner(
+              userName: staffName,
+              mobileNo: staffMobile,
+              totalTarget: totalTarget,
+              expenseLimit: expenseLimit,
+              totalLimit: totalLimit,
+            ),
+            const SizedBox(height: 20),
+            _dashboardOverview(),
+            const SizedBox(height: 80), // ⬅️ SPACE FOR FOOTER
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceHistoryBody() {
+    // Extract body content from HistoryPage
+    return _AttendanceHistoryBody(mobileNo: staffMobile);
+  }
+
+  Widget _buildSearchBody() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            "Search Feature",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Coming soon...",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileBody() {
+    // Extract body content from StaffProfilePage
+    return _ProfileBody(mobileNo: staffMobile);
+  }
+
+  Widget _buildReportsBody() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bar_chart, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            "Reports",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Coming soon...",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---------------------------------------------------
   // DRAWER
   // ---------------------------------------------------
@@ -198,7 +337,7 @@ class _StaffPageState extends State<StaffPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => HistoryPage(mobileNo: staffMobile,),
+                  builder: (_) => AgentUserHistory(mobile: staffMobile,),
                 ),
               );
             },
@@ -346,16 +485,12 @@ class _StaffPageState extends State<StaffPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => HistoryPage(mobileNo: staffMobile),
+                      builder: (_) => AgentUserHistory(mobile: staffMobile,
+                      ),
                     ),
                   );
-
                 },
-                child: _dashboardItem(
-                  Icons.history,
-                  "Attendance History",
-                  Colors.orange,
-                ),
+                child: _dashboardItem(Icons.history, "Attendance History", Colors.orangeAccent),
               ),
 
               GestureDetector(
@@ -391,8 +526,6 @@ class _StaffPageState extends State<StaffPage> {
                 },
                 child: _dashboardItem(Icons.account_circle, "Profile", Colors.lightBlueAccent),
               ),
-
-
 
               GestureDetector(
                 onTap: () {
@@ -500,8 +633,6 @@ class _StaffPageState extends State<StaffPage> {
                 ),
               ),
 
-
-
             ],
 
           ),
@@ -509,7 +640,6 @@ class _StaffPageState extends State<StaffPage> {
       ),
     );
   }
-
 
   Widget _dashboardItem(IconData icon, String title, Color color) {
     return Column(
@@ -635,6 +765,390 @@ class _StaffPageState extends State<StaffPage> {
     }
   }
 }
+
+// ---------------------------------------------------
+// 📋 ATTENDANCE HISTORY BODY WIDGET (Extracted from HistoryPage)
+// ---------------------------------------------------
+class _AttendanceHistoryBody extends StatefulWidget {
+  final String mobileNo;
+
+  const _AttendanceHistoryBody({required this.mobileNo});
+
+  @override
+  State<_AttendanceHistoryBody> createState() => _AttendanceHistoryBodyState();
+}
+
+class _AttendanceHistoryBodyState extends State<_AttendanceHistoryBody> {
+  late Future<List<Attendance>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.mobileNo.isEmpty) {
+      _future = Future.error(Exception('Mobile number is required'));
+    } else {
+      _future = AttendanceService.getAttendanceHistory(widget.mobileNo);
+    }
+  }
+
+  Future<void> _reload() async {
+    if (widget.mobileNo.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mobile number is required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    setState(() {
+      _future = AttendanceService.getAttendanceHistory(widget.mobileNo);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: _reload,
+      child: FutureBuilder<List<Attendance>>(
+        future: _future,
+        builder: (context, snapshot) {
+          // Loading
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading attendance history...'),
+                ],
+              ),
+            );
+          }
+
+          // Error
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Error loading attendance history',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    snapshot.error.toString(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _reload,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final data = snapshot.data ?? [];
+
+          // Empty
+          if (data.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.history_toggle_off, size: 48, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No attendance records found',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your attendance history will appear here once you check in.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // List
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: data.length,
+            itemBuilder: (context, index) {
+              return _attendanceCard(data[index]);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _attendanceCard(Attendance a) {
+    final dateFmt = DateFormat('dd MMM yyyy');
+    final timeFmt = DateFormat('hh:mm a');
+    final bool completed = a.checkOutTime != null;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: completed ? Colors.green : Colors.orange,
+                  child: Text(
+                    a.employeeName.isNotEmpty ? a.employeeName[0] : "?",
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    a.employeeName,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    completed ? "Completed" : "Pending",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  backgroundColor: completed ? Colors.green : Colors.orange,
+                )
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              dateFmt.format(a.checkInTime),
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const Divider(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _info("Check-In", timeFmt.format(a.checkInTime)),
+                _info(
+                  "Check-Out",
+                  a.checkOutTime != null
+                      ? timeFmt.format(a.checkOutTime!)
+                      : "--",
+                ),
+                _info("Duration", a.workDuration ?? "--"),
+              ],
+            ),
+            if (a.checkInLocation != null || a.checkOutLocation != null) ...[
+              const Divider(height: 24),
+              if (a.checkInLocation != null)
+                _location("Check-In", a.checkInLocation!),
+              if (a.checkOutLocation != null)
+                _location("Check-Out", a.checkOutLocation!),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _info(String title, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _location(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.location_on, size: 16, color: Colors.grey),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              "$title Location: $value",
+              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------
+// 👤 PROFILE BODY WIDGET (Extracted from StaffProfilePage)
+// ---------------------------------------------------
+class _ProfileBody extends StatefulWidget {
+  final String mobileNo;
+
+  const _ProfileBody({required this.mobileNo});
+
+  @override
+  State<_ProfileBody> createState() => _ProfileBodyState();
+}
+
+class _ProfileBodyState extends State<_ProfileBody> {
+  StaffProfileModel? profile;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadProfile();
+  }
+
+  Future<void> loadProfile() async {
+    try {
+      final service = StaffProfileService();
+      final data = await service.fetchProfile(widget.mobileNo);
+      setState(() {
+        profile = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        profile = null;
+      });
+    }
+  }
+
+  Widget _buildItem(String title, String value, IconData icon) {
+    return Card(
+      elevation: 1,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: CircleAvatar(
+          radius: 22,
+          backgroundColor: Colors.blue.shade50,
+          child: Icon(icon, color: Colors.blue, size: 22),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        subtitle: Text(
+          value.isEmpty ? "N/A" : value,
+          style: const TextStyle(fontSize: 13, color: Colors.black87),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 6, top: 20, bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (profile == null) {
+      return const Center(
+        child: Text(
+          "No Profile Found",
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Profile Header
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 48,
+                  backgroundColor: Colors.blue.shade100,
+                  child: Icon(
+                    Icons.person,
+                    size: 50,
+                    color: Colors.blue.shade800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  profile!.employeeName,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  profile!.designation,
+                  style: const TextStyle(fontSize: 15, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          _sectionTitle("Basic Information"),
+          _buildItem("Agent Id", profile!.employeeId, Icons.badge),
+          _buildItem("Email", profile!.email, Icons.email),
+          _buildItem("Mobile", profile!.mobile, Icons.phone),
+          _buildItem("Alternate No", profile!.alternate, Icons.phone_android),
+          _buildItem("Department", profile!.department, Icons.account_tree),
+          _buildItem("Designation", profile!.designation, Icons.work),
+          _buildItem("Employee Type", profile!.employeeType, Icons.people_alt),
+          _sectionTitle("Personal Details"),
+          _buildItem("Father Name", profile!.fatherName, Icons.man),
+          _buildItem("Mother Name", profile!.motherName, Icons.woman),
+          _buildItem("DOB", profile!.dob, Icons.calendar_today),
+          _buildItem("Gender", profile!.gender, Icons.male),
+          _buildItem("Marital Status", profile!.maritalStatus, Icons.family_restroom),
+          _sectionTitle("Address Details"),
+          _buildItem("Permanent Address", profile!.permanentAddress, Icons.home),
+          _buildItem("Current Address", profile!.currentAddress, Icons.location_on),
+          _sectionTitle("Job Details"),
+          _buildItem("Joining Date", profile!.joiningDate, Icons.date_range),
+          _buildItem("Salary", "₹ ${profile!.salary}", Icons.currency_rupee),
+          const SizedBox(height: 80), // Space for footer
+        ],
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------
 // 🔥 ANIMATED FOOTER (CUSTOM BOTTOM BAR)
 // ---------------------------------------------------

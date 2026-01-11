@@ -54,6 +54,8 @@ dependencies:
   open_file: ^3.5.10
   flutter_screenutil: ^5.9.3
   provider: ^6.1.5+1
+  pdf: ^3.11.3
+  printing: ^5.14.2
 
 dev_dependencies:
   flutter_test:

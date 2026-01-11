@@ -1,4 +1,7 @@
 import 'dart:math' as math;
+import 'package:bookworld/adminPage/publication_agreement_page.dart';
+import 'package:bookworld/adminPage/school_order_list_page.dart';
+import 'package:bookworld/adminPage/sell_school_list_page.dart';
 import 'package:bookworld/staffPage/add_school_survey_page.dart';
 import 'package:bookworld/staffPage/staffhistory.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,7 +11,6 @@ import 'package:bookworld/HomePagelist/addDayBook.dart';
 import 'package:bookworld/adminPage/BilingPurchase/purchaseNotForSale.dart';
 import 'package:bookworld/adminPage/HRMViewEmployee.dart';
 import 'package:bookworld/adminPage/ViewCompanyPage.dart';
-import 'package:bookworld/adminPage/publicationAgreement.dart';
 import 'package:flutter/material.dart';
 import 'package:bookworld/Model/change_password_model.dart';
 import 'package:bookworld/Model/login_model.dart';
@@ -421,7 +423,7 @@ class _AdminPageState extends State<AdminPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => PublicationAgreementPage(),
+                      builder: (context) =>  PublicationListPage(),
                     ),
                   );
                 },
@@ -479,6 +481,18 @@ class _AdminPageState extends State<AdminPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => InterviewList()),
+                );
+              },
+            ),
+            _buildDrawerSubItem(
+
+              'Sell School List',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>SellSchoolListPage (),
+                  ),
                 );
               },
             ),
@@ -724,6 +738,7 @@ class _AdminPageState extends State<AdminPage> {
               ),
             );
 
+
             break;
           case 'Employee\nList':
             Navigator.push(
@@ -743,6 +758,12 @@ class _AdminPageState extends State<AdminPage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => AgentListPage()),
+            );
+            break;
+          case 'Latest\nOrder':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => InvoiceSearchScreen()),
             );
             break;
 

@@ -1,10 +1,12 @@
 import 'package:bookworld/SchoolPage/schoolChangePassword.dart';
 import 'package:bookworld/SchoolPage/schoolProfile.dart';
+import 'package:bookworld/SchoolPage/school_order_invoice_page.dart';
 import 'package:flutter/material.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
 import '../Service/school_profile_service.dart';
 import '../Model/school_profile_model.dart';
+import 'orderBooknow.dart';
 
 class SchoolPageScreen extends StatefulWidget {
   const SchoolPageScreen  ({Key? key}) : super(key: key);
@@ -325,6 +327,12 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                   Icons.inventory_2, // 📦 stock
                   Colors.blue,
                       () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>  SchoolOrderInvoicePage(mobileNo: _ownerNumber,),
+                      ),
+                    );
                     setState(() => _currentIndex = 4);
                   },
                 ),
@@ -334,9 +342,29 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                   Icons.settings, // ⚙️ settings (FIXED)
                   Colors.blueGrey,
                       () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SchoolChangePasswordPage (mobileNo: _ownerNumber,),
+                          ),
+                        );
                     // navigate to settings page
                   },
                 ),
+                _menuItem(
+                  "Order Now",
+                  Icons.bookmark_border,
+                  Colors.greenAccent,
+                      () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const Orderbooknow(),
+                      ),
+                    );
+                  },
+                ),
+
               ],
 
             ),

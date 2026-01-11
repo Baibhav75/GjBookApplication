@@ -14,7 +14,6 @@ class StaffProfilePage extends StatefulWidget {
 class _StaffProfilePageState extends State<StaffProfilePage> {
   StaffProfileModel? profile;
   bool isLoading = true;
-  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -101,16 +100,6 @@ class _StaffProfilePageState extends State<StaffProfilePage> {
               ),
             )
           : _buildProfileBody(),
-
-      /// ✅ ANIMATED FOOTER
-      bottomNavigationBar: AnimatedBottomFooter(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
     );
   }
 
@@ -187,97 +176,6 @@ class _StaffProfilePageState extends State<StaffProfilePage> {
           _buildItem("Joining Date", profile!.joiningDate, Icons.date_range),
           _buildItem("Salary", "₹ ${profile!.salary}", Icons.currency_rupee),
         ],
-      ),
-    );
-  }
-}
-
-/// ===================================================================
-/// 🎯 ANIMATED FOOTER BAR (REUSABLE)
-/// ===================================================================
-
-class AnimatedBottomFooter extends StatefulWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-
-  const AnimatedBottomFooter({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  State<AnimatedBottomFooter> createState() => _AnimatedBottomFooterState();
-}
-
-class _AnimatedBottomFooterState extends State<AnimatedBottomFooter>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1), // from bottom
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: Container(
-        decoration: const BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, -3),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: widget.currentIndex,
-          onTap: widget.onTap,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          items:  [
-            BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: "Dashboad"),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history),
-              label: "Attendance History",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search_rounded),
-              label: "Search",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle),
-              label: "profile",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart),
-              label: "Report",
-            ),
-          ],
-        ),
       ),
     );
   }

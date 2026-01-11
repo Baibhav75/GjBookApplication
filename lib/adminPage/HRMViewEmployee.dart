@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '/Model/HrmViewEmplyeeModel.dart';
 import '../service/HrmViewEmployee_service.dart';
 
+/// 🔹 FILTER TYPE
+enum EmployeeFilter { all, active, deactive }
+
 class HRMViewEmployee extends StatefulWidget {
   const HRMViewEmployee({Key? key}) : super(key: key);
 
@@ -11,10 +14,11 @@ class HRMViewEmployee extends StatefulWidget {
 
 class _HRMViewEmployeeState extends State<HRMViewEmployee> {
   final HrmViewEmployeeService _employeeService = HrmViewEmployeeService();
+
   late Future<HrmViewEmployeeModel?> _employeesFuture;
   List<EmployeeList> _employees = [];
 
-  VoidCallback? get _refreshData => null;
+  EmployeeFilter _currentFilter = EmployeeFilter.all;
 
   @override
   void initState() {
@@ -22,76 +26,81 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
     _employeesFuture = _fetchEmployees();
   }
 
+  /// 🔹 FETCH EMPLOYEES
   Future<HrmViewEmployeeModel?> _fetchEmployees() async {
     try {
-      final employees = await _employeeService.fetchEmployees();
-      if (employees != null && employees.employeeList != null) {
+      final response = await _employeeService.fetchEmployees();
+      if (response != null && response.employeeList != null) {
         setState(() {
-          _employees = employees.employeeList!;
+          // ❌ Hide null Status
+          _employees = response.employeeList!
+              .where((e) => e.statuss != null)
+              .toList();
         });
-        print('Fetched ${_employees.length} employees'); // Debug print
-      } else {
-        print('No employees found in response');
       }
-      return employees;
+      return response;
     } catch (e) {
-      print('Error in _fetchEmployees: $e');
+      debugPrint('Error fetching employees: $e');
       return null;
     }
   }
 
-  Color getStatusColor(String? status) {
-    if (status == null) return Colors.grey;
-    if (status.toLowerCase().contains('active')) return Colors.green;
-    if (status.toLowerCase().contains('complete')) return Colors.green;
-    if (status.toLowerCase().contains('verified')) return Colors.green;
-    return Colors.red;
-  }
-
-  String getStatusText(EmployeeList employee) {
-    // Use policeverification or salaryConfirmation as status indicator
-    return employee.policeverification ??
-        employee.salaryConfirmation ??
-        'Unknown';
-  }
-
-  Color getButtonColor(String text) {
-    switch (text) {
-      case 'View':
-        return Colors.blue;
-      case 'Edit':
-        return Colors.orange;
-      case 'Activate':
-        return Colors.green;
-      case 'Deactivate':
-        return Colors.red;
+  /// 🔹 FILTERED LIST
+  List<EmployeeList> get _filteredEmployees {
+    switch (_currentFilter) {
+      case EmployeeFilter.active:
+        return _employees.where((e) => e.statuss == true).toList();
+      case EmployeeFilter.deactive:
+        return _employees.where((e) => e.statuss == false).toList();
+      case EmployeeFilter.all:
       default:
-        return Colors.grey;
+        return _employees;
     }
   }
 
-  String getActionButtonText(EmployeeList employee) {
-    final status = getStatusText(employee);
-    final statusLower = status.toLowerCase();
-    return statusLower.contains('active') ||
-        statusLower.contains('complete') ||
-        statusLower.contains('verified')
-        ? 'Deactivate'
-        : 'Activate';
+  /// 🔹 FILTER UI
+  Widget _buildStatusFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          ChoiceChip(
+            label: const Text('All'),
+            selected: _currentFilter == EmployeeFilter.all,
+            onSelected: (_) {
+              setState(() {
+                _currentFilter = EmployeeFilter.all;
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: const Text('Active'),
+            selectedColor: Colors.green[200],
+            selected: _currentFilter == EmployeeFilter.active,
+            onSelected: (_) {
+              setState(() {
+                _currentFilter = EmployeeFilter.active;
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: const Text('Deactive'),
+            selectedColor: Colors.red[200],
+            selected: _currentFilter == EmployeeFilter.deactive,
+            onSelected: (_) {
+              setState(() {
+                _currentFilter = EmployeeFilter.deactive;
+              });
+            },
+          ),
+        ],
+      ),
+    );
   }
 
-  // 🔽🔽🔽 FOOTER BUTTON METHODS - ADD THESE 🔽🔽🔽
-
-
-
-
-
-
-
-
-
-  // 🔼🔼🔼 FOOTER BUTTON METHODS - END 🔼🔼🔼
-
+  /// 🔹 MAIN UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,39 +108,20 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
         title: const Text('View Employee'),
         backgroundColor: Colors.blue[900],
         foregroundColor: Colors.white,
-        elevation: 2,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: ArgumentError.notNull,
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.refresh,
-              color: Colors.white, //
-            ),
-            onPressed: _refreshData,
-          ),
-
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              _handlePopupMenuSelection(value);
-            },
-            itemBuilder: (BuildContext context) {
-              return {'Profile', 'Settings', 'Help', 'Logout'}.map((String choice) {
-                return PopupMenuItem<String>(
-                  value: choice,
-                  child: Text(choice),
-                );
-              }).toList();
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {
+                _employeesFuture = _fetchEmployees();
+              });
             },
           ),
-
         ],
       ),
-
       body: Column(
         children: [
+          _buildStatusFilter(),
           Expanded(
             child: FutureBuilder<HrmViewEmployeeModel?>(
               future: _employeesFuture,
@@ -140,141 +130,69 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error: ${snapshot.error}',
-                          style: const TextStyle(fontSize: 16),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _employeesFuture = _fetchEmployees();
-                            });
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (_employees.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No employees found',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Status: ${snapshot.data?.status ?? 'Unknown'}',
-                          style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        Text(
-                          'Message: ${snapshot.data?.message ?? 'No message'}',
-                          style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _employeesFuture = _fetchEmployees();
-                            });
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
+                if (_filteredEmployees.isEmpty) {
+                  return const Center(child: Text('No employees found'));
                 }
 
                 return Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Container(
-                      // ✅ CHANGE: Added Container with constraints
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height - 200,
-                      ),
-                      child: SingleChildScrollView(
-                        // ✅ CHANGE: Made both horizontal and vertical scroll
-                        scrollDirection: Axis.horizontal,
-                        child: SingleChildScrollView(
-                          // ✅ ADDED: Vertical scrolling
-                          scrollDirection: Axis.vertical,
-                          child: DataTable(
-                            headingRowColor: MaterialStateColor.resolveWith(
-                                  (states) => Colors.lightBlue[100]!,
-                            ),
-                            columns: const [
-                              DataColumn(label: Text('Sr No')),
-                              DataColumn(label: Text('Employee Name')),
-                              DataColumn(label: Text('Contact No')),
-                              DataColumn(label: Text('Department')),
-                              DataColumn(label: Text('Date of Joining')),
-                              DataColumn(label: Text('Designation')),
-                              DataColumn(label: Text('Status')),
-                              DataColumn(label: Text('Action')),
-                            ],
-                            rows: _employees.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final employee = entry.value;
-                              final statusText = getStatusText(employee);
-                              final actionButtonText = getActionButtonText(employee);
-
-                              return DataRow(cells: [
-                                DataCell(Text('${index + 1}')),
-                                DataCell(Text(employee.employeeName ?? 'N/A')),
-                                DataCell(Text(employee.contactNumber ?? 'N/A')),
-                                DataCell(Text(employee.departmentName ?? 'N/A')),
-                                DataCell(Text(employee.dateOfJoining ?? 'N/A')),
-                                DataCell(Text(employee.designation ?? 'N/A')),
-                                DataCell(Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: getStatusColor(statusText),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    statusText,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                )),
-                                DataCell(Row(
-                                  children: [
-                                    _buildActionButton('View', employee),
-                                    const SizedBox(width: 4),
-                                    _buildActionButton('Edit', employee),
-                                    const SizedBox(width: 4),
-                                    _buildActionButton(actionButtonText, employee),
-                                  ],
-                                )),
-                              ]);
-                            }).toList(),
-                          ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: DataTable(
+                        headingRowColor: MaterialStateProperty.all(
+                          Colors.lightBlue[100],
                         ),
+                        columns: const [
+                          DataColumn(label: Text('Sr No')),
+                          DataColumn(label: Text('Employee Name')),
+                          DataColumn(label: Text('Contact No')),
+                          DataColumn(label: Text('Department')),
+                          DataColumn(label: Text('Date of Joining')),
+                          DataColumn(label: Text('Designation')),
+                          DataColumn(label: Text('Status')),
+                          DataColumn(label: Text('Action')),
+                        ],
+                        rows: _filteredEmployees.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final employee = entry.value;
+                          final bool status = employee.statuss!;
+
+                          return DataRow(cells: [
+                            DataCell(Text('${index + 1}')),
+                            DataCell(Text(employee.employeeName ?? 'N/A')),
+                            DataCell(Text(employee.contactNumber ?? 'N/A')),
+                            DataCell(Text(employee.departmentName ?? 'N/A')),
+                            DataCell(Text(employee.dateOfJoining ?? 'N/A')),
+                            DataCell(Text(employee.designation ?? 'N/A')),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: status ? Colors.green : Colors.red,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  status ? 'Active' : 'Deactive',
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Row(
+                                children: [
+                                  _actionButton('View', Colors.blue, employee),
+                                  const SizedBox(width: 8),
+                                  _actionButton('Edit', Colors.orange, employee),
+                                  // Removed Activate/Deactivate button
+                                ],
+                              ),
+                            ),
+                          ]);
+                        }).toList(),
                       ),
                     ),
                   ),
@@ -282,73 +200,82 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
               },
             ),
           ),
-
-
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(String text, EmployeeList employee) {
+  /// 🔹 ACTION BUTTON
+  Widget _actionButton(
+      String text, Color color, EmployeeList employee) {
     return GestureDetector(
-      onTap: () {
-        _handleAction(text, employee);
-      },
+      onTap: () => _handleAction(text, employee),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: getButtonColor(text),
+          color: color,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           text,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
         ),
       ),
     );
   }
 
+  /// 🔹 ACTION HANDLER
   void _handleAction(String action, EmployeeList employee) {
-    switch (action) {
-      case 'View':
-        _viewEmployee(employee);
-        break;
-      case 'Edit':
-        _editEmployee(employee);
-        break;
-      case 'Activate':
-      case 'Deactivate':
-        _toggleEmployeeStatus(employee, action);
-        break;
+    if (action == 'View') {
+      _showEmployeeDetails(employee);
+    } else if (action == 'Edit') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Edit ${employee.employeeName}')),
+      );
+      // TODO: Implement edit functionality
     }
   }
 
-  void _viewEmployee(EmployeeList employee) {
+  /// 🔹 SHOW EMPLOYEE DETAILS DIALOG
+  void _showEmployeeDetails(EmployeeList employee) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${employee.employeeName ?? 'Employee'} Details'),
+        title: const Text('Employee Details'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('Name', employee.employeeName),
-              _buildDetailRow('Contact', employee.contactNumber),
-              _buildDetailRow('Email', employee.emailId),
-              _buildDetailRow('Department', employee.departmentName),
-              _buildDetailRow('Designation', employee.designation),
-              _buildDetailRow('Date of Joining', employee.dateOfJoining),
-              _buildDetailRow('Employee Type', employee.employeeType),
-              _buildDetailRow('Salary', employee.salaryFormatted),
-              _buildDetailRow('Gender', employee.gender),
-              _buildDetailRow('Martial Status', employee.martialStatus),
+
+              _buildDetailRow('Name:', employee.employeeName),
+              _buildDetailRow('Contact:', employee.contactNumber),
+
+              _buildDetailRow('Department:', employee.departmentName),
+              _buildDetailRow('Designation:', employee.designation),
+              _buildDetailRow('Date of Joining:', employee.dateOfJoining),
+              _buildDetailRow('Date of Birth:', employee.dateOfBirth),
+              _buildDetailRow('Gender:', employee.gender),
+
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: employee.statuss! ? Colors.green : Colors.red,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  employee.statuss! ? 'Active' : 'Deactive',
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
         ],
@@ -356,6 +283,7 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
     );
   }
 
+  /// 🔹 BUILD DETAIL ROW
   Widget _buildDetailRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -363,35 +291,21 @@ class _HRMViewEmployeeState extends State<HRMViewEmployee> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 140,
             child: Text(
-              '$label: ',
+              label,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
-            child: Text(value ?? 'N/A'),
+            child: Text(
+              value ?? 'N/A',
+              style: const TextStyle(fontSize: 14),
+            ),
           ),
         ],
       ),
     );
   }
-
-  void _editEmployee(EmployeeList employee) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Edit ${employee.employeeName}'),
-      ),
-    );
-  }
-
-  void _toggleEmployeeStatus(EmployeeList employee, String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$action ${employee.employeeName}'),
-      ),
-    );
-  }
-
-  void _handlePopupMenuSelection(String value) {}
 }

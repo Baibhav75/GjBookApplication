@@ -62,6 +62,8 @@ class EmployeeList {
   dynamic position;
   String? agrementFrom;
   String? employeid;
+  /// ✅ NEW FIELD
+  bool? statuss;
 
   EmployeeList({
     this.employeeName,
@@ -97,6 +99,7 @@ class EmployeeList {
     this.position,
     this.agrementFrom,
     this.employeid,
+    this.statuss, // ✅ added
   });
 
   factory EmployeeList.fromJson(Map<String, dynamic> json) {
@@ -134,6 +137,7 @@ class EmployeeList {
       position: json['Position'],
       agrementFrom: json['AgrementFrom']?.toString(),
       employeid: json['Employeid']?.toString(),
+      statuss: json['Statuss'],
     );
   }
 
@@ -172,6 +176,7 @@ class EmployeeList {
     data['Position'] = position;
     data['AgrementFrom'] = agrementFrom;
     data['Employeid'] = employeid;
+    data['Statuss'] = statuss;
     return data;
   }
 

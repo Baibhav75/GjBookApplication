@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Model/agent_school_sale_return_model.dart';
 import '../Service/agent_school_sale_return_service.dart';
+import 'agent_invoice_return_detail_page.dart';
 
 class AgentSchoolSaleReturnPage extends StatefulWidget {
   final String agentId;
@@ -159,14 +160,62 @@ class _AgentSchoolSaleReturnPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            sale.schoolName,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // SCHOOL NAME
+              Expanded(
+                child: Text(
+                  sale.schoolName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // SALE / RETURN ICON (RIGHT SIDE)
+              GestureDetector(
+                onTap: () {
+                  // Use billNo from the model to show invoice details
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>  AgentInvoiceReturnDetailPage (
+                        agentId: widget.agentId,
+                        billNo: sale.billNo,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: (sale.type == "Sale"
+                        ? Colors.green
+                        : Colors.red)
+                        .withOpacity(0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    sale.type == "Sale"
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    size: 20,
+                    color: sale.type == "Sale" ? Colors.green : Colors.red,
+                  ),
+                ),
+              ),
+
+            ],
+          ),//
+
           const SizedBox(height: 6),
+
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
