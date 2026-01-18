@@ -1,11 +1,14 @@
 import 'package:bookworld/SchoolPage/schoolChangePassword.dart';
 import 'package:bookworld/SchoolPage/schoolProfile.dart';
 import 'package:bookworld/SchoolPage/school_order_invoice_page.dart';
+import 'package:bookworld/SchoolPage/view_ticket_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:bookworld/Service/secure_storage_service.dart';
 import 'package:bookworld/home_screen.dart';
 import '../Service/school_profile_service.dart';
 import '../Model/school_profile_model.dart';
+import 'OrderFormPage.dart';
+import 'new_ticket_screen.dart';
 import 'orderBooknow.dart';
 
 class SchoolPageScreen extends StatefulWidget {
@@ -113,10 +116,10 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.payment), label: "Student"),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Teachers"),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Class"),
-          BottomNavigationBarItem(icon: Icon(Icons.assessment), label: "Active Today"),
+          BottomNavigationBarItem(icon: Icon(Icons.payment), label: "Agreement"),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Oder Now"),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Total Sell"),
+          BottomNavigationBarItem(icon: Icon(Icons.assessment), label: "Settings"),
         ],
       ),
     );
@@ -203,7 +206,41 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
             },
           ),
 
+          ExpansionTile(
+            leading: const Icon(Icons.settings, color: Colors.teal),
+            title: const Text("Ticket"),
+            children: [
+              ListTile(
+                leading: const Icon(Icons.add, color: Colors.blue),
+                title: const Text("New Ticket"),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => NewTicketScreen(
+                        schoolName: _schoolName, // backend value
+                      ),
+                    ),
+                  );
 
+                  //   MaterialPageRoute(builder: (_) => NewTicketScreen()));
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.list, color: Colors.green),
+                title: const Text("View Ticket"),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ViewTicketScreen(),
+                    ),
+                  );
+
+                },
+              ),
+            ],
+          ),
           // Logout Button
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
@@ -227,19 +264,36 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
   Widget _getPage() {
     switch (_currentIndex) {
       case 0:
+      // 🏠 Home
         return _buildDashboard();
+
       case 1:
-        return _buildCollectFeePage();
+      // 📄 Agreement
+        return const OrderFormPage();
+
       case 2:
-        return _buildSearchPage();
+      // 🛒 Order Now
+        return OrderBookScreen(
+          mobileNo: _ownerNumber,
+        );
+
       case 3:
-        return _buildReceiptsPage();
+      // 📊 Total Sell
+        return SchoolOrderInvoicePage(
+          mobileNo: _ownerNumber,
+        );
+
       case 4:
-        return _buildReportsPage();
+      // ⚙️ Settings
+        return SchoolChangePasswordPage(
+          mobileNo: _ownerNumber,
+        );
+
       default:
         return _buildDashboard();
     }
   }
+
 
   // ---------------------------------------------------------------------------
   // 🎨 DASHBOARD UI
@@ -300,7 +354,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                   Icons.account_balance_wallet, // 💰 credit
                   Colors.green,
                       () {
-                    setState(() => _currentIndex = 1);
+
                   },
                 ),
 
@@ -309,7 +363,6 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                   Icons.money_off_csred, // 💸 debit
                   Colors.teal,
                       () {
-                    setState(() => _currentIndex = 2);
                   },
                 ),
 
@@ -333,7 +386,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                         builder: (context) =>  SchoolOrderInvoicePage(mobileNo: _ownerNumber,),
                       ),
                     );
-                    setState(() => _currentIndex = 4);
+
                   },
                 ),
 
@@ -342,6 +395,7 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                   Icons.settings, // ⚙️ settings (FIXED)
                   Colors.blueGrey,
                       () {
+                        setState(() => _currentIndex = 4);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -356,10 +410,11 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
                   Icons.bookmark_border,
                   Colors.greenAccent,
                       () {
+                        setState(() => _currentIndex = 2);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const Orderbooknow(),
+                        builder: (context) => OrderBookScreen(mobileNo:  _ownerNumber,),
                       ),
                     );
                   },
@@ -412,18 +467,26 @@ class _SchoolPageScreenState extends State<SchoolPageScreen > {
               crossAxisSpacing: 8, // Reduced spacing
               childAspectRatio: 0.85, // Optimal ratio
               children: [
-                _menuItem("Add Student", Icons.person_add, Colors.blue, () {
-                  setState(() => _currentIndex = 1);
-                }),
-                _menuItem("Mark Attendance", Icons.check_circle, Colors.green, () {
+
+                _menuItem(
+                  "Agreement",
+                  Icons.bookmark_border,
+                  Colors.greenAccent,
+                      () {
+                    setState(() => _currentIndex = 1);
+                    // If you still need to navigate to OrderFormPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const OrderFormPage(),
+                      ),
+                    );
+                  },
+                ),
+                _menuItem("Order Management ", Icons.check_circle, Colors.green, () {
                   setState(() => _currentIndex = 2);
                 }),
-                _menuItem("upload Results", Icons.assignment, Colors.orange, () {
-                  setState(() => _currentIndex = 3);
-                }),
-                _menuItem("Send Notification", Icons.inventory_2, Colors.blue, () {
-                  setState(() => _currentIndex = 4);
-                }),
+
               ],
             ),
           ),

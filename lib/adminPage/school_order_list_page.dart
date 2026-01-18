@@ -6,9 +6,13 @@ import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-
 class InvoiceSearchScreen extends StatefulWidget {
-  const InvoiceSearchScreen({super.key});
+  final String? billNo; // 👈 BillNo from list (optional)
+
+  const InvoiceSearchScreen({
+    super.key,
+    this.billNo,
+  });
 
   @override
   State<InvoiceSearchScreen> createState() => _InvoiceSearchScreenState();
@@ -17,14 +21,32 @@ class InvoiceSearchScreen extends StatefulWidget {
 class _InvoiceSearchScreenState extends State<InvoiceSearchScreen> {
   final TextEditingController _billNoController = TextEditingController();
   final OrderFormService _service = OrderFormService();
+
   OrderFormInvoice? _invoice;
   bool _isLoading = false;
   String _errorMessage = '';
 
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔥 AUTO SEARCH when BillNo comes from list
+    if (widget.billNo != null && widget.billNo!.isNotEmpty) {
+      _billNoController.text = widget.billNo!;
+      _searchInvoice();
+    }
+  }
+
+  @override
+  void dispose() {
+    _billNoController.dispose();
+    super.dispose();
+  }
+
   Future<void> _searchInvoice() async {
     if (_billNoController.text.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter a Bill Number';
+        _errorMessage = 'Please enter Bill Number';
       });
       return;
     }
@@ -36,14 +58,20 @@ class _InvoiceSearchScreenState extends State<InvoiceSearchScreen> {
     });
 
     try {
-      final invoice = await _service.getInvoiceByBillNo(_billNoController.text);
+      final invoice =
+      await _service.getInvoiceByBillNo(_billNoController.text);
+
+      if (!invoice.status) {
+        throw Exception(invoice.message);
+      }
+
       setState(() {
         _invoice = invoice;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Invoice not found';
         _isLoading = false;
       });
     }
@@ -56,105 +84,57 @@ class _InvoiceSearchScreenState extends State<InvoiceSearchScreen> {
         title: const Text('Invoice Search'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
-        elevation: 4,
       ),
-      body: Container(
-        color: Colors.grey[50],
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Search Card
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _billNoController,
-                        decoration: InputDecoration(
-                          labelText: 'Bill Number',
-                          prefixIcon: const Icon(Icons.receipt),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        keyboardType: TextInputType.number,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // 🔎 Search Card
+            Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _billNoController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Bill Number',
+                        prefixIcon: Icon(Icons.receipt),
+                        border: OutlineInputBorder(),
                       ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _searchInvoice,
-                          icon: _isLoading
-                              ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.white),
-                            ),
-                          )
-                              : const Icon(Icons.search),
-                          label: Text(_isLoading ? 'Searching...' : 'Search Invoice'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _searchInvoice,
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                            : const Text('Search Invoice'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
 
-              // Error Message
-              if (_errorMessage.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              // Invoice Preview or Full View
-              if (_invoice != null) ...[
-                const SizedBox(height: 20),
-                Expanded(
-                  child: InvoiceDetailView(invoice: _invoice!),
-                ),
-              ] else if (_isLoading) ...[
-                const SizedBox(height: 40),
-                const CircularProgressIndicator(),
-              ],
+            // ❌ Error
+            if (_errorMessage.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage,
+                style: const TextStyle(color: Colors.red),
+              ),
             ],
-          ),
+
+            // 📄 Invoice View
+            if (_invoice != null)
+              Expanded(child: InvoiceDetailView(invoice: _invoice!)),
+          ],
         ),
       ),
     );
@@ -636,7 +616,6 @@ class _InvoiceDetailViewState extends State<InvoiceDetailView> {
 }
 
 //invoice_utils file
-
 
 class InvoiceUtils {
   static Future<void> generatePdf(OrderFormInvoice invoice) async {

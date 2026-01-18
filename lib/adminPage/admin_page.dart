@@ -29,6 +29,8 @@ import 'Sale/SaleInvoice.dart';
 import 'Sale/SampleSaleInvoice.dart';
 import 'SellReturn/SaleReturnInvoice.dart';
 import 'SellReturn/SamplesaleReturnInvoice.dart';
+import 'SellReturn/order_agreement_list_screen.dart';
+import 'SellReturn/order_list_screen.dart';
 import 'ViewProductList.dart';
 import 'agent_list_page.dart';
 import 'in_out_management_page.dart';
@@ -81,7 +83,7 @@ class _AdminPageState extends State<AdminPage> {
 
   // Sample data for dashboard
   final List<Map<String, dynamic>> _dashboardStats = [
-    {'title': 'Receiving', 'icon': Icons.download, 'color': Colors.green},
+    {'title': 'Oder Agreement', 'icon': Icons.download, 'color': Colors.green},
     {
       'title': 'Latest\nOrder',
       'icon': Icons.shopping_cart,
@@ -143,6 +145,7 @@ class _AdminPageState extends State<AdminPage> {
       'icon': Icons.work,
       'color': Colors.orangeAccent,
     },
+
     {
       'title': 'Publication/nAgreement',
       'icon': Icons.description,
@@ -596,7 +599,7 @@ class _AdminPageState extends State<AdminPage> {
       case 2:
         return ViewProductList();
       case 3:
-        return _buildComingSoon('Latest Order');
+        return _buildComingSoon('Latest\nOrder');
       default:
         return _buildDashboard();
     }
@@ -763,7 +766,13 @@ class _AdminPageState extends State<AdminPage> {
           case 'Latest\nOrder':
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => InvoiceSearchScreen()),
+              MaterialPageRoute(builder: (context) => OrderListScreen()),
+            );
+            break;
+          case 'Oder Agreement':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => OrderAgreementListScreen ()),
             );
             break;
 
