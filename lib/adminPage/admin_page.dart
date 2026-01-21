@@ -35,6 +35,7 @@ import 'ViewProductList.dart';
 import 'agent_list_page.dart';
 import 'in_out_management_page.dart';
 import 'interviewList.dart';
+import 'oderManagement/OderManagement.dart';
 
 class AdminPage extends StatefulWidget {
   final LoginModel? userData;
@@ -84,6 +85,7 @@ class _AdminPageState extends State<AdminPage> {
   // Sample data for dashboard
   final List<Map<String, dynamic>> _dashboardStats = [
     {'title': 'Oder Agreement', 'icon': Icons.download, 'color': Colors.green},
+    {'title': 'Oder\nManagement', 'icon': Icons.auto_mode_rounded, 'color': Colors.blue},
     {
       'title': 'Latest\nOrder',
       'icon': Icons.shopping_cart,
@@ -260,8 +262,7 @@ class _AdminPageState extends State<AdminPage> {
 
           // Product Management (Expandable)
           _buildExpandableDrawerItem(Icons.inventory_2, 'Product Management', [
-            _buildDrawerSubItem(
-              'View Product',
+            _buildDrawerSubItemWithNumber('View Product', 1,
               onTap: () {
                 Navigator.push(
                   context,
@@ -270,8 +271,7 @@ class _AdminPageState extends State<AdminPage> {
               },
             ),
 
-            _buildDrawerSubItem(
-              'View Company',
+            _buildDrawerSubItemWithNumber('View Company', 2,
               onTap: () {
                 Navigator.push(
                   context,
@@ -283,18 +283,17 @@ class _AdminPageState extends State<AdminPage> {
 
           // Account (Expandable)
           _buildExpandableDrawerItem(Icons.account_balance_wallet, 'Account', [
-            _buildDrawerSubItem('Purchase Invoice'),
-            _buildDrawerSubItem('Purchase Return'),
-            _buildDrawerSubItem('Sale Invoice'),
-            _buildDrawerSubItem('General Cashbook'),
-            _buildDrawerSubItem('Account Cashbook'),
+            _buildDrawerSubItemWithNumber('Purchase Invoice', 1),
+            _buildDrawerSubItemWithNumber('Purchase Return', 2),
+            _buildDrawerSubItemWithNumber('Sale Invoice', 3),
+            _buildDrawerSubItemWithNumber('General Cashbook', 4),
+            _buildDrawerSubItemWithNumber('Account Cashbook', 5),
           ]),
 
           // Billing (Expandable) - Fixed version
           _buildExpandableDrawerItem(Icons.receipt, 'Billing', [
             _buildExpandableSubItem('Purchase', [
-              _buildDrawerSubItem(
-                'Purchase Not For Sale',
+              _buildDrawerSubItemWithNumber('Purchase Not For Sale', 1,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -302,8 +301,7 @@ class _AdminPageState extends State<AdminPage> {
                   );
                 },
               ),
-              _buildDrawerSubItem(
-                'Purchase Sample Revenew',
+              _buildDrawerSubItemWithNumber('Purchase Sample Revenue', 2,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -313,8 +311,7 @@ class _AdminPageState extends State<AdminPage> {
                   );
                 },
               ),
-              _buildDrawerSubItem(
-                'Purchase Invoice',
+              _buildDrawerSubItemWithNumber('Purchase Invoice', 3,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -324,8 +321,7 @@ class _AdminPageState extends State<AdminPage> {
               ),
             ]),
             _buildExpandableSubItem('Purchase Return', [
-              _buildDrawerSubItem(
-                'Purchase Return Not For Sale',
+              _buildDrawerSubItemWithNumber('Purchase Return Not For Sale', 1,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -335,10 +331,8 @@ class _AdminPageState extends State<AdminPage> {
                   );
                 },
               ),
-              _buildDrawerSubItem(
-                'Purchase Return sample Revenue',
+              _buildDrawerSubItemWithNumber('Purchase Return Sample Revenue', 2,
                 onTap: () {
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -347,10 +341,8 @@ class _AdminPageState extends State<AdminPage> {
                   );
                 },
               ),
-              _buildDrawerSubItem(
-                'Puchase Return Invoice',
+              _buildDrawerSubItemWithNumber('Purchase Return Invoice', 3,
                 onTap: () {
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -361,20 +353,16 @@ class _AdminPageState extends State<AdminPage> {
               ),
             ]),
             _buildExpandableSubItem('Sale', [
-              _buildDrawerSubItem(
-                'Sale Invoice',
+              _buildDrawerSubItemWithNumber('Sale Invoice', 1,
                 onTap: () {
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => saleInvoice()),
                   );
                 },
               ),
-              _buildDrawerSubItem(
-                'Sample Sale Invoice',
+              _buildDrawerSubItemWithNumber('Sample Sale Invoice', 2,
                 onTap: () {
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -385,10 +373,8 @@ class _AdminPageState extends State<AdminPage> {
               ),
             ]),
             _buildExpandableSubItem('Sell Return', [
-              _buildDrawerSubItem(
-                'sale Return Invoice',
+              _buildDrawerSubItemWithNumber('Sale Return Invoice', 1,
                 onTap: () {
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -397,8 +383,7 @@ class _AdminPageState extends State<AdminPage> {
                   );
                 },
               ),
-              _buildDrawerSubItem(
-                'Sample Sale Return Invoice',
+              _buildDrawerSubItemWithNumber('Sample Sale Return Invoice', 2,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -416,12 +401,11 @@ class _AdminPageState extends State<AdminPage> {
             Icons.description,
             'Account Opening Form',
             [
-              _buildDrawerSubItem('Purchase Account Form'),
-              _buildDrawerSubItem('Sell Account Form'),
-              _buildDrawerSubItem('Investor Account Form'),
-              _buildDrawerSubItem('Vendor Account Form'),
-              _buildDrawerSubItem(
-                'Publication Agreement',
+              _buildDrawerSubItemWithNumber('Purchase Account Form', 1),
+              _buildDrawerSubItemWithNumber('Sell Account Form', 2),
+              _buildDrawerSubItemWithNumber('Investor Account Form', 3),
+              _buildDrawerSubItemWithNumber('Vendor Account Form', 4),
+              _buildDrawerSubItemWithNumber('Publication Agreement', 5,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -436,8 +420,7 @@ class _AdminPageState extends State<AdminPage> {
 
           // HRM (Expandable)
           _buildExpandableDrawerItem(Icons.people, 'HRM', [
-            _buildDrawerSubItem(
-              'View Employee',
+            _buildDrawerSubItemWithNumber('View Employee', 1,
               onTap: () {
                 Navigator.push(
                   context,
@@ -445,8 +428,7 @@ class _AdminPageState extends State<AdminPage> {
                 );
               },
             ),
-            _buildDrawerSubItem(
-              'InOut list',
+            _buildDrawerSubItemWithNumber('InOut list', 2,
               onTap: () {
                 Navigator.push(
                   context,
@@ -456,16 +438,13 @@ class _AdminPageState extends State<AdminPage> {
                 );
               },
             ),
-            _buildDrawerSubItem(
-              'Employee Tree',
+            _buildDrawerSubItemWithNumber('Employee Tree', 3,
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Add Employee Tree page navigation
               },
             ),
-
-            _buildDrawerSubItem(
-              'Attendance History',
+            _buildDrawerSubItemWithNumber('Attendance History', 4,
               onTap: () {
                 Navigator.push(
                   context,
@@ -473,12 +452,9 @@ class _AdminPageState extends State<AdminPage> {
                     builder: (context) => HistoryPage(mobileNo: mobileNo),
                   ),
                 );
-                
               },
             ),
-
-            _buildDrawerSubItem(
-              'Interview List',
+            _buildDrawerSubItemWithNumber('Interview List', 5,
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -487,14 +463,12 @@ class _AdminPageState extends State<AdminPage> {
                 );
               },
             ),
-            _buildDrawerSubItem(
-
-              'Sell School List',
+            _buildDrawerSubItemWithNumber('Sell School List', 6,
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>SellSchoolListPage (),
+                    builder: (context) => SellSchoolListPage(),
                   ),
                 );
               },
@@ -503,7 +477,7 @@ class _AdminPageState extends State<AdminPage> {
 
           // Setting (Expandable)
           _buildExpandableDrawerItem(Icons.settings, 'Setting', [
-            _buildDrawerSubItem('Change Password'),
+            _buildDrawerSubItemWithNumber('Change Password', 1),
           ]),
 
           const Divider(),
@@ -521,10 +495,10 @@ class _AdminPageState extends State<AdminPage> {
 
   // Helper method for expandable drawer items
   Widget _buildExpandableDrawerItem(
-    IconData icon,
-    String title,
-    List<Widget> children,
-  ) {
+      IconData icon,
+      String title,
+      List<Widget> children,
+      ) {
     return ExpansionTile(
       leading: Icon(
         icon,
@@ -549,18 +523,57 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  // Helper method for sub-menu items with optional onTap parameter
+  // New method for sub-menu items with number prefix
+  Widget _buildDrawerSubItemWithNumber(String title, int index, {VoidCallback? onTap}) {
+    return Padding(
+      padding: EdgeInsets.only(left: 32.0.w),
+      child: ListTile(
+        title: Row(
+          children: [
+            Container(
+              width: 24.w,
+              height: 24.h,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFF6B46C1), // Matching purple theme
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$index',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.poppins(fontSize: 14.sp),
+              ),
+            ),
+          ],
+        ),
+        onTap: onTap ?? () {
+          Navigator.pop(context); // Close drawer
+          _handleSubMenuItemTap(title);
+        },
+      ),
+    );
+  }
+
+  // Original drawer subitem method (without numbers)
   Widget _buildDrawerSubItem(String title, {VoidCallback? onTap}) {
     return Padding(
       padding: EdgeInsets.only(left: 32.0.w),
       child: ListTile(
         title: Text(title, style: GoogleFonts.poppins(fontSize: 14.sp)),
-        onTap:
-            onTap ??
-            () {
-              Navigator.pop(context); // Close drawer
-              _handleSubMenuItemTap(title);
-            },
+        onTap: onTap ?? () {
+          Navigator.pop(context); // Close drawer
+          _handleSubMenuItemTap(title);
+        },
       ),
     );
   }
@@ -773,6 +786,16 @@ class _AdminPageState extends State<AdminPage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => OrderAgreementListScreen ()),
+            );
+            break;
+
+          case 'Total\nPurchase':
+            Navigator.pop(context);
+            break;
+          case 'Oder\nManagement':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) =>  OrderManagementPage ()),
             );
             break;
 

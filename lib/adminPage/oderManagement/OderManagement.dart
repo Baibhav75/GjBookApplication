@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class OrderManagementPage extends StatelessWidget {
+  const OrderManagementPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF6B46C1), // Purple background
+        iconTheme: const IconThemeData(color: Colors.white), // Back icon white
+        title: Text(
+          'Order Management',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white, // ✅ Text color white
+          ),
+        ),
+        centerTitle: false, // optional
+      ),
+
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+
+          // 🔽 ORDER MANAGEMENT DROPDOWN
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: const EdgeInsets.only(bottom: 12),
+              iconColor: const Color(0xFF6B46C1),
+              collapsedIconColor: const Color(0xFF6B46C1),
+
+              title: Text(
+                'Order Management Options',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              children: [
+                _orderItem(context, 1, 'School Order Letter Pad Record'),
+                _orderItem(context, 2, 'School Discount Agreement Form'),
+                _orderItem(context, 3, 'All Order Details'),
+                _orderItem(context, 4, 'School Agreement with Old Mix Report Mention'),
+                _orderItem(context, 5, 'Order Process Billing With School Stretch'),
+                _orderItem(context, 6, 'Order Excel Sheet'),
+                _orderItem(context, 7, 'Book List (Publication Without Publication)'),
+                _orderItem(context, 8, 'Merge Publication Order Form'),
+                _orderItem(context, 9, 'Individual Order'),
+                _orderItem(context, 10, 'Order Tracking (GR Number Transport Name)'),
+                _orderItem(context, 11, 'Order Pending'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= ORDER ITEM CARD =================
+  Widget _orderItem(BuildContext context, int index, String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderPlaceholderPage(title: title),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            children: [
+              // Number badge
+              Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF6B46C1),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  index.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+              const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+class OrderPlaceholderPage extends StatelessWidget {
+  final String title;
+
+  const OrderPlaceholderPage({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: const Color(0xFF6B46C1),
+      ),
+      body: Center(
+        child: Text(
+          '$title Page Coming Soon',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
