@@ -1,5 +1,9 @@
+import 'package:bookworld/adminPage/oderManagement/school_agrement_old_mix_list_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../SellReturn/order_list_screen.dart';
+import 'order_letter_pad_list_page.dart';
 
 class OrderManagementPage extends StatelessWidget {
   const OrderManagementPage({super.key});
@@ -46,6 +50,8 @@ class OrderManagementPage extends StatelessWidget {
 
               children: [
                 _orderItem(context, 1, 'School Order Letter Pad Record'),
+
+
                 _orderItem(context, 2, 'School Discount Agreement Form'),
                 _orderItem(context, 3, 'All Order Details'),
                 _orderItem(context, 4, 'School Agreement with Old Mix Report Mention'),
@@ -71,12 +77,7 @@ class OrderManagementPage extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OrderPlaceholderPage(title: title),
-            ),
-          );
+          _navigateToPage(context, title);
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -124,6 +125,46 @@ class OrderManagementPage extends StatelessWidget {
       ),
     );
   }
+  void _navigateToPage(BuildContext context, String title) {
+    Widget page;
+
+    switch (title) {
+      case 'School Order Letter Pad Record':
+        page = const OrderLetterPadListPage();// OrderListScreen()),
+        break;
+
+      case 'School Discount Agreement Form':
+        page = const OrderPlaceholderPage(
+          title: 'School Discount Agreement Form',
+        );
+        break;
+
+      case 'All Order Details':
+        page = const OrderListScreen();
+
+        break;
+
+      case 'Order Pending':
+        page = const OrderPlaceholderPage(title: 'Order Pending');
+        break;
+
+      case 'School Agreement with Old Mix Report Mention':
+        page = const SchoolAgrementOldMixListPage();
+        break;
+
+
+
+
+      default:
+        page = OrderPlaceholderPage(title: title);
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => page),
+    );
+  }
+
 }
 class OrderPlaceholderPage extends StatelessWidget {
   final String title;
