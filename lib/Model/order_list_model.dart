@@ -30,6 +30,7 @@ class OrderItem {
   final String agentName;
   final String mobileNo;
   final String billDate;
+  final String schoolType;
 
   OrderItem({
     required this.billNo,
@@ -40,6 +41,7 @@ class OrderItem {
     required this.agentName,
     required this.mobileNo,
     required this.billDate,
+    required this.schoolType,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -47,11 +49,12 @@ class OrderItem {
       billNo: json['BillNo']?.toString() ?? '',
       schoolName: json['SchoolName'] ?? '',
       oldOrderDate: json['OldOrderDate'] ?? '',
-      orderDate: json['OrderDate'] ?? json['Dates'] ?? '',
-      counterSupply: json['CounterSupply'] ?? '',
-      agentName: json['AgentName'] ?? '',
-      mobileNo: json['MobileNo'] ?? '',
-      billDate: json['BillDate'] ?? json['RecDate'] ?? '',
+      orderDate: json['Dates'] ?? '',
+      counterSupply: json['CounterType'] ?? '',
+      agentName: json['CounterNamOrAgentName'] ?? '',
+      mobileNo: json['SchoolMobileNo'] ?? '',
+      billDate: json['RecDate'] ?? '',
+      schoolType: json['SchoolType'] ?? '',
     );
   }
 }

@@ -24,8 +24,13 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   void _onOrderTap(String billNo) {
     setState(() {
-      _expandedBillNo = billNo;
-      _invoiceFuture = BillNoInvoiceService.fetchInvoice(billNo);
+      if (_expandedBillNo == billNo) {
+        _expandedBillNo = null;
+        _invoiceFuture = null;
+      } else {
+        _expandedBillNo = billNo;
+        _invoiceFuture = BillNoInvoiceService.fetchInvoice(billNo);
+      }
     });
   }
 
@@ -66,6 +71,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
           final orders = snapshot.data!.data;
 
+          if (orders.isEmpty) {
+            return _buildEmptyState();
+          }
+
           return Column(
             children: [
               Expanded(
@@ -85,6 +94,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                       columns: const [
                         DataColumn(label: Text('Sr No.')),
                         DataColumn(label: Text('Old OrderDate')),
+                        DataColumn(label: Text('School Type')),
                         DataColumn(label: Text('Order Date')),
                         DataColumn(label: Text('Bill No')),
                         DataColumn(label: Text('Party Name')),
@@ -100,6 +110,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                           cells: [
                             DataCell(Text((index + 1).toString())),
                             DataCell(Text(_cleanDate(order.oldOrderDate))),
+                            DataCell(Text(order.schoolType)),
                             DataCell(Text(_cleanDate(order.orderDate))),
                             DataCell(Text(order.billNo)),
                             DataCell(SizedBox(
