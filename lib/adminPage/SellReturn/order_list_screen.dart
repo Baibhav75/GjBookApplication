@@ -24,13 +24,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   void _onOrderTap(String billNo) {
     setState(() {
-      if (_expandedBillNo == billNo) {
-        _expandedBillNo = null;
-        _invoiceFuture = null;
-      } else {
-        _expandedBillNo = billNo;
-        _invoiceFuture = BillNoInvoiceService.fetchInvoice(billNo);
-      }
+      _expandedBillNo = billNo;
+      _invoiceFuture = BillNoInvoiceService.fetchInvoice(billNo);
     });
   }
 
@@ -39,246 +34,231 @@ class _OrderListScreenState extends State<OrderListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Order Agreement',
+          'All Order Details',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
-            color: Colors.white, // ✅ text white
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.deepPurple, // ✅ deep purple
+        backgroundColor: const Color(0xFF6B46C1), // Deep purple
         iconTheme: const IconThemeData(
-          color: Colors.white, // back icon white
+          color: Colors.white,
         ),
       ),
+      body: FutureBuilder<OrderListModel>(
+        future: _orderFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _buildLoadingState();
+          }
 
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).primaryColor.withOpacity(0.05),
-              Theme.of(context).primaryColor.withOpacity(0.02),
-            ],
-          ),
-        ),
-        child: FutureBuilder<OrderListModel>(
-          future: _orderFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildLoadingState();
-            }
+          if (snapshot.hasError) {
+            return _buildErrorState(snapshot.error.toString());
+          }
 
-            if (snapshot.hasError) {
-              return _buildErrorState(snapshot.error.toString());
-            }
+          if (!snapshot.hasData || snapshot.data == null) {
+            return _buildEmptyState();
+          }
 
-            final orders = snapshot.data!.data;
+          final orders = snapshot.data!.data;
 
-            if (orders.isEmpty) {
-              return _buildEmptyState();
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                final order = orders[index];
-                final isExpanded = _expandedBillNo == order.billNo;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: Colors.grey.shade200,
-                        width: 1,
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      headingRowColor: MaterialStateProperty.all(
+                        const Color(0xFFE0F7FA), // Light cyan header
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        // Order Header
-                        _buildOrderHeader(order, isExpanded),
-
-                        // Expanded Invoice Details
-                        if (isExpanded) _buildInvoiceDetails(),
+                      columnSpacing: 20,
+                      headingTextStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      columns: const [
+                        DataColumn(label: Text('Sr No.')),
+                        DataColumn(label: Text('Old OrderDate')),
+                        DataColumn(label: Text('Order Date')),
+                        DataColumn(label: Text('Bill No')),
+                        DataColumn(label: Text('Party Name')),
+                        DataColumn(label: Text('CounterSupply')),
+                        DataColumn(label: Text('AgentName')),
+                        DataColumn(label: Text('MobileNo')),
+                        DataColumn(label: Text('Bill Date')),
+                        DataColumn(label: Text('Action')),
                       ],
+                      rows: List.generate(orders.length, (index) {
+                        final order = orders[index];
+                        return DataRow(
+                          cells: [
+                            DataCell(Text((index + 1).toString())),
+                            DataCell(Text(_cleanDate(order.oldOrderDate))),
+                            DataCell(Text(_cleanDate(order.orderDate))),
+                            DataCell(Text(order.billNo)),
+                            DataCell(SizedBox(
+                              width: 250,
+                              child: Text(
+                                order.schoolName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )),
+                            DataCell(Text(order.counterSupply.toUpperCase())),
+                            DataCell(Text(order.agentName)),
+                            DataCell(Text(order.mobileNo)),
+                            DataCell(Text(_cleanDate(order.billDate))),
+                            DataCell(
+                              PopupMenuButton<String>(
+                                onSelected: (value) {
+                                  if (value == 'view_details') {
+                                    _showOrderDetails(order);
+                                  } else if (value == 'view_books') {
+                                    _showBookList(order);
+                                  }
+                                },
+                                itemBuilder: (context) => const [
+                                  PopupMenuItem(
+                                    value: 'view_details',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.visibility, size: 20),
+                                        SizedBox(width: 8),
+                                        Text('View Details'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'view_books',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.list_alt, size: 20),
+                                        SizedBox(width: 8),
+                                        Text('View Book List'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+
+                                // 👇 THIS IS THE MAIN UPDATE
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.deepPurple,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'View',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        color: Colors.white,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          ],
+                        );
+                      }),
                     ),
                   ),
-                );
-              },
-            );
-          },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  String _cleanDate(String date) {
+    if (date.isEmpty) return '';
+    try {
+      // If it's a full DateTime string, just take the date part
+      if (date.contains('T')) {
+        return date.split('T')[0];
+      }
+      if (date.contains(' ')) {
+        return date.split(' ')[0];
+      }
+      return date;
+    } catch (e) {
+      return date;
+    }
+  }
+
+  void _showOrderDetails(dynamic order) {
+    _onOrderTap(order.billNo);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Order Details: ${order.billNo}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildInvoiceDetails(),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildOrderHeader(dynamic order, bool isExpanded) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Order Icon/Avatar
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Theme.of(context).primaryColor.withOpacity(0.3),
-                width: 1.5,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                order.billNo,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12), // Reduced spacing
-
-          // Order Information
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  order.schoolName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Bill No: ${order.billNo}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // Simplified date display
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          size: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Order: ${_formatDate(order.dates)}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Received: ${_formatDate(order.recDate)}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Expand/Collapse Button
-          IconButton(
-            onPressed: () => _onOrderTap(order.billNo),
-            icon: Icon(
-              isExpanded
-                  ? Icons.expand_less_rounded
-                  : Icons.expand_more_rounded,
-              size: 24, // Reduced size
-              color: Theme.of(context).primaryColor,
-            ),
-            padding: const EdgeInsets.all(4), // Minimal padding
-            constraints: const BoxConstraints(
-              minWidth: 40,
-              minHeight: 40,
-            ),
-          ),
-        ],
-      ),
-    );
+  void _showBookList(dynamic order) {
+    // This could navigate to a specific book list page or show another modal
+    // For now, let's reuse the details view as it contains the book list
+    _showOrderDetails(order);
   }
 
-  // Helper method to format date
-  String _formatDate(DateTime date) {
-    return date.toLocal().toString().split(' ')[0];
-  }
-
-  Widget _buildDateChip({
-    required IconData icon,
-    required String label,
-    required DateTime date,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 14,
-            color: Colors.grey.shade600,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '$label: ${date.toLocal().toString().split(' ')[0]}',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildInvoiceDetails() {
     return FutureBuilder<BillNoInvoiceModel>(
@@ -290,6 +270,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
         if (detailSnap.hasError) {
           return _buildInvoiceError(detailSnap.error.toString());
+        }
+
+        if (!detailSnap.hasData || detailSnap.data == null) {
+          return const Center(child: Text('No invoice data available'));
         }
 
         final invoice = detailSnap.data!;

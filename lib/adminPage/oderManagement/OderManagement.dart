@@ -1,7 +1,6 @@
 import 'package:bookworld/adminPage/oderManagement/school_agrement_old_mix_list_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../SellReturn/order_list_screen.dart';
 import 'order_letter_pad_list_page.dart';
 
@@ -151,9 +150,6 @@ class OrderManagementPage extends StatelessWidget {
       case 'School Agreement with Old Mix Report Mention':
         page = const SchoolAgrementOldMixListPage();
         break;
-
-
-
 
       default:
         page = OrderPlaceholderPage(title: title);

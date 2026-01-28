@@ -11,9 +11,9 @@ class BillNoInvoiceModel {
 
   factory BillNoInvoiceModel.fromJson(Map<String, dynamic> json) {
     return BillNoInvoiceModel(
-      status: json['status'],
-      message: json['message'],
-      data: InvoiceData.fromJson(json['data']),
+      status: json['status'] ?? false,
+      message: json['message'] ?? '',
+      data: InvoiceData.fromJson(json['data'] ?? {}),
     );
   }
 }
@@ -33,11 +33,12 @@ class InvoiceData {
 
   factory InvoiceData.fromJson(Map<String, dynamic> json) {
     return InvoiceData(
-      header: InvoiceHeader.fromJson(json['Header']),
-      publications: (json['Publications'] as List)
-          .map((e) => Publication.fromJson(e))
-          .toList(),
-      summary: InvoiceSummary.fromJson(json['Summary']),
+      header: InvoiceHeader.fromJson(json['Header'] ?? {}),
+      publications: (json['Publications'] as List?)
+              ?.map((e) => Publication.fromJson(e))
+              .toList() ??
+          [],
+      summary: InvoiceSummary.fromJson(json['Summary'] ?? {}),
     );
   }
 }
@@ -65,11 +66,13 @@ class InvoiceHeader {
 
   factory InvoiceHeader.fromJson(Map<String, dynamic> json) {
     return InvoiceHeader(
-      invoiceNo: json['InvoiceNo'],
-      billDate: DateTime.parse(json['BillDate']),
-      schoolName: json['SchoolName'],
-      address: json['Address'],
-      transport: json['Transport'],
+      invoiceNo: json['InvoiceNo']?.toString() ?? '',
+      billDate: json['BillDate'] != null
+          ? DateTime.tryParse(json['BillDate'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      schoolName: json['SchoolName'] ?? '',
+      address: json['Address'] ?? '',
+      transport: json['Transport'] ?? '',
       board: json['Board'],
       remark: json['Remark'],
     );
@@ -95,13 +98,14 @@ class Publication {
 
   factory Publication.fromJson(Map<String, dynamic> json) {
     return Publication(
-      publicationName: json['PublicationName'],
-      series: json['Series'],
-      items: (json['Items'] as List)
-          .map((e) => BookItem.fromJson(e))
-          .toList(),
-      totalQty: json['TotalQty'],
-      subTotal: (json['SubTotal'] as num).toDouble(),
+      publicationName: json['PublicationName'] ?? '',
+      series: json['Series'] ?? '',
+      items: (json['Items'] as List?)
+              ?.map((e) => BookItem.fromJson(e))
+              .toList() ??
+          [],
+      totalQty: json['TotalQty'] ?? 0,
+      subTotal: (json['SubTotal'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -127,12 +131,12 @@ class BookItem {
 
   factory BookItem.fromJson(Map<String, dynamic> json) {
     return BookItem(
-      bookName: json['BookName'],
-      subject: json['Subject'],
-      className: json['Class'],
-      qty: json['Qty'],
-      rate: (json['Rate'] as num).toDouble(),
-      amount: (json['Amount'] as num).toDouble(),
+      bookName: json['BookName'] ?? '',
+      subject: json['Subject'] ?? '',
+      className: json['Class'] ?? '',
+      qty: json['Qty'] ?? 0,
+      rate: (json['Rate'] as num?)?.toDouble() ?? 0.0,
+      amount: (json['Amount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -150,8 +154,8 @@ class InvoiceSummary {
 
   factory InvoiceSummary.fromJson(Map<String, dynamic> json) {
     return InvoiceSummary(
-      grandQty: json['GrandQty'],
-      grandTotal: (json['GrandTotal'] as num).toDouble(),
+      grandQty: json['GrandQty'] ?? 0,
+      grandTotal: (json['GrandTotal'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

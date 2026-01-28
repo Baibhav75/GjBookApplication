@@ -11,11 +11,12 @@ class OrderListModel {
 
   factory OrderListModel.fromJson(Map<String, dynamic> json) {
     return OrderListModel(
-      status: json['Status'],
-      message: json['Message'],
-      data: (json['Data'] as List)
-          .map((e) => OrderItem.fromJson(e))
-          .toList(),
+      status: json['Status']?.toString() ?? '',
+      message: json['Message']?.toString() ?? '',
+      data: (json['Data'] as List?)
+              ?.map((e) => OrderItem.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 }
@@ -23,22 +24,34 @@ class OrderListModel {
 class OrderItem {
   final String billNo;
   final String schoolName;
-  final DateTime dates;
-  final DateTime recDate;
+  final String oldOrderDate;
+  final String orderDate;
+  final String counterSupply;
+  final String agentName;
+  final String mobileNo;
+  final String billDate;
 
   OrderItem({
     required this.billNo,
     required this.schoolName,
-    required this.dates,
-    required this.recDate,
+    required this.oldOrderDate,
+    required this.orderDate,
+    required this.counterSupply,
+    required this.agentName,
+    required this.mobileNo,
+    required this.billDate,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      billNo: json['BillNo'],
-      schoolName: json['SchoolName'],
-      dates: DateTime.parse(json['Dates']),
-      recDate: DateTime.parse(json['RecDate']),
+      billNo: json['BillNo']?.toString() ?? '',
+      schoolName: json['SchoolName'] ?? '',
+      oldOrderDate: json['OldOrderDate'] ?? '',
+      orderDate: json['OrderDate'] ?? json['Dates'] ?? '',
+      counterSupply: json['CounterSupply'] ?? '',
+      agentName: json['AgentName'] ?? '',
+      mobileNo: json['MobileNo'] ?? '',
+      billDate: json['BillDate'] ?? json['RecDate'] ?? '',
     );
   }
 }
