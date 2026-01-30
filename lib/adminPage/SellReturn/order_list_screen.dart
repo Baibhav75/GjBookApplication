@@ -3,6 +3,8 @@ import '../../Model/order_list_model.dart';
 import '../../Model/billno_invoice_model.dart';
 import '../../Service/order_list_service.dart';
 import '../../Service/billno_invoice_service.dart';
+import 'ViewBookList.dart';
+import 'oderExcelSheet.dart';
 
 class OrderListScreen extends StatefulWidget {
   const OrderListScreen({super.key});
@@ -50,9 +52,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: const Color(0xFF6B46C1), // Deep purple
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<OrderListModel>(
         future: _orderFuture,
@@ -113,14 +113,16 @@ class _OrderListScreenState extends State<OrderListScreen> {
                             DataCell(Text(order.schoolType)),
                             DataCell(Text(_cleanDate(order.orderDate))),
                             DataCell(Text(order.billNo)),
-                            DataCell(SizedBox(
-                              width: 250,
-                              child: Text(
-                                order.schoolName,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                            DataCell(
+                              SizedBox(
+                                width: 250,
+                                child: Text(
+                                  order.schoolName,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            )),
+                            ),
                             DataCell(Text(order.counterSupply.toUpperCase())),
                             DataCell(Text(order.agentName)),
                             DataCell(Text(order.mobileNo)),
@@ -131,8 +133,26 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                   if (value == 'view_details') {
                                     _showOrderDetails(order);
                                   } else if (value == 'view_books') {
-                                    _showBookList(order);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ViewBookDetails(
+                                          billNo: order.billNo, // optional
+                                        ),
+                                      ),
+                                    );
                                   }
+                                  else if (value == 'Oder ExcelSheet') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>  OderExcelSheet(
+                                          billNo: order.billNo, // optional
+                                        ),
+                                      ),
+                                    );
+                                  }
+
                                 },
                                 itemBuilder: (context) => const [
                                   PopupMenuItem(
@@ -155,11 +175,25 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                       ],
                                     ),
                                   ),
+                                  PopupMenuItem(
+                                    value: 'Oder ExcelSheet',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.list_alt, size: 20),
+                                        SizedBox(width: 8),
+                                        Text('Oder ExcelSheet'),
+                                      ],
+                                    ),
+                                  ),
+
                                 ],
 
                                 // 👇 THIS IS THE MAIN UPDATE
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.deepPurple,
                                     borderRadius: BorderRadius.circular(6),
@@ -185,7 +219,6 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                 ),
                               ),
                             ),
-
                           ],
                         );
                       }),
@@ -254,9 +287,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             ),
             const Divider(),
             Expanded(
-              child: SingleChildScrollView(
-                child: _buildInvoiceDetails(),
-              ),
+              child: SingleChildScrollView(child: _buildInvoiceDetails()),
             ),
           ],
         ),
@@ -269,7 +300,6 @@ class _OrderListScreenState extends State<OrderListScreen> {
     // For now, let's reuse the details view as it contains the book list
     _showOrderDetails(order);
   }
-
 
   Widget _buildInvoiceDetails() {
     return FutureBuilder<BillNoInvoiceModel>(
@@ -380,18 +410,12 @@ class _OrderListScreenState extends State<OrderListScreen> {
               const SizedBox(height: 4),
               Text(
                 header.address,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade700,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Transport: ${header.transport}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -458,9 +482,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
-              ),
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: const Row(
               children: [
@@ -524,9 +546,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade100),
-                ),
+                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
               ),
               child: Row(
                 children: [
@@ -536,9 +556,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                       item.bookName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(fontSize: 14),
                     ),
                   ),
                   Expanded(
@@ -607,10 +625,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
               children: [
                 Text(
                   'Publication Total: ',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey.shade700,
-                  ),
+                  style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -653,13 +668,13 @@ class _OrderListScreenState extends State<OrderListScreen> {
             children: [
               Text(
                 'Total Quantity:',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade700,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade100,
                   borderRadius: BorderRadius.circular(8),
@@ -676,10 +691,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Divider(
-            color: Colors.grey.shade300,
-            thickness: 1,
-          ),
+          Divider(color: Colors.grey.shade300, thickness: 1),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -699,10 +711,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.green.shade500,
-                      Colors.green.shade600,
-                    ],
+                    colors: [Colors.green.shade500, Colors.green.shade600],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
@@ -744,10 +753,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
           const SizedBox(height: 20),
           Text(
             'Loading Orders...',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -761,11 +767,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 64,
-              color: Colors.red[400],
-            ),
+            Icon(Icons.error_outline_rounded, size: 64, color: Colors.red[400]),
             const SizedBox(height: 20),
             const Text(
               'Unable to Load Orders',
@@ -779,10 +781,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -830,10 +829,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             const SizedBox(height: 12),
             Text(
               'Your order history will appear here',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -853,10 +849,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
           const SizedBox(height: 16),
           Text(
             'Loading invoice details...',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -875,11 +868,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              size: 36,
-              color: Colors.red[400],
-            ),
+            Icon(Icons.warning_amber_rounded, size: 36, color: Colors.red[400]),
             const SizedBox(height: 12),
             const Text(
               'Failed to Load Invoice',
@@ -893,10 +882,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             ),
           ],
         ),
