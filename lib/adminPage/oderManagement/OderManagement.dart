@@ -1,7 +1,9 @@
 import 'package:bookworld/adminPage/oderManagement/school_agrement_old_mix_list_page.dart';
+import 'package:bookworld/adminPage/oderManagement/tracking_order_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../SellReturn/order_list_screen.dart';
+import 'individual_order_list_screen.dart';
 import 'order_letter_pad_list_page.dart';
 
 class OrderManagementPage extends StatelessWidget {
@@ -150,6 +152,16 @@ class OrderManagementPage extends StatelessWidget {
       case 'School Agreement with Old Mix Report Mention':
         page = const SchoolAgrementOldMixListPage();
         break;
+
+      case 'Order Tracking (GR Number Transport Name)':
+        page = const TrackingOrderListScreen ();
+        break;
+
+      case  'Individual Order':
+        page = const IndividualOrderListScreen ();
+        break;
+
+
 
       default:
         page = OrderPlaceholderPage(title: title);
