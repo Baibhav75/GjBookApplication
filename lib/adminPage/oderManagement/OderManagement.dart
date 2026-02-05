@@ -3,8 +3,10 @@ import 'package:bookworld/adminPage/oderManagement/tracking_order_list_screen.da
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../SellReturn/order_list_screen.dart';
+import 'dispatch_order_list_screen.dart';
 import 'individual_order_list_screen.dart';
 import 'order_letter_pad_list_page.dart';
+
 
 class OrderManagementPage extends StatelessWidget {
   const OrderManagementPage({super.key});
@@ -63,6 +65,7 @@ class OrderManagementPage extends StatelessWidget {
                 _orderItem(context, 9, 'Individual Order'),
                 _orderItem(context, 10, 'Order Tracking (GR Number Transport Name)'),
                 _orderItem(context, 11, 'Order Pending'),
+                _orderItem(context, 11, 'Dispatch Order List'),
               ],
             ),
           ),
@@ -161,7 +164,9 @@ class OrderManagementPage extends StatelessWidget {
         page = const IndividualOrderListScreen ();
         break;
 
-
+      case  'Dispatch Order ListDispatch Order List':
+        page = const DispatchOrderListScreen();
+        break;
 
       default:
         page = OrderPlaceholderPage(title: title);
