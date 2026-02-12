@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../Model/tracking_order_model.dart';
 import '../../Service/tracking_order_service.dart';
+import 'order_tracking_detail_page.dart';
 
 class TrackingOrderListScreen extends StatefulWidget {
   const TrackingOrderListScreen({super.key});
@@ -103,12 +104,25 @@ class _TrackingOrderListScreenState
                             child: Center(
                               child: ElevatedButton(
                                 onPressed: () {
-                                  // TODO: Navigate to details screen
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => OrderTrackingDetailPage(
+                                        senderId: order.senderId,   // 🔒 hidden but passed
+
+                                      ),
+                                    ),
+                                  );
                                 },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.deepPurple,
+                                  foregroundColor: Colors.white,
+                                ),
                                 child: const Text('View'),
                               ),
                             ),
                           ),
+
                         ],
                       ),
                     );

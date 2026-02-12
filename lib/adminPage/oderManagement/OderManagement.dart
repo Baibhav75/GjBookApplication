@@ -1,3 +1,4 @@
+import 'package:bookworld/adminPage/oderManagement/publication_list_page.dart';
 import 'package:bookworld/adminPage/oderManagement/school_agrement_old_mix_list_page.dart';
 import 'package:bookworld/adminPage/oderManagement/tracking_order_list_screen.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../SellReturn/order_list_screen.dart';
 import 'dispatch_order_list_screen.dart';
 import 'individual_order_list_screen.dart';
+import 'order_excel_sheet_page.dart';
 import 'order_letter_pad_list_page.dart';
 
 
@@ -56,16 +58,19 @@ class OrderManagementPage extends StatelessWidget {
 
 
                 _orderItem(context, 2, 'School Discount Agreement Form'),
-                _orderItem(context, 3, 'All Order Details'),
-                _orderItem(context, 4, 'School Agreement with Old Mix Report Mention'),
-                _orderItem(context, 5, 'Order Process Billing With School Stretch'),
-                _orderItem(context, 6, 'Order Excel Sheet'),
-                _orderItem(context, 7, 'Book List (Publication Without Publication)'),
-                _orderItem(context, 8, 'Merge Publication Order Form'),
-                _orderItem(context, 9, 'Individual Order'),
-                _orderItem(context, 10, 'Order Tracking (GR Number Transport Name)'),
-                _orderItem(context, 11, 'Order Pending'),
+                _orderItem(context, 3, 'Order Process Billing With School Stretch'),
+                _orderItem(context, 4, 'All Order Details'),
+                //_orderItem(context, 4, 'School Agreement with Old Mix Report Mention'),
+
+                _orderItem(context, 5, 'Order Excel Sheet'),
+               // _orderItem(context, 7, 'Book List (Publication Without Publication)'),
+                _orderItem(context, 6, 'Merge Publication Order Form'),
+                _orderItem(context, 7, 'Individual Oder Details'),
+                _orderItem(context, 8, 'Marge Order Details'),
+                _orderItem(context, 9, 'Order Tracking (GR Number Transport Name)'),
+                _orderItem(context, 10, 'Order Pending'),
                 _orderItem(context, 11, 'Dispatch Order List'),
+                _orderItem(context, 12, 'Publication Oder'),
               ],
             ),
           ),
@@ -156,6 +161,10 @@ class OrderManagementPage extends StatelessWidget {
         page = const SchoolAgrementOldMixListPage();
         break;
 
+      case 'Order Excel Sheet':
+        page = const OrderExcelSheetPage();
+        break;
+
       case 'Order Tracking (GR Number Transport Name)':
         page = const TrackingOrderListScreen ();
         break;
@@ -166,6 +175,10 @@ class OrderManagementPage extends StatelessWidget {
 
       case  'Dispatch Order ListDispatch Order List':
         page = const DispatchOrderListScreen();
+        break;
+
+      case  'Publication Oder':
+        page = const PublicationOrderManagementPage();
         break;
 
       default:

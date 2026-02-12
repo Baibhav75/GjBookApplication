@@ -22,7 +22,7 @@ class TrackingOrderResponse {
 
 class TrackingOrder {
   final String orderNo;
-  final String senderId;
+  final String senderId; // ✅ stored, not shown
   final String publication;
   final DateTime date;
 
@@ -42,3 +42,4 @@ class TrackingOrder {
     );
   }
 }
+
