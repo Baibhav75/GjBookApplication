@@ -49,10 +49,10 @@ class OrderMaster {
     return OrderMaster(
       senderId: json['SenderId'] ?? '',
       publicationId: json['PublicationId'] ?? '',
-      publicationName: json['PublicationName'] ?? '',
+      publicationName: json['PublicationName'] ?? json['Publication'] ?? '', // ✅ Robust check
       transport: json['Transport'] ?? '',
-      date: DateTime.tryParse(json['Dates'] ?? '') ??
-          DateTime.now(), // ✅ SAFE
+      date: DateTime.tryParse(json['Dates'] ?? json['Date'] ?? json['OrderDate'] ?? '') ??
+          DateTime.now(), // ✅ Highly Robust date check
     );
   }
 }

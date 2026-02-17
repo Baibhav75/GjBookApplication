@@ -11,9 +11,9 @@ class OrderLetterPadResponse {
 
   factory OrderLetterPadResponse.fromJson(Map<String, dynamic> json) {
     return OrderLetterPadResponse(
-      status: json['Status'],
-      message: json['Message'],
-      data: (json['Data'] as List)
+      status: json['Status'] ?? false,
+      message: json['Message'] ?? '',
+      data: (json['Data'] as List<dynamic>? ?? [])
           .map((e) => OrderLetterPad.fromJson(e))
           .toList(),
     );
@@ -24,10 +24,10 @@ class OrderLetterPad {
   final int id;
   final String schoolName;
   final String address;
-  final DateTime createDate;
+  final DateTime? createDate;   // ✅ Nullable
   final String image;
   final String type;
-  final DateTime orderDate;
+  final DateTime? orderDate;    // ✅ Nullable
 
   OrderLetterPad({
     required this.id,
@@ -41,13 +41,21 @@ class OrderLetterPad {
 
   factory OrderLetterPad.fromJson(Map<String, dynamic> json) {
     return OrderLetterPad(
-      id: json['id'],
-      schoolName: json['SchoolName'],
-      address: json['Address'],
-      createDate: DateTime.parse(json['CreateDate']),
-      image: json['Image'],
-      type: json['Type'],
-      orderDate: DateTime.parse(json['OrderDate']),
+      id: json['id'] ?? 0,
+      schoolName: json['SchoolName'] ?? '',
+      address: json['Address'] ?? '',
+
+      // ✅ SAFE DATE PARSING
+      createDate: DateTime.tryParse(
+          json['CreateDate']?.toString() ?? ''
+      ),
+
+      orderDate: DateTime.tryParse(
+          json['OrderDate']?.toString() ?? ''
+      ),
+
+      image: json['Image'] ?? '',
+      type: json['Type'] ?? '',
     );
   }
 }

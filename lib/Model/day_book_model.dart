@@ -1,84 +1,114 @@
-// models/day_book_model.dart
 class DayBookModel {
-  final String? id;
-  final String company;
-  final String? crdr;
-  final String amount;
-  final String? expenseNo;
-  final String? receiptNo;
-  final String? mobile;
+  final int? id;
+  final String? particularName;
+  final String? type;
+  final double? amount;
+  final double? totalBalance;
+  final String? createdAt;
+  final double? openingBalance;
+  final String? expenseVoucherNo;
+  final String? receiptVoucherNo;
   final String? remark;
-  final String? filePath;
-  final DateTime? createdAt;
+  final String? mobileNo;
+  final String? remarks;
+  final String? image;
+  final String? director;
+  final String? transfer;
 
   DayBookModel({
     this.id,
-    required this.company,
-    this.crdr,
-    required this.amount,
-    this.expenseNo,
-    this.receiptNo,
-    this.mobile,
-    this.remark,
-    this.filePath,
+    this.particularName,
+    this.type,
+    this.amount,
+    this.totalBalance,
     this.createdAt,
+    this.openingBalance,
+    this.expenseVoucherNo,
+    this.receiptVoucherNo,
+    this.remark,
+    this.mobileNo,
+    this.remarks,
+    this.image,
+    this.director,
+    this.transfer,
   });
 
-  // Convert to JSON for API - match your API expected fields
+  // ---------------- SEND TO API ----------------
   Map<String, dynamic> toJson() {
     return {
-      'company': company,
-      'crdr': crdr,
-      'amount': amount,
-      'expense_no': expenseNo,
-      'receipt_no': receiptNo,
-      'mobile': mobile,
-      'remark': remark,
-      'file_path': filePath,
-      // Add any other fields your API expects
-      'created_date': createdAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      "ParicularName": particularName,
+      "Flag": type,
+      "Amount": amount,
+      "MobileNo": mobileNo,
+      "ExpenceBowcherNo": expenseVoucherNo,
+      "ReceiptBowcherNo": receiptVoucherNo,
+      "Remarks": remarks,
+      "image": image,
+      // The following are usually calculated by backend but included for completeness
+      "TotalBalance": totalBalance,
+      "OpeningBalance": openingBalance,
+      "Remark": remark,
+      "Director": director,
+      "Transfer": transfer,
     };
   }
 
-  // Create from JSON
+  // ---------------- RECEIVE FROM API ----------------
   factory DayBookModel.fromJson(Map<String, dynamic> json) {
     return DayBookModel(
-      id: json['id']?.toString(),
-      company: json['company'] ?? '',
-      crdr: json['crdr'],
-      amount: json['amount']?.toString() ?? '0',
-      expenseNo: json['expense_no'],
-      receiptNo: json['receipt_no'],
-      mobile: json['mobile'],
-      remark: json['remark'],
-      filePath: json['file_path'],
-      createdAt: json['created_date'] != null
-          ? DateTime.parse(json['created_date'])
-          : null,
+      id: json["id"],
+      particularName: json["ParicularName"],
+      type: json["Flag"],
+      amount: json["Amount"] != null ? (json["Amount"] as num).toDouble() : null,
+      totalBalance: json["TotalBalance"] != null ? (json["TotalBalance"] as num).toDouble() : null,
+      createdAt: json["Createdatetime"],
+      openingBalance: json["OpeningBalance"] != null ? (json["OpeningBalance"] as num).toDouble() : null,
+      expenseVoucherNo: json["ExpenceBowcherNo"],
+      receiptVoucherNo: json["ReceiptBowcherNo"],
+      remark: json["Remark"],
+      mobileNo: json["MobileNo"],
+      remarks: json["Remarks"],
+      image: json["image"],
+      director: json["Director"],
+      transfer: json["Transfer"],
     );
   }
 
   DayBookModel copyWith({
-    String? company,
-    String? crdr,
-    String? amount,
-    String? expenseNo,
-    String? receiptNo,
-    String? mobile,
+    int? id,
+    String? particularName,
+    String? type,
+    double? amount,
+    double? totalBalance,
+    String? createdAt,
+    double? openingBalance,
+    String? expenseVoucherNo,
+    String? receiptVoucherNo,
     String? remark,
-    String? filePath,
+    String? mobileNo,
+    String? remarks,
+    String? image,
+    String? director,
+    String? transfer,
   }) {
     return DayBookModel(
-      id: id,
-      company: company ?? this.company,
-      crdr: crdr ?? this.crdr,
+      id: id ?? this.id,
+      particularName: particularName ?? this.particularName,
+      type: type ?? this.type,
       amount: amount ?? this.amount,
-      expenseNo: expenseNo ?? this.expenseNo,
-      receiptNo: receiptNo ?? this.receiptNo,
-      mobile: mobile ?? this.mobile,
+      totalBalance: totalBalance ?? this.totalBalance,
+      createdAt: createdAt ?? this.createdAt,
+      openingBalance: openingBalance ?? this.openingBalance,
+      expenseVoucherNo: expenseVoucherNo ?? this.expenseVoucherNo,
+      receiptVoucherNo: receiptVoucherNo ?? this.receiptVoucherNo,
       remark: remark ?? this.remark,
-      filePath: filePath ?? this.filePath,
-      createdAt: createdAt,
+      mobileNo: mobileNo ?? this.mobileNo,
+      remarks: remarks ?? this.remarks,
+      image: image ?? this.image,
+      director: director ?? this.director,
+      transfer: transfer ?? this.transfer,
     );
   }
 }
+
+

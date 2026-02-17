@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../Model/individual_order_model.dart';
 import '../../Service/individual_order_service.dart';
+import 'IndividualOrderDetailScreen.dart';
 
 class IndividualOrderListScreen extends StatefulWidget {
   const IndividualOrderListScreen({super.key});
@@ -27,7 +28,7 @@ class _IndividualOrderListScreenState
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         title: const Text(
-          'Individual Orders',
+          'Individual Orders List',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -109,9 +110,16 @@ class _IndividualOrderListScreenState
                             child: Center(
                               child: ElevatedButton(
                                 onPressed: () {
-                                  // 🔹 Navigate to detail / tracking page
-                                  // Navigator.push(...)
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => IndividualOrderDetailScreen(
+                                        senderId: order.senderId,   // 🔥 PASSING SENDER ID
+                                      ),
+                                    ),
+                                  );
                                 },
+
                                 child: const Text('View'),
                               ),
                             ),
@@ -170,3 +178,5 @@ class _BodyCell extends StatelessWidget {
     );
   }
 }
+
+

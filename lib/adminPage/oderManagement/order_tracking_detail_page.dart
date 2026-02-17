@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../Model/publication_order_details_model.dart';
-import '../../Service/publication_order_details_service.dart';
+import '../../Model/order_tracking_detail_model.dart';
+import '../../Service/order_tracking_detail_service.dart';
 
 class OrderTrackingDetailPage extends StatefulWidget {
   final String senderId;
 
-  const OrderTrackingDetailPage({
-    super.key,
-    required this.senderId,
-  });
+  const OrderTrackingDetailPage({super.key, required this.senderId});
 
   @override
   State<OrderTrackingDetailPage> createState() =>
@@ -17,37 +14,35 @@ class OrderTrackingDetailPage extends StatefulWidget {
 
 class _OrderTrackingDetailPageState
     extends State<OrderTrackingDetailPage> {
-  late Future<PublicationOrderDetailsResponse> futureData;
+  late Future<OrderTrackingDetailResponse> futureData;
 
   @override
   void initState() {
     super.initState();
     futureData =
-        PublicationOrderDetailsService.fetchOrderDetails(widget.senderId);
+        OrderTrackingDetailService.fetchDetails(widget.senderId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
-        title: const Text('Publication Order Details'),
+        title: const Text("Order Details"),
+        centerTitle: true,
       ),
-      body: FutureBuilder<PublicationOrderDetailsResponse>(
+      body: FutureBuilder<OrderTrackingDetailResponse>(
         future: futureData,
         builder: (context, snapshot) {
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
             return Center(child: Text(snapshot.error.toString()));
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No data found'));
           }
 
           final data = snapshot.data!;
@@ -57,19 +52,145 @@ class _OrderTrackingDetailPageState
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _title(),
-                const SizedBox(height: 12),
 
-                // 🔹 ORDER META TABLE
-                _orderInfoTable(master, data.schools),
+                /// =========================
+                /// 🔹 ORDER SUMMARY CARD
+                /// =========================
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Order Summary",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Divider(height: 20),
+
+                        _summaryRow("Supplier", master.publication),
+                        _summaryRow("Transport", master.transport),
+                        _summaryRow("Date", _formatDate(master.date)),
+                        _summaryRow("School", master.schoolName),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 20),
 
-                // 🔹 ITEMS TABLE
-                _itemsTable(data.items),
-                const SizedBox(height: 12),
+                /// =========================
+                /// 🔹 ITEMS TABLE CARD
+                /// =========================
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
 
-                // 🔹 GRAND TOTAL
-                _grandTotal(data.grandTotal),
+                        const Text(
+                          "Items",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columnSpacing: 24,
+                            headingRowHeight: 48,
+                            dataRowHeight: 52,
+                            headingRowColor:
+                            MaterialStateProperty.all(
+                                Colors.grey.shade800),
+                            columns: const [
+                              DataColumn(
+                                  label: _HeaderText("S.N")),
+                              DataColumn(
+                                  label: _HeaderText("Book Name")),
+                              DataColumn(
+                                  label: _HeaderText("Class")),
+                              DataColumn(
+                                  label: _HeaderText("Subject")),
+                              DataColumn(
+                                  label: _HeaderText("Series")),
+                              DataColumn(
+                                  label: _HeaderText("Qty")),
+                              DataColumn(
+                                  label: _HeaderText("Rate")),
+                              DataColumn(
+                                  label: _HeaderText("Amount")),
+                            ],
+                            rows: List.generate(
+                              data.items.length,
+                                  (index) {
+                                final item = data.items[index];
+                                return DataRow(
+                                  cells: [
+                                    DataCell(
+                                        _BodyText("${index + 1}")),
+                                    DataCell(
+                                        _BodyText(item.bookName)),
+                                    DataCell(
+                                        _BodyText(item.classes)),
+                                    DataCell(
+                                        _BodyText(item.subject)),
+                                    DataCell(
+                                        _BodyText(item.series)),
+                                    DataCell(
+                                        _BodyText(item.qty.toString())),
+                                    DataCell(_BodyText(
+                                        "₹ ${item.rate.toStringAsFixed(2)}")),
+                                    DataCell(_BodyText(
+                                        "₹ ${item.totalAmount.toStringAsFixed(2)}")),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        /// Grand Total
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius:
+                              BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "Total Items: ${data.totalShown}",
+                              style: const TextStyle(
+                                  fontWeight:
+                                  FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -78,147 +199,63 @@ class _OrderTrackingDetailPageState
     );
   }
 
-  // ================= UI =================
-
-  Widget _title() => const Text(
-    'Publication Order Details',
-    style: TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-      decoration: TextDecoration.underline,
-    ),
-  );
-
-  /// Order meta info (SenderId intentionally hidden)
-  Widget _orderInfoTable(
-      OrderMaster master, List<String> schools) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 900),
-        child: Table(
-          border: TableBorder.all(),
-          columnWidths: const {
-            0: FlexColumnWidth(3),
-            1: FlexColumnWidth(4),
-            2: FlexColumnWidth(3),
-          },
-          children: [
-            _row3(
-              'Supplier: ${master.publicationName}',
-              'Transport: ${master.transport}',
-              'Date: ${_formatDate(master.date)}',
-            ),
-            _row3(
-              'School: ${schools.isNotEmpty ? schools.first : ''}',
-              '',
-              '',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _itemsTable(List<OrderItem> items) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 1100),
-        child: Table(
-          border: TableBorder.all(),
-          columnWidths: const {
-            0: FlexColumnWidth(1),
-            1: FlexColumnWidth(2),
-            2: FlexColumnWidth(4),
-            3: FlexColumnWidth(2),
-            4: FlexColumnWidth(3),
-            5: FlexColumnWidth(1),
-            6: FlexColumnWidth(2),
-            7: FlexColumnWidth(2),
-          },
-          children: [
-            _itemsHeader(),
-            ...items.asMap().entries.map(
-                  (e) => _itemRow(e.key + 1, e.value),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  TableRow _itemsHeader() => TableRow(
-    decoration: BoxDecoration(color: Colors.grey.shade200),
-    children:[
-      _cell('S.N', bold: true),
-      _cell('Series', bold: true),
-      _cell('Book Name', bold: true),
-      _cell('Class', bold: true),
-      _cell('Subject', bold: true),
-      _cell('Qty', bold: true),
-      _cell('Rate', bold: true),
-      _cell('Amount', bold: true),
-    ],
-  );
-
-  TableRow _itemRow(int sn, OrderItem item) {
-    return TableRow(
-      children: [
-        _cell(sn.toString()),
-        _cell(item.series),
-        _cell(item.bookName),
-        _cell(item.classes),
-        _cell(item.subject),
-        _cell(item.qty.toString()),
-        _cell('₹ ${item.rate.toStringAsFixed(2)}'),
-        _cell('₹ ${item.totalAmount.toStringAsFixed(2)}'),
-      ],
-    );
-  }
-
-  Widget _grandTotal(double total) => Align(
-    alignment: Alignment.centerRight,
-    child: Container(
-      padding: const EdgeInsets.all(12),
-      color: Colors.green.shade100,
-      child: Text(
-        'Grand Total : ₹ ${total.toStringAsFixed(2)}',
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-        ),
-      ),
-    ),
-  );
-
-  // ================= HELPERS =================
-
-  TableRow _row3(String a, String b, String c) {
-    return TableRow(
-      children: [
-        _cell(a, bold: true),
-        _cell(b, bold: true),
-        _cell(c, bold: true),
-      ],
-    );
-  }
-
-  static Widget _cell(String text, {bool bold = false}) {
+  /// Summary Row
+  Widget _summaryRow(String title, String value) {
     return Padding(
-      padding: const EdgeInsets.all(10),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
-        ),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              title,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600),
+            ),
+          ),
+          const Text(": "),
+          Expanded(child: Text(value)),
+        ],
       ),
     );
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.year}';
+    return "${date.day.toString().padLeft(2, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.year}";
+  }
+}
+
+/// Header Text Widget
+class _HeaderText extends StatelessWidget {
+  final String text;
+  const _HeaderText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+}
+
+/// Body Text Widget
+class _BodyText extends StatelessWidget {
+  final String text;
+  const _BodyText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+      ),
+    );
   }
 }

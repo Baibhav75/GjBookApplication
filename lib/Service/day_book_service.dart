@@ -5,94 +5,110 @@ import 'package:http/http.dart' as http;
 import '/Model/day_book_model.dart';
 
 class DayBookService {
-  // Base URL
-  static const String baseUrl = 'https://g17bookworld.com/API/AddDayBook';
+  // Correct Base URL
+  static const String baseUrl =
+      'https://g17bookworld.com/API/AddDayBook';
 
   final http.Client client;
 
-  DayBookService({http.Client? client}) : client = client ?? http.Client();
+  DayBookService({http.Client? client})
+      : client = client ?? http.Client();
 
   // ---------------------------------------------------------------------------
-  // CREATE DAY BOOK ENTRY
+  // CREATE LEDGER KHATA (POST) - Updated to Multipart for Image Upload
   // ---------------------------------------------------------------------------
   Future<Map<String, dynamic>> createDayBook(DayBookModel dayBook) async {
     try {
-      final url = '$baseUrl/AddLedgerKhata';
+      final url = 'https://g17bookworld.com/API/AddDayBook/AddLedgerKhata';
+      
+      final request = http.MultipartRequest('POST', Uri.parse(url));
 
-      print('🚀 POST: $url');
-      print('📦 DATA: ${dayBook.toJson()}');
+      // 🔹 TEXT FIELDS (Using exact keys from provided JSON response)
+      request.fields['ParicularName'] = dayBook.particularName ?? '';
+      request.fields['MobileNo'] = dayBook.mobileNo ?? '';
+      request.fields['Flag'] = dayBook.type ?? '';
+      request.fields['Amount'] = dayBook.amount?.toString() ?? '0';
+      request.fields['ExpenceBowcherNo'] = dayBook.expenseVoucherNo ?? '';
+      request.fields['ReceiptBowcherNo'] = dayBook.receiptVoucherNo ?? '';
+      request.fields['Remarks'] = dayBook.remarks ?? '';
+      // Optional/New fields
+      if (dayBook.openingBalance != null) request.fields['OpeningBalance'] = dayBook.openingBalance.toString();
+      if (dayBook.remark != null) request.fields['Remark'] = dayBook.remark!;
 
-      final response = await client
-          .post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(dayBook.toJson()),
-      )
-          .timeout(const Duration(seconds: 30));
+      // 🔹 IMAGE FILRE (ONLY IF PROVIDED)
+      if (dayBook.image != null && dayBook.image!.isNotEmpty) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image', // Backend field name
+            dayBook.image!,
+          ),
+        );
+      }
 
-      print('📡 Status: ${response.statusCode}');
-      print('📄 Body: ${response.body}');
+      print("Sending fields: ${request.fields}");
+
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 45));
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print("Response status: ${response.statusCode}");
+      print("Response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> json = jsonDecode(response.body);
-
         return {
-          'success': true,
-          'message': json['message'] ?? 'Day book created successfully',
-          'data': json,
+          'success': json['Status'] ?? false,
+          'message': json['Message'] ?? 'Ledger saved successfully',
+          'data': json['Data'] != null ? DayBookModel.fromJson(json['Data']) : null,
         };
       }
 
-      throw Exception('Server error: ${response.statusCode}');
+      return {
+        'success': false,
+        'message': 'Server error: ${response.statusCode}',
+      };
     } catch (e) {
-      throw Exception('Failed to create day book: $e');
+      print("Error creating day book: $e");
+      return {
+        'success': false,
+        'message': 'Failed to create ledger entry: $e',
+      };
     }
   }
 
   // ---------------------------------------------------------------------------
-  // GET DAY BOOK LIST (Used for Today / Week / Month / Date Filter)
+  // GET DAY BOOK LIST
   // ---------------------------------------------------------------------------
   Future<List<DayBookModel>> getDayBookList() async {
     try {
-      final url = '$baseUrl/GetDayBookList';
-
-      print('📥 GET: $url');
+      final url =
+          'https://g17bookworld.com/API/AddDayBook/GetDayBookList';
 
       final response = await client
           .get(
         Uri.parse(url),
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: {'Accept': 'application/json'},
       )
           .timeout(const Duration(seconds: 20));
 
-      print('📡 Status: ${response.statusCode}');
-      print('📄 Data: ${response.body}');
-
       if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
+        final jsonData =
+        jsonDecode(response.body);
 
-        // Expected JSON structure:
-        // { "success": true, "data": [ ... ] }
-
-        if (jsonData['data'] == null || jsonData['data'] is! List) {
-          return [];
+        if (jsonData['Status'] == true &&
+            jsonData['Data'] != null &&
+            jsonData['Data'] is List) {
+          return (jsonData['Data'] as List)
+              .map((e) =>
+              DayBookModel.fromJson(e))
+              .toList();
         }
 
-        final List<DayBookModel> items = (jsonData['data'] as List)
-            .map((e) => DayBookModel.fromJson(e))
-            .toList();
-
-        return items;
+        return [];
       }
 
-      throw Exception('Failed to fetch list: Status ${response.statusCode}');
+      return [];
     } catch (e) {
-      print('❌ Error loading list: $e');
+      print('❌ Error loading ledger list: $e');
       return [];
     }
   }
@@ -103,7 +119,10 @@ class DayBookService {
   Future<Map<String, dynamic>> testConnection() async {
     try {
       final response = await client
-          .get(Uri.parse('https://gj.realhomes.co.in/'))
+          .get(
+        Uri.parse(
+            'https://g17bookworld.com/'),
+      )
           .timeout(const Duration(seconds: 10));
 
       return {

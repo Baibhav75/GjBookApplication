@@ -5,7 +5,8 @@ import '/Model/order_letter_pad_model.dart';
 
 class OrderLetterPadService {
   static const String _baseUrl =
-      'https://g17bookworld.com/API/OrderLaterPadListApi/GetLaterPadList';
+      'https://g17bookworld.com//API/OrderLaterPadListApi/GetLaterPadList';
+
 
   /// Fetch list API
   Future<List<OrderLetterPad>> fetchLetterPadList() async {

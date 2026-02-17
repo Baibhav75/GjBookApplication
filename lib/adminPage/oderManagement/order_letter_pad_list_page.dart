@@ -15,17 +15,23 @@ class OrderLetterPadListPage extends StatefulWidget {
 class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
   late Future<List<OrderLetterPad>> _future;
 
+  @override
+  void initState() {
+    super.initState();
+    _future = OrderLetterPadService().fetchLetterPadList();
+  }
+
+  // ================= FILE OPEN =================
+
   Future<void> _openFile(String url) async {
     if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File not available')),
-      );
+      _showSnack('File not available');
       return;
     }
 
     final lowerUrl = url.toLowerCase();
 
-    // 🖼 Image formats → open inside app
+    // 🖼 Open image inside app
     if (lowerUrl.endsWith('.jpg') ||
         lowerUrl.endsWith('.jpeg') ||
         lowerUrl.endsWith('.png')) {
@@ -38,20 +44,20 @@ class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
       return;
     }
 
-    // 📄 PDF & other formats → open externally
+    // 📄 Open PDF externally
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open file')),
-      );
+      _showSnack('Could not open file');
     }
   }
-  
-  @override
-  void initState() {
-    super.initState();
-    _future = OrderLetterPadService().fetchLetterPadList();
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
+
+  // ================= UI =================
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +89,7 @@ class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
             );
           }
 
-          final list = snapshot.data!;
+          final list = snapshot.data ?? [];
 
           if (list.isEmpty) {
             return const Center(child: Text('No records found'));
@@ -115,7 +121,7 @@ class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // HEADER
+            // 🔹 HEADER
             Row(
               children: [
                 CircleAvatar(
@@ -133,7 +139,9 @@ class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    item.schoolName,
+                    item.schoolName.isEmpty
+                        ? '-'
+                        : item.schoolName,
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -152,33 +160,29 @@ class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
 
             const SizedBox(height: 10),
 
-            // VIEW BUTTON
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6B46C1),
                 foregroundColor: Colors.white,
               ),
-              onPressed: () {
-                _openFile(item.image);
-              },
+              onPressed: () => _openFile(item.image),
               icon: const Icon(Icons.picture_as_pdf, size: 18),
               label: const Text('View Letter Pad'),
             ),
-
-
           ],
         ),
       ),
     );
   }
 
-  Widget _row(String label, String value) {
+  Widget _row(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 90,
+            width: 95,
             child: Text(
               '$label:',
               style: GoogleFonts.poppins(
@@ -189,7 +193,7 @@ class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
           ),
           Expanded(
             child: Text(
-              value,
+              value == null || value.isEmpty ? '-' : value,
               style: GoogleFonts.poppins(fontSize: 13),
             ),
           ),
@@ -198,15 +202,24 @@ class _OrderLetterPadListPageState extends State<OrderLetterPadListPage> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}-${date.month}-${date.year}';
+  // ✅ SAFE DATE FORMATTER
+  String _formatDate(DateTime? date) {
+    if (date == null) return '-';
+    return '${date.day.toString().padLeft(2, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.year}';
   }
 }
+
+// ================= IMAGE PREVIEW =================
 
 class ImagePreviewPage extends StatelessWidget {
   final String imageUrl;
 
-  const ImagePreviewPage({super.key, required this.imageUrl});
+  const ImagePreviewPage({
+    super.key,
+    required this.imageUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
