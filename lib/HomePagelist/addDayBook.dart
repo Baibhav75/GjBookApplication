@@ -201,7 +201,7 @@ class _AddDayBookState extends State<AddDayBook> {
         title: const Text("Add Day Book", 
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
         centerTitle: true,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -216,7 +216,7 @@ class _AddDayBookState extends State<AddDayBook> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue[900]!, const Color(0xFFF0F4F8)],
+            colors: [Colors.deepPurple !, const Color(0xFFF0F4F8)],
             stops: const [0.0, 0.2],
           ),
         ),

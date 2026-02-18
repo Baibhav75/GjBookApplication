@@ -147,8 +147,8 @@ class SchoolDiscountAgreementModel {
       "AgentId": agentId,
 
       /// 🔥 SIGNATURE
-      "PartySignature": partySignatureBase64,
-      "ManagerSignature": managerSignatureBase64,
+      "Party_Signature": partySignatureBase64,
+      "Manager_Signature": managerSignatureBase64,
 
       /// Monthly Payments
       "January_Payment": monthlyPayments["January"],

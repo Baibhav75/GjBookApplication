@@ -211,6 +211,12 @@ class _SchoolDiscountAgreementFormState extends State<SchoolDiscountAgreementFor
 
     setState(() => _isLoading = true);
 
+    print("Party Signature: ${_partySignatureBase64 != null}");
+    print("Manager Signature: ${_managerSignatureBase64 != null}");
+    print("Party Length: ${_partySignatureBase64?.length}");
+    print("Manager Length: ${_managerSignatureBase64?.length}");
+
+
     try {
       final response =
       await SchoolDiscountAgreementService().submitAgreement(model);
@@ -237,21 +243,22 @@ class _SchoolDiscountAgreementFormState extends State<SchoolDiscountAgreementFor
     if (image != null) {
       final file = File(image.path);
       final bytes = await file.readAsBytes();
+
       final base64String = base64Encode(bytes);
+
+      final fullBase64 = base64String;
 
       setState(() {
         if (isParty) {
           _partySignatureFile = file;
-          _partySignatureBase64 = base64String;
+          _partySignatureBase64 = fullBase64;
         } else {
           _managerSignatureFile = file;
-          _managerSignatureBase64 = base64String;
+          _managerSignatureBase64 = fullBase64;
         }
       });
     }
   }
-
-
 
 
   @override

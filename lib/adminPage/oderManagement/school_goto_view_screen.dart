@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../Model/school_goto_view_model.dart';
 import '../../Service/school_goto_view_service.dart';
+import 'SchoolAgreementfullDetails.dart';
 
 class SchoolGotoViewScreen extends StatefulWidget {
   const SchoolGotoViewScreen({super.key});
@@ -70,6 +71,8 @@ class _SchoolGotoViewScreenState
             borderRadius: BorderRadius.circular(8),
           ),
           child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+             child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
               headingRowColor:
@@ -108,8 +111,17 @@ class _SchoolGotoViewScreenState
                           children: [
                             ElevatedButton(
                               onPressed: () {
-                                // Agreement action
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SchoolAgreementScreen(
+                                      partyName: item.partyName,
+                                      id: item.id,
+                                    ),
+                                  ),
+                                );
                               },
+
                               style: ElevatedButton
                                   .styleFrom(
                                 backgroundColor:
@@ -141,6 +153,7 @@ class _SchoolGotoViewScreenState
               ),
             ),
           ),
+        ),
         ),
       ),
     );
