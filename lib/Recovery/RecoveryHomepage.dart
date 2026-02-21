@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import '../Service/assigned_school_service.dart';
+import '../Model/assigned_school_model.dart';
+import 'AssignedSchoolScreen.dart';
+import 'CollectAmountPage.dart';
 
 class RecoveryHomePage extends StatefulWidget {
   final String position;
   final String agentName;
   final String mobileNo;
+  final String employeeId;   // ✅ Add this
 
   const RecoveryHomePage({
     Key? key,
     required this.position,
     required this.agentName,
     required this.mobileNo,
+    required this.employeeId,   // ✅ use this.
 
   }) : super(key: key);
 
@@ -19,6 +25,8 @@ class RecoveryHomePage extends StatefulWidget {
 
 class _RecoveryHomePageState extends State<RecoveryHomePage> {
   int _currentIndex = 0;
+  final AssignedSchoolService _service = AssignedSchoolService();
+
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +107,7 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
   Widget _summaryCards() {
     return Row(
       children: [
-        _summaryCard("Today's Collection", "₹ 12,500", Colors.green),
+        _summaryCard("Receive Balance", "₹ 12,500", Colors.green),
         const SizedBox(width: 12),
         _summaryCard("Pending Amount", "₹ 48,300", Colors.red),
       ],
@@ -144,10 +152,47 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
   // ===================== MENU ITEM =====================
   Widget _menuItem(String title, IconData icon, Color color) {
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("$title clicked (UI only)")),
-        );
+      onTap: () async {
+
+        if (title == "Assigned Schools") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AssignedSchoolScreen(
+                employeeId: widget.employeeId,
+              ),
+            ),
+          );
+        }
+
+        else if (title == "Collect Amount") {
+
+          final data =
+          await _service.fetchAssignedSchools(widget.employeeId);
+
+          if (data != null &&
+              data.status?.toLowerCase() == "success" &&
+              data.data?.schools != null &&
+              data.data!.schools!.isNotEmpty) {
+
+            final school = data.data!.schools!.first;
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CollectAmountPage(
+                  schoolId: school.schoolId ?? "",
+                  schoolName: school.schoolName ?? "",
+                ),
+              ),
+            );
+
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("No schools found")),
+            );
+          }
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -185,6 +230,43 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
     );
   }
 
+// ✅ ADD THIS METHOD HERE (inside same class)
+  void _showSchoolSelector(List<Schools> schools) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: schools.length,
+          itemBuilder: (context, index) {
+            final school = schools[index];
+
+            return ListTile(
+              leading: const Icon(Icons.school),
+              title: Text(school.schoolName ?? ""),
+              subtitle: Text(school.schoolAddress ?? ""),
+              onTap: () {
+                Navigator.pop(context);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectAmountPage(
+                      schoolId: school.schoolId ?? "",
+                      schoolName: school.schoolName ?? "",
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
   // ===================== DRAWER =====================
   Widget _buildDrawer() {
     return Drawer(

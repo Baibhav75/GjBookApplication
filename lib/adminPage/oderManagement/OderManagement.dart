@@ -67,17 +67,17 @@ class OrderManagementPage extends StatelessWidget {
                 _orderItem(context, 5, 'Order Excel Sheet'),
                 _orderItem(context, 6, 'Discussion Order Details'),
                 // _orderItem(context, 7, 'Book List (Publication Without Publication)'),
-                _orderItem(context, 7, 'Merge Publication Order Form'),
-                _orderItem(context, 8, 'Individual Oder Details'),
-                _orderItem(context, 9, 'Marge Order Details'),
+              //  _orderItem(context, 7, 'Merge Publication Order Form'),
+                _orderItem(context, 7, 'Individual Oder Details'),
+                _orderItem(context, 8, 'Marge Order Details'),
                 _orderItem(
                   context,
-                  10,
+                  9,
                   'Order Tracking (GR Number Transport Name)',
                 ),
-                _orderItem(context, 11, 'Order Pending'),
-                _orderItem(context, 12, 'Dispatch Order List'),
-                _orderItem(context, 13, 'Publication Oder'),
+                _orderItem(context, 10, 'Order Pending'),
+                _orderItem(context, 11, 'Dispatch Order List'),
+                _orderItem(context, 12, 'Publication Oder'),
               ],
             ),
           ),
@@ -92,7 +92,7 @@ class OrderManagementPage extends StatelessWidget {
     // 🔴 Titles that should be red
     final List<String> redItems = [
       'Order Pending',
-      'Merge Publication Order Form'
+
     ];
 
     final bool isRed = redItems.contains(title);

@@ -22,6 +22,7 @@ import '../HomePagelist/dayBookHistory.dart';
 import '../staffPage/AddSurvey.dart';
 import 'BilingPurchase/PurchaseInvoice.dart';
 import 'BilingPurchase/PurchaseSampleRevenew.dart';
+import 'CollectionManagement/CollectionManagementScreen.dart';
 import 'PurchaseReturn/PurchaseReturnInvoide.dart';
 import 'PurchaseReturn/PurchaseReturnNotForSale.dart';
 import 'PurchaseReturn/PurchaseReturnSampleRevenue.dart';
@@ -87,11 +88,9 @@ class _AdminPageState extends State<AdminPage> {
     {'title': 'Oder Agreement', 'icon': Icons.download, 'color': Colors.green},
     {'title': 'Oder\nManagement', 'icon': Icons.auto_mode_rounded, 'color': Colors.blue},
     {
-      'title': 'Latest\nOrder',
-      'icon': Icons.shopping_cart,
-      'color': Colors.blue,
+      'title': 'Latest\nOrder', 'icon': Icons.shopping_cart, 'color': Colors.blue,
     },
-    {'title': 'Total\nSell', 'icon': Icons.trending_up, 'color': Colors.purple},
+    {'title': 'Collection\nManagement', 'icon': Icons.trending_up, 'color': Colors.deepPurpleAccent},
     {
       'title': 'Total\nPurchase','icon': Icons.shopping_bag, 'color': Colors.orange,
     },
@@ -99,60 +98,18 @@ class _AdminPageState extends State<AdminPage> {
     {'title': 'School\nList', 'icon': Icons.school, 'color': Colors.teal},
     {'title': 'Employee\nList', 'icon': Icons.people, 'color': Colors.indigo},
 
-    {
-      'title': 'Agent\nList', 'icon': Icons.person, 'color': Colors.cyan,
-    },
-    {
-      'title': 'Add Day\nBook',
-      'icon': Icons.business,
-      'color': Colors.deepOrange,
-    },
-    {
-      'title': 'Day Book\nHistory',
-      'icon': Icons.history,
-      'color': Colors.brown,
-    },
-    {
-      'title': 'Purchase\nInvoice',
-      'icon': Icons.receipt,
-      'color': Colors.amber,
-    },
-    {
-      'title': 'Sale\nInvoice',
-      'icon': Icons.point_of_sale,
-      'color': Colors.lightGreen,
-    },
-    {
-      'title': 'Purchase Return',
-      'icon': Icons.assignment_return,
-      'color': Colors.pink,
-    },
-    {
-      'title': 'Sale Return',
-      'icon': Icons.keyboard_return,
-      'color': Colors.deepPurple,
-    },
-    {
-      'title': 'Company List',
-      'icon': Icons.business_center,
-      'color': Colors.lightBlue,
-    },
-    {
-      'title': 'Product List',
-      'icon': Icons.inventory_2,
-      'color': Colors.blueGrey,
-    },
-    {
-      'title': 'Interview List',
-      'icon': Icons.work,
-      'color': Colors.orangeAccent,
-    },
+    {'title': 'Agent\nList', 'icon': Icons.person, 'color': Colors.cyan,},
+    {'title': 'Add Day\nBook', 'icon': Icons.business, 'color': Colors.deepOrange,},
+    {'title': 'Day Book\nHistory', 'icon': Icons.history, 'color': Colors.brown,},
+    {'title': 'Purchase\nInvoice', 'icon': Icons.receipt, 'color': Colors.amber,},
+    {'title': 'Sale\nInvoice', 'icon': Icons.point_of_sale, 'color': Colors.lightGreen,},
+    {'title': 'Purchase Return', 'icon': Icons.assignment_return, 'color': Colors.pink,},
+    {'title': 'Sale Return', 'icon': Icons.keyboard_return, 'color': Colors.deepPurple,},
+    {'title': 'Company List', 'icon': Icons.business_center, 'color': Colors.lightBlue,},
+    {'title': 'Product List', 'icon': Icons.inventory_2, 'color': Colors.blueGrey,},
+    {'title': 'Interview List', 'icon': Icons.work, 'color': Colors.orangeAccent,},
 
-    {
-      'title': 'Publication/nAgreement',
-      'icon': Icons.description,
-      'color': Colors.greenAccent,
-    },
+    {'title': 'Publication/nAgreement', 'icon': Icons.description, 'color': Colors.greenAccent,},
   ];
 
   @override
@@ -270,7 +227,6 @@ class _AdminPageState extends State<AdminPage> {
                 );
               },
             ),
-
             _buildDrawerSubItemWithNumber('View Company', 2,
               onTap: () {
                 Navigator.push(
@@ -280,7 +236,6 @@ class _AdminPageState extends State<AdminPage> {
               },
             ),
           ]),
-
           // Account (Expandable)
           _buildExpandableDrawerItem(Icons.account_balance_wallet, 'Account', [
             _buildDrawerSubItemWithNumber('Purchase Invoice', 1),
@@ -289,7 +244,6 @@ class _AdminPageState extends State<AdminPage> {
             _buildDrawerSubItemWithNumber('General Cashbook', 4),
             _buildDrawerSubItemWithNumber('Account Cashbook', 5),
           ]),
-
           // Billing (Expandable) - Fixed version
           _buildExpandableDrawerItem(Icons.receipt, 'Billing', [
             _buildExpandableSubItem('Purchase', [
@@ -395,7 +349,6 @@ class _AdminPageState extends State<AdminPage> {
               ),
             ]),
           ]),
-
           // Account Opening Form (Expandable)
           _buildExpandableDrawerItem(
             Icons.description,
@@ -417,7 +370,6 @@ class _AdminPageState extends State<AdminPage> {
               ),
             ],
           ),
-
           // HRM (Expandable)
           _buildExpandableDrawerItem(Icons.people, 'HRM', [
             _buildDrawerSubItemWithNumber('View Employee', 1,
@@ -754,7 +706,6 @@ class _AdminPageState extends State<AdminPage> {
               ),
             );
 
-
             break;
           case 'Employee\nList':
             Navigator.push(
@@ -789,13 +740,17 @@ class _AdminPageState extends State<AdminPage> {
             );
             break;
 
-          case 'Total\nPurchase':
-            Navigator.pop(context);
-            break;
           case 'Oder\nManagement':
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) =>  OrderManagementPage ()),
+            );
+            break;
+
+          case 'Collection\nManagement':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SchoolWiseRegisterScreen  ()),
             );
             break;
 
