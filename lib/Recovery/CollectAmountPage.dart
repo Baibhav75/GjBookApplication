@@ -42,7 +42,7 @@ class _CollectAmountPageState extends State<CollectAmountPage> {
   bool _isLoading = true;
   bool _isSendingOtp = false;
 
-  String maskedNumber = "OK";
+  String maskedNumber = "Email";
 
   @override
   void initState() {

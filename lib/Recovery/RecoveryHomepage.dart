@@ -1,8 +1,10 @@
+import 'package:bookworld/Recovery/recovery_history_screen.dart';
 import 'package:flutter/material.dart';
 import '../Service/assigned_school_service.dart';
 import '../Model/assigned_school_model.dart';
 import 'AssignedSchoolScreen.dart';
 import 'CollectAmountPage.dart';
+import 'RecoveryPendingAmountScreen.dart';
 
 class RecoveryHomePage extends StatefulWidget {
   final String position;
@@ -155,12 +157,36 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
       onTap: () async {
 
         if (title == "Assigned Schools") {
+
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => AssignedSchoolScreen(
                 employeeId: widget.employeeId,
               ),
+            ),
+          );
+        }
+        if (title == "Pending Dues") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  RecoveryPendingAmountScreen(
+                    employeeId: widget.employeeId,
+                  ),
+            ),
+          );
+        }
+
+        if (title == "Recovery History") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  RecoveryHistoryListScreen (employeeId: widget.employeeId,
+                   // employeeId: widget.employeeId,
+                  ),
             ),
           );
         }
@@ -230,43 +256,7 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
     );
   }
 
-// ✅ ADD THIS METHOD HERE (inside same class)
-  void _showSchoolSelector(List<Schools> schools) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: schools.length,
-          itemBuilder: (context, index) {
-            final school = schools[index];
 
-            return ListTile(
-              leading: const Icon(Icons.school),
-              title: Text(school.schoolName ?? ""),
-              subtitle: Text(school.schoolAddress ?? ""),
-              onTap: () {
-                Navigator.pop(context);
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CollectAmountPage(
-                      schoolId: school.schoolId ?? "",
-                      schoolName: school.schoolName ?? "",
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
   // ===================== DRAWER =====================
   Widget _buildDrawer() {
     return Drawer(
