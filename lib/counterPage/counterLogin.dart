@@ -15,9 +15,9 @@ class _CounterLoginPageState extends State<CounterLoginPage> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _mobileCtrl =
-  TextEditingController(text: "9897382328");
+  TextEditingController(text: "9838477423");
   final TextEditingController _passwordCtrl =
-  TextEditingController(text: "123456");
+  TextEditingController(text: "1234566");
 
   bool _isLoading = false;
   bool _obscureText = true;

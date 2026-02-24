@@ -1,7 +1,9 @@
 import 'package:bookworld/Recovery/recovery_history_screen.dart';
 import 'package:flutter/material.dart';
+import '../Model/receive_pending_amount_model.dart';
 import '../Service/assigned_school_service.dart';
 import '../Model/assigned_school_model.dart';
+import '../Service/receive_pending_amount_service.dart';
 import 'AssignedSchoolScreen.dart';
 import 'CollectAmountPage.dart';
 import 'RecoveryPendingAmountScreen.dart';
@@ -29,6 +31,26 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
   int _currentIndex = 0;
   final AssignedSchoolService _service = AssignedSchoolService();
 
+  ReceivePendingAmountModel? amountData;
+  bool isLoadingAmount = true;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAmounts();
+  }
+  void _loadAmounts() async {
+    final data = await ReceivePendingAmountService()
+        .fetchAmounts(widget.employeeId);
+
+    if (mounted) {
+      setState(() {
+        amountData = data;
+        isLoadingAmount = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +129,23 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
 
   // ===================== SUMMARY =====================
   Widget _summaryCards() {
+    if (isLoadingAmount) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Row(
       children: [
-        _summaryCard("Receive Balance", "₹ 12,500", Colors.green),
+        _summaryCard(
+          "Receive Balance",
+          "₹ ${amountData?.receivedAmount.toStringAsFixed(2) ?? "0.00"}",
+          Colors.green,
+        ),
         const SizedBox(width: 12),
-        _summaryCard("Pending Amount", "₹ 48,300", Colors.red),
+        _summaryCard(
+          "Pending Amount",
+          "₹ ${amountData?.pendingAmount.toStringAsFixed(2) ?? "0.00"}",
+          Colors.red,
+        ),
       ],
     );
   }

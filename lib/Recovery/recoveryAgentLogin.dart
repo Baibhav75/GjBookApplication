@@ -14,10 +14,10 @@ class _RecoveryAgentLoginState extends State<RecoveryAgentLogin> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _mobileController =
-  TextEditingController(text: "9140734721");
+  TextEditingController(text: "9936589225");
 
   final TextEditingController _passwordController =
-  TextEditingController(text: "Munna@1");
+  TextEditingController(text: "123456");
 
 
   String? _selectedPosition;
@@ -81,12 +81,6 @@ class _RecoveryAgentLoginState extends State<RecoveryAgentLogin> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  @override
-  void dispose() {
-    _mobileController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

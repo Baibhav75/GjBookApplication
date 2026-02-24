@@ -43,7 +43,7 @@ class _RecoveryHistoryListScreenState
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.orangeAccent,
+        backgroundColor: Colors.orange,
         centerTitle: true,
         iconTheme: const IconThemeData(
           color: Colors.white, // 👈 back button + other icons white

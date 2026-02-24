@@ -5,6 +5,15 @@ import 'package:bookworld/home_screen.dart';
 import '../AgentStaff/getmanProfile.dart';
 import 'counterChangePassword.dart';
 import 'counterProfile.dart';
+import 'counter_details_page.dart';
+import 'counter_order_pending_page.dart';
+import 'counter_today_sell_page.dart';
+import 'counter_online_payment_page.dart';
+import 'counter_cash_payment_page.dart';
+import 'counter_transaction_history_page.dart';
+import 'counter_completed_order_page.dart';
+import 'counter_total_sell_page.dart';
+import 'counter_wallet_history_page.dart';
 
 class CounterMainPage extends StatefulWidget {
   const CounterMainPage({Key? key}) : super(key: key);
@@ -73,7 +82,9 @@ class _CounterMainPageState extends State<CounterMainPage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              _loadCounterDetails();
+            },
           ),
         ],
       ),
@@ -84,6 +95,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
         currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFF1A73E8),
         unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() => _currentIndex = index);
         },
@@ -98,9 +110,6 @@ class _CounterMainPageState extends State<CounterMainPage> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // DRAWER
-  // ---------------------------------------------------------------------------
 
   Widget _buildDrawer() {
     return Drawer(
@@ -133,7 +142,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
                 ),
                 if (_counterId.isNotEmpty)
                   Text(
-                    _counterId,
+                    "ID: $_counterId",
                     style: const TextStyle(color: Colors.white70),
                   ),
               ],
@@ -153,7 +162,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
             leading: const Icon(Icons.person, color: Colors.blue),
             title: const Text("Profile"),
             onTap: () {
-
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -178,6 +187,8 @@ class _CounterMainPageState extends State<CounterMainPage> {
             },
           ),
 
+          const Divider(),
+
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout"),
@@ -187,15 +198,16 @@ class _CounterMainPageState extends State<CounterMainPage> {
             },
           ),
 
-          const SizedBox(height: 20),
+          const Spacer(),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text("v1.0.2", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ),
         ],
       ),
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // PAGES (same as before)
-  // ---------------------------------------------------------------------------
 
   Widget _getPage() {
     switch (_currentIndex) {
@@ -214,9 +226,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 🎨 DASHBOARD UI
-  // ---------------------------------------------------------------------------
+
 
   Widget _buildDashboard() {
     return SingleChildScrollView(
@@ -224,7 +234,7 @@ class _CounterMainPageState extends State<CounterMainPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AnimatedBanner(userName: _counterName ,),   // <-- 🔥 Added here
+          AnimatedBanner(userName: _counterName ,),
 
           const SizedBox(height: 25),
 
@@ -266,70 +276,124 @@ class _CounterMainPageState extends State<CounterMainPage> {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 3,
               mainAxisSpacing: 15,
-              crossAxisSpacing: 25,
-
+              crossAxisSpacing: 15,
               childAspectRatio: 0.85,
               children: [
                 _menuItem(
-                  "Counter List",
-                  Icons.store, // 🏪 counters / shops
+                  "Counter Details",
+                  Icons.storefront, // better shop icon
                   Colors.green,
                       () {
-                    setState(() => _currentIndex = 1);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CounterDetailsPage(counterData: {
+                          'name': _counterName,
+                          'id': _counterId,
+                        }),
+                      ),
+                    );
                   },
                 ),
 
                 _menuItem(
-                  "Total Collection",
-                  Icons.account_balance_wallet, // 💰 total money collected
+                  "Pending Order",
+                  Icons.pending_actions, // correct
                   Colors.orange,
                       () {
-                    setState(() => _currentIndex = 2);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CounterOrderPendingPage()),
+                    );
                   },
                 ),
 
                 _menuItem(
-                  "Deposit Amount",
-                  Icons.arrow_downward, // ⬇️ money deposited
-                  Colors.purple,
-                      () {
-                    setState(() => _currentIndex = 3);
-                  },
-                ),
-
-                _menuItem(
-                  "Hold Amount",
-                  Icons.pause_circle_filled, // ⏸ money on hold
+                  "Completed Order",
+                  Icons.check_circle_outline, // correct completed icon
                   Colors.blue,
                       () {
-                    setState(() => _currentIndex = 4);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CounterCompletedOrderPage()),
+                    );
                   },
                 ),
 
                 _menuItem(
-                  "Hold Limit",
-                  Icons.lock, // 🔒 limit / restriction
+                  "Stock",
+                  Icons.inventory_2_outlined, // correct stock icon
                   Colors.teal,
                       () {
-                    // Hold limit logic
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const CounterTodaySellPage()),
+                        );
                   },
                 ),
-
                 _menuItem(
-                  "Today Collection",
-                  Icons.today, // 📅 today’s collection
+                  "Today Sell",
+                  Icons.today, // correct
                   Colors.red,
                       () {
-                    // Today collection logic
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const CounterTodaySellPage()),
+                        );
+
                   },
                 ),
-
                 _menuItem(
-                  "Monthly\nCollection",
-                  Icons.calendar_month, // 📆 monthly summary
+                  "Total Sell",
+                  Icons.bar_chart, // better analytics icon
                   Colors.deepPurple,
                       () {
-                    // Monthly collection logic
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CounterTotalSellPage()),
+                    );
+                  },
+                ),
+                _menuItem(
+                  "Online Payment",
+                  Icons.payment, // correct
+                  Colors.indigo,
+                      () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CounterTransactionHistoryPage()),
+                    );
+                  },
+                ),
+                _menuItem(
+                  "Cash Payment",
+                  Icons.payments_outlined, // correct cash icon
+                  Colors.green,
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const CounterTransactionHistoryPage()),
+                        );
+                    // Add navigation here
+                  },
+                ),
+                _menuItem(
+                  "Wallet History",
+                  Icons.account_balance_wallet_outlined, // correct wallet icon
+                  Colors.brown,
+                      () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CounterWalletHistoryPage()),
+                    );
                   },
                 ),
               ],
@@ -344,21 +408,23 @@ class _CounterMainPageState extends State<CounterMainPage> {
   Widget _menuItem(String title, IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(15),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, size: 32, color: color),
+            child: Icon(icon, size: 28, color: color),
           ),
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -371,9 +437,6 @@ class _CounterMainPageState extends State<CounterMainPage> {
   Widget _buildReceiptsPage() => const Center(child: Text("Receipts Page"));
   Widget _buildReportsPage() => const Center(child: Text("Reports Page"));
 
-  // ---------------------------------------------------------------------------
-  // 🚪 LOGOUT
-  // ---------------------------------------------------------------------------
 
   void _logout() async {
     try {
@@ -419,8 +482,8 @@ class _AnimatedBannerState extends State<AnimatedBanner>
     )..repeat(reverse: true);
 
     _slide = Tween<Offset>(
-      begin: const Offset(-0.05, 0),
-      end: const Offset(0.05, 0),
+      begin: const Offset(-0.02, 0),
+      end: const Offset(0.02, 0),
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,

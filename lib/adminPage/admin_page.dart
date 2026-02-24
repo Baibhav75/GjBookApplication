@@ -6,6 +6,7 @@ import 'package:bookworld/staffPage/add_school_survey_page.dart';
 import 'package:bookworld/staffPage/staffhistory.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '/adminPage/CounterListPage.dart';
 
 import 'package:bookworld/HomePagelist/addDayBook.dart';
 import 'package:bookworld/adminPage/BilingPurchase/purchaseNotForSale.dart';
@@ -23,6 +24,7 @@ import '../staffPage/AddSurvey.dart';
 import 'BilingPurchase/PurchaseInvoice.dart';
 import 'BilingPurchase/PurchaseSampleRevenew.dart';
 import 'CollectionManagement/CollectionManagementScreen.dart';
+import 'CounterListPage.dart';
 import 'PurchaseReturn/PurchaseReturnInvoide.dart';
 import 'PurchaseReturn/PurchaseReturnNotForSale.dart';
 import 'PurchaseReturn/PurchaseReturnSampleRevenue.dart';
@@ -85,7 +87,10 @@ class _AdminPageState extends State<AdminPage> {
 
   // Sample data for dashboard
   final List<Map<String, dynamic>> _dashboardStats = [
-    {'title': 'Oder Agreement', 'icon': Icons.download, 'color': Colors.green},
+    {'title': 'Oder\nAgreement', 'icon': Icons.download, 'color': Colors.green},
+
+    {'title': 'Counter\nList', 'icon': Icons.list_alt, 'color': Colors.redAccent.shade200},
+
     {'title': 'Oder\nManagement', 'icon': Icons.auto_mode_rounded, 'color': Colors.blue},
     {
       'title': 'Latest\nOrder', 'icon': Icons.shopping_cart, 'color': Colors.blue,
@@ -733,7 +738,7 @@ class _AdminPageState extends State<AdminPage> {
               MaterialPageRoute(builder: (context) => OrderListScreen()),
             );
             break;
-          case 'Oder Agreement':
+          case 'Oder\nAgreement':
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => OrderAgreementListScreen ()),
@@ -744,6 +749,13 @@ class _AdminPageState extends State<AdminPage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) =>  OrderManagementPage ()),
+            );
+            break;
+
+          case 'Counter\nList':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CounterListPage ()),
             );
             break;
 
