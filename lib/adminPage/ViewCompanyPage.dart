@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '/Model/ViewCompany_model.dart';
 import '/Service/ViewCompany_service.dart';
+
 class ViewCompanyPage extends StatefulWidget {
   const ViewCompanyPage({super.key});
 
@@ -71,7 +72,7 @@ class _ViewCompanyPageState extends State<ViewCompanyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('View Company'),
+        title: const Text('All Publication'),
         backgroundColor: Colors.blue[900],
         foregroundColor: Colors.white,
         elevation: 2,
@@ -130,13 +131,12 @@ class _ViewCompanyPageState extends State<ViewCompanyPage> {
               ),
             ),
             // Footer Buttons
-            _buildFooter(),
+
           ],
         ),
       ),
     );
   }
-
 
 
   Widget _buildSearchField() {
@@ -298,51 +298,49 @@ class _ViewCompanyPageState extends State<ViewCompanyPage> {
         _buildResultsCount(),
         const SizedBox(height: 16),
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor: MaterialStateProperty.all(Colors.lightBlue.shade50),
-              columnSpacing: 20,
-              dataRowMinHeight: 60,
-              dataRowMaxHeight: 80,
-              columns: const [
-                DataColumn(label: Text('Sr No', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Company Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Group', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Mobile', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('GST No', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-              ],
-              rows: _filteredCompanies.asMap().entries.map((entry) {
-                final index = entry.key;
-                final company = entry.value;
-                return DataRow(
-                  cells: [
-                    DataCell(Text('${index + 1}')),
-                    DataCell(
-                      Tooltip(
-                        message: company.publication ?? 'N/A',
-                        child: Text(
-                          company.publication ?? 'N/A',
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                      ),
-                    ),
-                    DataCell(Text(company.groups ?? 'N/A')),
-                    DataCell(Text(company.email ?? 'N/A')),
-                    DataCell(Text(company.mobileNo ?? 'N/A')),
-                    DataCell(Text(company.gstNo ?? 'N/A')),
-                    DataCell(Text(company.discountRateDisplay)),
-                    DataCell(_buildActionMenu(company)),
+          child: Scrollbar(
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,   // Vertical Scroll
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,  // Horizontal Scroll
+                child: DataTable(
+                  headingRowColor: MaterialStateProperty.all(
+                      Colors.lightBlue.shade50),
+                  columnSpacing: 20,
+                  dataRowMinHeight: 60,
+                  dataRowMaxHeight: 80,
+                  columns: const [
+                    DataColumn(label: Text('Sr No', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Company Name', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Group', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Mobile', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('GST No', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
                   ],
-                );
-              }).toList(),
+                  rows: _filteredCompanies.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final company = entry.value;
+                    return DataRow(
+                      cells: [
+                        DataCell(Text('${index + 1}')),
+                        DataCell(Text(company.publication ?? 'N/A')),
+                        DataCell(Text(company.groups ?? 'N/A')),
+                        DataCell(Text(company.email ?? 'N/A')),
+                        DataCell(Text(company.mobileNo ?? 'N/A')),
+                        DataCell(Text(company.gstNo ?? 'N/A')),
+                        DataCell(Text(company.discountRateDisplay)),
+                        DataCell(_buildActionMenu(company)),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
-        ),
+        )
       ],
     );
   }
@@ -495,116 +493,8 @@ class _ViewCompanyPageState extends State<ViewCompanyPage> {
     );
   }
 
-  void _navigateToHome() {
-    // TODO: Implement navigation to Home screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Home'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
 
-  void _navigateToDayBook() {
-    // TODO: Implement navigation to Day Book screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Day Book'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
 
-  void _navigateToAttendanceHistory() {
-    // TODO: Implement navigation to Attendance History screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigating to Attendance History'),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildFooterTextButton(
-            text: 'Home',
-            onPressed: _navigateToHome,
-            icon: Icons.home,
-            textColor: Colors.blue[700],
-          ),
-          _buildFooterTextButton(
-            text: 'Day Book',
-            onPressed: _navigateToDayBook,
-            icon: Icons.book,
-            textColor: Colors.green[700],
-          ),
-          _buildFooterTextButton(
-            text: 'Attendance',
-            onPressed: _navigateToAttendanceHistory,
-            icon: Icons.history,
-            textColor: Colors.orange[700],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooterTextButton({
-    required String text,
-    required VoidCallback onPressed,
-    required IconData icon,
-    Color? textColor,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.transparent,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: textColor ?? Colors.blue[700],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: textColor ?? Colors.blue[700],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   void dispose() {

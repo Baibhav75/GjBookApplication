@@ -395,7 +395,7 @@ class _AddSurveyState extends State<AddSurvey> {
         backgroundColor: Colors.deepPurpleAccent,
         elevation: 4,
         title: const Text(
-          'Survey List',
+          'School Survey List',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,

@@ -88,21 +88,15 @@ class _AdminPageState extends State<AdminPage> {
   // Sample data for dashboard
   final List<Map<String, dynamic>> _dashboardStats = [
     {'title': 'Oder\nAgreement', 'icon': Icons.download, 'color': Colors.green},
-
     {'title': 'Counter\nList', 'icon': Icons.list_alt, 'color': Colors.redAccent.shade200},
-
     {'title': 'Oder\nManagement', 'icon': Icons.auto_mode_rounded, 'color': Colors.blue},
-    {
-      'title': 'Latest\nOrder', 'icon': Icons.shopping_cart, 'color': Colors.blue,
-    },
+    {'title': 'Latest\nOrder', 'icon': Icons.shopping_cart, 'color': Colors.blue,},
     {'title': 'Collection\nManagement', 'icon': Icons.trending_up, 'color': Colors.deepPurpleAccent},
-    {
-      'title': 'Total\nPurchase','icon': Icons.shopping_bag, 'color': Colors.orange,
-    },
-    {'title': 'Total\nStall', 'icon': Icons.store, 'color': Colors.red},
-    {'title': 'School\nList', 'icon': Icons.school, 'color': Colors.teal},
+    {'title': 'Total\nPurchase','icon': Icons.shopping_bag, 'color': Colors.orange,},
+    {'title': 'All\nPublication', 'icon': Icons.store, 'color': Colors.red},
+    {'title': 'School Survey List', 'icon': Icons.school, 'color': Colors.teal},
+    {'title': 'All\nSchool List', 'icon': Icons.sell, 'color': Colors.indigoAccent,},
     {'title': 'Employee\nList', 'icon': Icons.people, 'color': Colors.indigo},
-
     {'title': 'Agent\nList', 'icon': Icons.person, 'color': Colors.cyan,},
     {'title': 'Add Day\nBook', 'icon': Icons.business, 'color': Colors.deepOrange,},
     {'title': 'Day Book\nHistory', 'icon': Icons.history, 'color': Colors.brown,},
@@ -113,8 +107,7 @@ class _AdminPageState extends State<AdminPage> {
     {'title': 'Company List', 'icon': Icons.business_center, 'color': Colors.lightBlue,},
     {'title': 'Product List', 'icon': Icons.inventory_2, 'color': Colors.blueGrey,},
     {'title': 'Interview List', 'icon': Icons.work, 'color': Colors.orangeAccent,},
-
-    {'title': 'Publication/nAgreement', 'icon': Icons.description, 'color': Colors.greenAccent,},
+    {'title': 'Publication\nAgreement', 'icon': Icons.description, 'color': Colors.greenAccent,},
   ];
 
   @override
@@ -232,7 +225,7 @@ class _AdminPageState extends State<AdminPage> {
                 );
               },
             ),
-            _buildDrawerSubItemWithNumber('View Company', 2,
+            _buildDrawerSubItemWithNumber('All Publication', 2,
               onTap: () {
                 Navigator.push(
                   context,
@@ -596,17 +589,17 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   List<Widget> _buildDashboardOverviewSections() {
-    // First container: 8 items, Second container: 4 items
-    final firstChunk = _dashboardStats.length >= 8
-        ? _dashboardStats.sublist(0, 8)
+
+    final firstChunk = _dashboardStats.length >= 9
+        ? _dashboardStats.sublist(0, 9)
         : _dashboardStats;
-    final secondChunk = _dashboardStats.length > 8
-        ? _dashboardStats.sublist(8, math.min(12, _dashboardStats.length))
+    final secondChunk = _dashboardStats.length > 12
+        ? _dashboardStats.sublist(9, 13)
         : <Map<String, dynamic>>[];
 
     final List<Widget> sections = [];
 
-    // First Container with 8 items
+
     if (firstChunk.isNotEmpty) {
       sections.add(
         _buildDashboardContainer('Dashboard Overview', firstChunk, true),
@@ -703,7 +696,7 @@ class _AdminPageState extends State<AdminPage> {
               MaterialPageRoute(builder: (context) => DayBookHistory()),
             );
             break;
-          case 'School\nList':
+          case 'School Survey List':
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -712,12 +705,7 @@ class _AdminPageState extends State<AdminPage> {
             );
 
             break;
-          case 'Employee\nList':
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => HRMViewEmployee()),
-            );
-            break;
+
 
           case 'Purchase\nInvoice':
             Navigator.push(
@@ -758,11 +746,24 @@ class _AdminPageState extends State<AdminPage> {
               MaterialPageRoute(builder: (context) => CounterListPage ()),
             );
             break;
+          case 'All\nPublication':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) =>  ViewCompanyPage()),
+            );
+            break;
 
           case 'Collection\nManagement':
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => SchoolWiseRegisterScreen  ()),
+            );
+            break;
+
+          case 'All\nSchool List':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SellSchoolListPage ()),
             );
             break;
 

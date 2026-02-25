@@ -11,15 +11,15 @@ class OrderAgreementResponse {
 
   factory OrderAgreementResponse.fromJson(Map<String, dynamic> json) {
     return OrderAgreementResponse(
-      status: json['Status'],
-      message: json['Message'],
-      data: List<OrderAgreement>.from(
-        json['Data'].map((x) => OrderAgreement.fromJson(x)),
-      ),
+      status: json['Status'] ?? '',
+      message: json['Message'] ?? '',
+      data: json['Data'] != null
+          ? List<OrderAgreement>.from(
+          json['Data'].map((x) => OrderAgreement.fromJson(x)))
+          : [],
     );
   }
 }
-
 class OrderAgreement {
   final int id;
   final DateTime createDate;
@@ -35,10 +35,12 @@ class OrderAgreement {
 
   factory OrderAgreement.fromJson(Map<String, dynamic> json) {
     return OrderAgreement(
-      id: json['id'],
-      createDate: DateTime.parse(json['CreateDate']),
-      partyName: json['PartyName'],
-      address: json['Address'],
+      id: json['id'] ?? 0,
+      createDate: json['CreateDate'] != null
+          ? DateTime.tryParse(json['CreateDate']) ?? DateTime.now()
+          : DateTime.now(),
+      partyName: json['PartyName'] ?? '',
+      address: json['Address'] ?? '',
     );
   }
 }

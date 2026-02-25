@@ -7,6 +7,9 @@ import '../Service/receive_pending_amount_service.dart';
 import 'AssignedSchoolScreen.dart';
 import 'CollectAmountPage.dart';
 import 'RecoveryPendingAmountScreen.dart';
+import 'RecoveryProfile.dart';
+import 'changePasswordRecovery.dart';
+import 'counterAmount.dart';
 
 class RecoveryHomePage extends StatefulWidget {
   final String position;
@@ -120,6 +123,8 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
               _menuItem("Pending Dues", Icons.warning, Colors.red),
               _menuItem("Reports", Icons.bar_chart, Colors.purple),
               _menuItem("Profile", Icons.person, Colors.teal),
+              _menuItem("Amount\nCounter", Icons.home_repair_service_outlined, Colors.amberAccent),
+
             ],
           ),
         ],
@@ -220,6 +225,18 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
               builder: (_) =>
                   RecoveryHistoryListScreen (employeeId: widget.employeeId,
                    // employeeId: widget.employeeId,
+                  ),
+            ),
+          );
+        }
+
+        if (title == "Amount\nCounter") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>CounterAmountPage
+                   (
+                    // employeeId: widget.employeeId,
                   ),
             ),
           );
@@ -340,12 +357,37 @@ class _RecoveryHomePageState extends State<RecoveryHomePage> {
           ListTile(
             leading: const Icon(Icons.person),
             title: const Text("Profile"),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Recoveryprofile(
+
+                    mobileNo: widget.mobileNo,
+
+                  ),
+                ),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.lock),
             title: const Text("Change Password"),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context); // 👈 pehle drawer close karo
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChangePasswordRecovery(
+
+                    mobileNo: widget.mobileNo,
+
+                  ),
+                ),
+              );
+            },
           ),
           const Divider(),
 
